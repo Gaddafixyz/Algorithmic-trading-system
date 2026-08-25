@@ -13,3 +13,4 @@ venv/
 data/*.db
 models/*.pkl
 models/*.joblib
+*.bak
