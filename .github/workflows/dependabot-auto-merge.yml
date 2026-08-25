@@ -1,0 +1,28 @@
+# Enable auto-merge for Dependabot (and trusted bots) once CI is green.
+# Requires: repo setting allow_auto_merge=true + branch protection with required checks.
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    # Only Dependabot (or extend the actor list if needed)
+    if: >
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.draft == false
+    steps:
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # Squash keeps history clean for dependency bumps
+          gh pr merge "$PR_URL" --auto --squash
