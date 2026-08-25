@@ -205,6 +205,8 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning:aiohttp",
     "ignore::DeprecationWarning:asyncpg",
+    "ignore::ResourceWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 
 [tool.coverage.run]

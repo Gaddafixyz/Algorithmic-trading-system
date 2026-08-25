@@ -93,7 +93,14 @@ def configure_logging(
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
-    root_logger.handlers.clear()
+    # Close existing handlers so file descriptors are released (avoids
+    # ResourceWarning when reconfigure is called repeatedly in tests).
+    for handler in root_logger.handlers[:]:
+        try:
+            handler.close()
+        except Exception:
+            pass
+        root_logger.removeHandler(handler)
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(console_formatter)

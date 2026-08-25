@@ -37,19 +37,14 @@ jobs:
       - name: Install lint tools
         run: |
           python -m pip install --upgrade pip
-          pip install ruff==0.4.2 black==26.5.1 isort==5.13.2
+          pip install ruff==0.4.2
 
       - name: Ruff check
         run: ruff check src tests scripts
 
       - name: Ruff format check
+        # Single formatter — black/isort diverge from ruff format on this tree
         run: ruff format --check src tests scripts
-
-      - name: Black check
-        run: black --check --diff src tests scripts
-
-      - name: isort check
-        run: isort --check-only --diff src tests scripts
 
   typecheck:
     name: Type check (mypy)
@@ -112,7 +107,6 @@ jobs:
             -m "not integration and not exchange" \
             --ignore=tests/integration \
             --ignore=tests/end_to_end \
-            -x \
             --cov=src \
             --cov-report=term-missing \
             --cov-report=xml \
