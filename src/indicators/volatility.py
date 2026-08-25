@@ -63,5 +63,5 @@ def historical_volatility(candles: list[OHLCV], period: int = 20) -> float:
     closes = np.array([float(c.close) for c in candles])
     if len(closes) < period + 1:
         return 0.0
-    log_returns = np.diff(np.log(closes[-period - 1:]))
+    log_returns = np.diff(np.log(closes[-period - 1 :]))
     return float(np.std(log_returns, ddof=1) * np.sqrt(365))

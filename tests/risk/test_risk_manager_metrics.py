@@ -73,9 +73,7 @@ def _counter_value(result: str) -> float:
 
 
 class TestRiskValidationsMetric:
-    async def test_passing_signal_increments_passed_label(
-        self, risk_manager: RiskManager
-    ) -> None:
+    async def test_passing_signal_increments_passed_label(self, risk_manager: RiskManager) -> None:
         before = _counter_value("passed")
 
         result = await risk_manager.validate_signal(make_signal())
@@ -83,9 +81,7 @@ class TestRiskValidationsMetric:
         assert result is True
         assert _counter_value("passed") == before + 1
 
-    async def test_rejected_signal_increments_failed_label(
-        self, risk_manager: RiskManager
-    ) -> None:
+    async def test_rejected_signal_increments_failed_label(self, risk_manager: RiskManager) -> None:
         risk_manager.update_equity(Decimal("10000"))  # peak
         risk_manager.update_equity(Decimal("8500"))  # -15% drawdown trips the breaker
 
@@ -96,9 +92,7 @@ class TestRiskValidationsMetric:
 
         assert _counter_value("failed") == before + 1
 
-    async def test_metric_deltas_track_in_memory_counters(
-        self, risk_manager: RiskManager
-    ) -> None:
+    async def test_metric_deltas_track_in_memory_counters(self, risk_manager: RiskManager) -> None:
         # Cross-check against RiskManager's own pre-existing in-memory
         # stats (self._validations_passed/_failed) rather than just the
         # Prometheus side, to catch the case where the metric call was

@@ -16,7 +16,6 @@ from src.core.enums import Timeframe
 from src.core.exceptions import InsufficientDataError
 from src.core.interfaces import IExchangeClient, IWebSocketStreamClient
 from src.core.models import OHLCV
-from src.domain.candle import Candle
 from src.market_data.cache import MarketDataCache
 
 logger = logging.getLogger(__name__)
@@ -58,13 +57,17 @@ class CandleService:
         if key in self._initialized:
             return
 
-        logger.info("Warming up candle cache: %s %s (%d candles)", symbol, timeframe, self._warmup_candles)
+        logger.info(
+            "Warming up candle cache: %s %s (%d candles)", symbol, timeframe, self._warmup_candles
+        )
         candles = await self._rest.get_candles(symbol, timeframe, limit=self._warmup_candles)
         self._cache.put_candles(symbol, timeframe, candles)
         self._initialized.add(key)
         logger.info(
             "Cache warm-up complete: %s %s (%d candles loaded)",
-            symbol, timeframe, len(candles),
+            symbol,
+            timeframe,
+            len(candles),
         )
 
     async def subscribe_live(
@@ -78,7 +81,7 @@ class CandleService:
 
         Optionally calls `callback(candle: OHLCV)` when a candle closes.
         """
-        key = (symbol.upper(), timeframe.value)
+        (symbol.upper(), timeframe.value)
 
         async def _on_kline(msg: dict[str, Any]) -> None:
             k = msg if "t" in msg else msg.get("k", msg)
@@ -128,12 +131,16 @@ class CandleService:
                 self._cache.put_candles(symbol, timeframe, candles)
                 logger.info(
                     "Resynced %s %s after reconnect (%d candles fetched)",
-                    symbol, timeframe, len(candles),
+                    symbol,
+                    timeframe,
+                    len(candles),
                 )
             except Exception as exc:
                 logger.error(
                     "Candle resync failed for %s %s after reconnect: %s",
-                    symbol, timeframe, exc,
+                    symbol,
+                    timeframe,
+                    exc,
                 )
 
     def get_candles(

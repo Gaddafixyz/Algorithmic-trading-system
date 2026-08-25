@@ -13,7 +13,6 @@ Executes shutdown steps in reverse dependency order:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from src.bootstrap.app import Application
@@ -121,7 +120,9 @@ async def shutdown(
                 await app.order_manager.submit_order(close_order)
                 logger.info(
                     "Submitted market close order for %s (position_id=%s, qty=%s)",
-                    pos.symbol, pos.position_id, qty,
+                    pos.symbol,
+                    pos.position_id,
+                    qty,
                 )
             except Exception as exc:
                 logger.error("Error closing position %s: %s", pos.symbol, exc)
@@ -184,12 +185,9 @@ async def shutdown(
         _failures.append(f"database close: {exc}")
 
     if _failures:
-        logger.error(
-            "=== Shutdown complete with %d error(s) ===", len(_failures)
-        )
+        logger.error("=== Shutdown complete with %d error(s) ===", len(_failures))
         raise ShutdownError(
-            f"Shutdown completed with {len(_failures)} error(s): "
-            + "; ".join(_failures)
+            f"Shutdown completed with {len(_failures)} error(s): " + "; ".join(_failures)
         )
 
     logger.info("=== Shutdown complete ===")

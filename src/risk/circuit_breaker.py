@@ -94,9 +94,7 @@ class CircuitBreaker:
         # used because trip()/reset()/half_open() are synchronous.
         self._bus = get_event_bus()
 
-    def _publish_state_change(
-        self, previous: CircuitBreakerState, reason: str
-    ) -> None:
+    def _publish_state_change(self, previous: CircuitBreakerState, reason: str) -> None:
         if previous == self._state:
             return
         self._bus.publish_sync(
@@ -116,9 +114,7 @@ class CircuitBreaker:
         self._tripped_at = datetime.now(tz=UTC)
         self._open_reason = reason
         self._trip_count += 1
-        logger.critical(
-            "CIRCUIT BREAKER TRIPPED: %s (trip #%d)", reason, self._trip_count
-        )
+        logger.critical("CIRCUIT BREAKER TRIPPED: %s (trip #%d)", reason, self._trip_count)
         self._publish_state_change(prev, reason)
 
     def reset(self) -> None:
@@ -195,12 +191,12 @@ class CircuitBreaker:
         self._probation_trade_active = False
         self._probation_started_at = None
         if pnl >= 0:
-            logger.info("HALF_OPEN probation trade profitable (pnl=%.4f) — resetting to CLOSED", pnl)
+            logger.info(
+                "HALF_OPEN probation trade profitable (pnl=%.4f) — resetting to CLOSED", pnl
+            )
             self.reset()
         else:
-            logger.warning(
-                "HALF_OPEN probation trade lost (pnl=%.4f) — re-tripping to OPEN", pnl
-            )
+            logger.warning("HALF_OPEN probation trade lost (pnl=%.4f) — re-tripping to OPEN", pnl)
             self.trip(f"Probation trade loss during HALF_OPEN recovery test ({pnl:.4f})")
 
     @property

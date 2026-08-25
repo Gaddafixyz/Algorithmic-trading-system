@@ -47,9 +47,7 @@ def sign_request(
     """
     ts = timestamp_ms(clock_offset_ms)
     prehash = f"{ts}{api_key}{recv_window}{payload}"
-    signature = hmac.new(
-        api_secret.encode(), prehash.encode(), hashlib.sha256
-    ).hexdigest()
+    signature = hmac.new(api_secret.encode(), prehash.encode(), hashlib.sha256).hexdigest()
     return {
         "X-BAPI-API-KEY": api_key,
         "X-BAPI-TIMESTAMP": str(ts),

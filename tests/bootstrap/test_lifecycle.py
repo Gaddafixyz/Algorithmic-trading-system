@@ -32,8 +32,10 @@ class TestRun:
         mgr = LifecycleManager(app)
         mgr._shutdown_event.set()  # main loop exits immediately
 
-        with patch("src.bootstrap.lifecycle.startup", new=AsyncMock()) as mock_startup, \
-             patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown:
+        with (
+            patch("src.bootstrap.lifecycle.startup", new=AsyncMock()) as mock_startup,
+            patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown,
+        ):
             await mgr.run()
 
         mock_startup.assert_awaited_once_with(app, None)
@@ -49,20 +51,25 @@ class TestRun:
         mgr = LifecycleManager(app)
         mgr._shutdown_event.set()
 
-        with patch("src.bootstrap.lifecycle.startup", new=AsyncMock()), \
-             patch(
-                 "src.bootstrap.lifecycle.shutdown",
-                 new=AsyncMock(side_effect=ShutdownError("2 error(s): boom; boom2")),
-             ):
+        with (
+            patch("src.bootstrap.lifecycle.startup", new=AsyncMock()),
+            patch(
+                "src.bootstrap.lifecycle.shutdown",
+                new=AsyncMock(side_effect=ShutdownError("2 error(s): boom; boom2")),
+            ),
+        ):
             await mgr.run()  # must not raise
 
     async def test_shutdown_still_runs_if_startup_raises(self) -> None:
         app = _fake_app()
         mgr = LifecycleManager(app)
 
-        with patch(
-            "src.bootstrap.lifecycle.startup", new=AsyncMock(side_effect=RuntimeError("boom"))
-        ), patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown:
+        with (
+            patch(
+                "src.bootstrap.lifecycle.startup", new=AsyncMock(side_effect=RuntimeError("boom"))
+            ),
+            patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown,
+        ):
             await mgr.run()  # must not propagate the startup exception
 
         mock_shutdown.assert_awaited_once_with(app, None)
@@ -73,8 +80,10 @@ class TestRun:
         mgr = LifecycleManager(app, orchestrator=orchestrator)
         mgr._shutdown_event.set()
 
-        with patch("src.bootstrap.lifecycle.startup", new=AsyncMock()) as mock_startup, \
-             patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown:
+        with (
+            patch("src.bootstrap.lifecycle.startup", new=AsyncMock()) as mock_startup,
+            patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()) as mock_shutdown,
+        ):
             await mgr.run()
 
         mock_startup.assert_awaited_once_with(app, orchestrator)
@@ -85,8 +94,10 @@ class TestRun:
         mgr = LifecycleManager(app)
         mgr._shutdown_event.set()
 
-        with patch("src.bootstrap.lifecycle.startup", new=AsyncMock()), \
-             patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()):
+        with (
+            patch("src.bootstrap.lifecycle.startup", new=AsyncMock()),
+            patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()),
+        ):
             await mgr.run()
 
         assert mgr._reconcile_task is not None
@@ -100,9 +111,11 @@ class TestRun:
         mgr._shutdown_event.set()
         loop = asyncio.get_running_loop()
 
-        with patch.object(loop, "add_signal_handler") as mock_add, \
-             patch("src.bootstrap.lifecycle.startup", new=AsyncMock()), \
-             patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()):
+        with (
+            patch.object(loop, "add_signal_handler") as mock_add,
+            patch("src.bootstrap.lifecycle.startup", new=AsyncMock()),
+            patch("src.bootstrap.lifecycle.shutdown", new=AsyncMock()),
+        ):
             await mgr.run()
 
         registered = {call.args[0] for call in mock_add.call_args_list}
@@ -130,6 +143,7 @@ class TestReconcileLoop:
         mgr = LifecycleManager(app)
 
         with patch("src.bootstrap.lifecycle.RECONCILE_INTERVAL_SECONDS", 0.01):
+
             async def _stop_after_one_tick() -> None:
                 await asyncio.sleep(0.03)
                 mgr._shutdown_event.set()
@@ -156,6 +170,7 @@ class TestReconcileLoop:
         mgr = LifecycleManager(app)
 
         with patch("src.bootstrap.lifecycle.RECONCILE_INTERVAL_SECONDS", 0.01):
+
             async def _stop_after_two_ticks() -> None:
                 await asyncio.sleep(0.05)
                 mgr._shutdown_event.set()

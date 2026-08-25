@@ -7,8 +7,8 @@ Uses SQLAlchemy 2.0 async engine with asyncpg.
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -111,5 +111,6 @@ def get_database() -> Database:
     global _db  # noqa: PLW0603
     if _db is None:
         from src.core.config import get_settings
+
         _db = Database(get_settings().database)
     return _db

@@ -50,24 +50,24 @@ class OrderStatus(StrEnum):
         Any non-terminal → FAILED (unrecoverable local error)
     """
 
-    PENDING = auto()           # Created locally, not yet sent to exchange
-    SUBMITTED = auto()         # Sent to exchange, awaiting acknowledgement
-    OPEN = auto()              # Acknowledged by exchange, resting in order book
+    PENDING = auto()  # Created locally, not yet sent to exchange
+    SUBMITTED = auto()  # Sent to exchange, awaiting acknowledgement
+    OPEN = auto()  # Acknowledged by exchange, resting in order book
     PARTIALLY_FILLED = auto()  # Some quantity has been filled
-    FILLED = auto()            # Fully filled — terminal
-    CANCELLED = auto()         # Cancelled by user or exchange — terminal
-    REJECTED = auto()          # Rejected by exchange — terminal
-    EXPIRED = auto()           # Time-in-force expired — terminal
-    FAILED = auto()            # Unrecoverable local error — terminal
+    FILLED = auto()  # Fully filled — terminal
+    CANCELLED = auto()  # Cancelled by user or exchange — terminal
+    REJECTED = auto()  # Rejected by exchange — terminal
+    EXPIRED = auto()  # Time-in-force expired — terminal
+    FAILED = auto()  # Unrecoverable local error — terminal
 
 
 class TimeInForce(StrEnum):
     """Order time-in-force policy."""
 
-    GTC = auto()   # Good Till Cancel
-    IOC = auto()   # Immediate Or Cancel
-    FOK = auto()   # Fill Or Kill
-    GTX = auto()   # Good Till Crossing (maker-only / post-only)
+    GTC = auto()  # Good Till Cancel
+    IOC = auto()  # Immediate Or Cancel
+    FOK = auto()  # Fill Or Kill
+    GTX = auto()  # Good Till Crossing (maker-only / post-only)
 
 
 class PositionSide(StrEnum):
@@ -75,14 +75,14 @@ class PositionSide(StrEnum):
 
     LONG = auto()
     SHORT = auto()
-    BOTH = auto()   # One-way mode; Binance uses "BOTH" in one-way mode
+    BOTH = auto()  # One-way mode; Binance uses "BOTH" in one-way mode
 
 
 class PositionStatus(StrEnum):
     """Position lifecycle status."""
 
     OPEN = auto()
-    CLOSING = auto()   # Partial close in progress
+    CLOSING = auto()  # Partial close in progress
     CLOSED = auto()
 
 
@@ -157,11 +157,21 @@ class Timeframe(StrEnum):
     def label(self) -> str:
         """Human-readable label, e.g. '1 hour', '15 minutes'."""
         _labels: dict[str, str] = {
-            "1m": "1 minute", "3m": "3 minutes", "5m": "5 minutes",
-            "15m": "15 minutes", "30m": "30 minutes", "1h": "1 hour",
-            "2h": "2 hours", "4h": "4 hours", "6h": "6 hours",
-            "8h": "8 hours", "12h": "12 hours", "1d": "1 day",
-            "3d": "3 days", "1w": "1 week", "1M": "1 month",
+            "1m": "1 minute",
+            "3m": "3 minutes",
+            "5m": "5 minutes",
+            "15m": "15 minutes",
+            "30m": "30 minutes",
+            "1h": "1 hour",
+            "2h": "2 hours",
+            "4h": "4 hours",
+            "6h": "6 hours",
+            "8h": "8 hours",
+            "12h": "12 hours",
+            "1d": "1 day",
+            "3d": "3 days",
+            "1w": "1 week",
+            "1M": "1 month",
         }
         return _labels[self.value]
 
@@ -186,8 +196,8 @@ class MarketStructure(StrEnum):
 class OrderBlockType(StrEnum):
     """Smart Money order block classification."""
 
-    BULLISH = auto()   # Demand zone — last bearish candle before bullish BOS
-    BEARISH = auto()   # Supply zone — last bullish candle before bearish BOS
+    BULLISH = auto()  # Demand zone — last bearish candle before bullish BOS
+    BEARISH = auto()  # Supply zone — last bullish candle before bearish BOS
 
 
 class FVGType(StrEnum):
@@ -205,12 +215,12 @@ class FVGType(StrEnum):
 class LiquidityType(StrEnum):
     """Liquidity pool type based on its price location and formation."""
 
-    EQUAL_HIGHS = auto()   # Multiple swing highs at nearly the same price
-    EQUAL_LOWS = auto()    # Multiple swing lows at nearly the same price
-    SWING_HIGH = auto()    # Single prominent swing high (sell-side liquidity above)
-    SWING_LOW = auto()     # Single prominent swing low (buy-side liquidity below)
-    BSL = auto()           # Buy-side liquidity (above price — resting stops of shorts)
-    SSL = auto()           # Sell-side liquidity (below price — resting stops of longs)
+    EQUAL_HIGHS = auto()  # Multiple swing highs at nearly the same price
+    EQUAL_LOWS = auto()  # Multiple swing lows at nearly the same price
+    SWING_HIGH = auto()  # Single prominent swing high (sell-side liquidity above)
+    SWING_LOW = auto()  # Single prominent swing low (buy-side liquidity below)
+    BSL = auto()  # Buy-side liquidity (above price — resting stops of shorts)
+    SSL = auto()  # Sell-side liquidity (below price — resting stops of longs)
 
 
 class SessionType(StrEnum):
@@ -219,7 +229,7 @@ class SessionType(StrEnum):
     ASIAN = auto()
     LONDON = auto()
     NEW_YORK = auto()
-    OVERLAP = auto()     # London/New York overlap — highest liquidity
+    OVERLAP = auto()  # London/New York overlap — highest liquidity
     OFF_HOURS = auto()
 
 
@@ -231,11 +241,11 @@ class KillZone(StrEnum):
     and are therefore preferred for entries.
     """
 
-    ASIAN_KZ = auto()           # 01:00–04:00 UTC
-    LONDON_OPEN_KZ = auto()     # 07:00–09:00 UTC
-    NEW_YORK_OPEN_KZ = auto()   # 12:00–14:00 UTC
+    ASIAN_KZ = auto()  # 01:00–04:00 UTC
+    LONDON_OPEN_KZ = auto()  # 07:00–09:00 UTC
+    NEW_YORK_OPEN_KZ = auto()  # 12:00–14:00 UTC
     NEW_YORK_LUNCH_KZ = auto()  # 17:00–19:00 UTC (reduced activity)
-    LONDON_CLOSE_KZ = auto()    # 15:00–16:00 UTC
+    LONDON_CLOSE_KZ = auto()  # 15:00–16:00 UTC
 
 
 class RiskLevel(StrEnum):
@@ -257,8 +267,8 @@ class CircuitBreakerState(StrEnum):
     HALF_OPEN → OPEN (on further loss)
     """
 
-    CLOSED = auto()     # Normal operation — orders permitted
-    OPEN = auto()       # Halted — no new orders
+    CLOSED = auto()  # Normal operation — orders permitted
+    OPEN = auto()  # Halted — no new orders
     HALF_OPEN = auto()  # Testing recovery — limited orders
 
 

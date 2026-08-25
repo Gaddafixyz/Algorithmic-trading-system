@@ -19,7 +19,6 @@ import logging
 from datetime import UTC, datetime
 
 from src.core.enums import SignalDirection
-from src.core.models import OHLCV
 from src.domain.signal import Signal
 from src.indicators.rsi import is_overbought, is_oversold
 from src.smart_money.killzones import should_trade_now
@@ -40,7 +39,8 @@ def filter_by_spread(
     if spread_pct > max_spread_pct:
         logger.debug(
             "Signal filtered: spread %.4f%% > max %.4f%%",
-            spread_pct, max_spread_pct,
+            spread_pct,
+            max_spread_pct,
         )
         return False
     return True
@@ -59,7 +59,8 @@ def filter_by_minimum_atr(
     if atr_pct < min_atr_pct:
         logger.debug(
             "Signal filtered: ATR %% %.4f < min %.4f%%",
-            atr_pct, min_atr_pct,
+            atr_pct,
+            min_atr_pct,
         )
         return False
     return True
@@ -88,13 +89,17 @@ def filter_by_rsi_exhaustion(
     if signal.direction == SignalDirection.LONG and is_overbought(rsi_value, overbought):
         logger.debug(
             "Signal filtered: RSI %.1f >= overbought %.1f for LONG %s",
-            rsi_value, overbought, signal.symbol,
+            rsi_value,
+            overbought,
+            signal.symbol,
         )
         return False
     if signal.direction == SignalDirection.SHORT and is_oversold(rsi_value, oversold):
         logger.debug(
             "Signal filtered: RSI %.1f <= oversold %.1f for SHORT %s",
-            rsi_value, oversold, signal.symbol,
+            rsi_value,
+            oversold,
+            signal.symbol,
         )
         return False
     return True
@@ -117,13 +122,15 @@ def filter_by_macd_trend(
     if signal.direction == SignalDirection.LONG and macd_histogram < 0:
         logger.debug(
             "Signal filtered: MACD histogram %.6f < 0 for LONG %s",
-            macd_histogram, signal.symbol,
+            macd_histogram,
+            signal.symbol,
         )
         return False
     if signal.direction == SignalDirection.SHORT and macd_histogram > 0:
         logger.debug(
             "Signal filtered: MACD histogram %.6f > 0 for SHORT %s",
-            macd_histogram, signal.symbol,
+            macd_histogram,
+            signal.symbol,
         )
         return False
     return True
@@ -189,7 +196,9 @@ def filter_by_correlated_positions(
     if correlated_open_count >= max_correlated_positions:
         logger.debug(
             "Signal filtered: %d correlated position(s) already open for %s (max %d)",
-            correlated_open_count, signal.symbol, max_correlated_positions,
+            correlated_open_count,
+            signal.symbol,
+            max_correlated_positions,
         )
         return False
     return True

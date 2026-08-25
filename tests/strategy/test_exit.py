@@ -26,8 +26,12 @@ def make_position(
     breakeven_triggered: bool = False,
 ) -> Position:
     return Position(
-        symbol="BTCUSDT", side=side, quantity=Decimal("0.1"), entry_quantity=Decimal("0.1"),
-        entry_price=Decimal(entry), mark_price=Decimal(entry),
+        symbol="BTCUSDT",
+        side=side,
+        quantity=Decimal("0.1"),
+        entry_quantity=Decimal("0.1"),
+        entry_price=Decimal(entry),
+        mark_price=Decimal(entry),
         stop_loss=Decimal(stop_loss) if stop_loss else None,
         take_profit=Decimal(take_profit) if take_profit else None,
         breakeven_triggered=breakeven_triggered,
@@ -216,8 +220,11 @@ class TestEvaluateExitActions:
     def test_fixed_multiplier_used_when_regime_aware_disabled(self) -> None:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"),
-            use_regime_aware_trail=False, trail_atr_multiplier=Decimal("3.0"),
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            use_regime_aware_trail=False,
+            trail_atr_multiplier=Decimal("3.0"),
         )
         assert plan.new_stop_loss == Decimal("51000") - Decimal("300")
 
@@ -230,7 +237,10 @@ class TestEvaluateExitActions:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         levels = [(Decimal("51000"), Decimal("0.5")), (Decimal("53000"), Decimal("0.5"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"), partial_tp_levels=levels,
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            partial_tp_levels=levels,
         )
         assert plan.triggered_partial_tps == [(Decimal("51000"), Decimal("0.5"))]
 
@@ -245,17 +255,21 @@ class TestFvgTargetPartialTp:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50900"), Decimal("51100"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"), fvg_target_zones=zones,
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            fvg_target_zones=zones,
         )
-        assert plan.fvg_target_partial_tps == [
-            (Decimal("51000"), Decimal("0.25"), 0)
-        ]
+        assert plan.fvg_target_partial_tps == [(Decimal("51000"), Decimal("0.25"), 0)]
 
     def test_price_outside_target_zone_no_trigger(self) -> None:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50900"), Decimal("51100"))]
         plan = evaluate_exit_actions(
-            position, Decimal("50500"), atr=Decimal("100"), fvg_target_zones=zones,
+            position,
+            Decimal("50500"),
+            atr=Decimal("100"),
+            fvg_target_zones=zones,
         )
         assert plan.fvg_target_partial_tps == []
 
@@ -263,8 +277,11 @@ class TestFvgTargetPartialTp:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50900"), Decimal("51100"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"),
-            fvg_target_zones=zones, fvg_target_taken={0},
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            fvg_target_zones=zones,
+            fvg_target_taken={0},
         )
         assert plan.fvg_target_partial_tps == []
 
@@ -272,12 +289,13 @@ class TestFvgTargetPartialTp:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50900"), Decimal("51100"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"),
-            fvg_target_zones=zones, fvg_partial_tp_fraction=Decimal("0.5"),
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            fvg_target_zones=zones,
+            fvg_partial_tp_fraction=Decimal("0.5"),
         )
-        assert plan.fvg_target_partial_tps == [
-            (Decimal("51000"), Decimal("0.5"), 0)
-        ]
+        assert plan.fvg_target_partial_tps == [(Decimal("51000"), Decimal("0.5"), 0)]
 
 
 class TestFvgReversalRisk:
@@ -288,7 +306,10 @@ class TestFvgReversalRisk:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50400"), Decimal("50600"))]
         plan = evaluate_exit_actions(
-            position, Decimal("50500"), atr=Decimal("0"), fvg_reversal_zones=zones,
+            position,
+            Decimal("50500"),
+            atr=Decimal("0"),
+            fvg_reversal_zones=zones,
         )
         assert plan.fvg_reversal_risk is True
         # Candidate stop = zone bottom (50400), which improves on 49000.
@@ -296,11 +317,17 @@ class TestFvgReversalRisk:
 
     def test_short_entering_opposing_zone_flags_risk_and_tightens_stop(self) -> None:
         position = make_position(
-            side=PositionSide.SHORT, entry="50000", stop_loss="51000", take_profit="48000",
+            side=PositionSide.SHORT,
+            entry="50000",
+            stop_loss="51000",
+            take_profit="48000",
         )
         zones = [(Decimal("49400"), Decimal("49600"))]
         plan = evaluate_exit_actions(
-            position, Decimal("49500"), atr=Decimal("0"), fvg_reversal_zones=zones,
+            position,
+            Decimal("49500"),
+            atr=Decimal("0"),
+            fvg_reversal_zones=zones,
         )
         assert plan.fvg_reversal_risk is True
         assert plan.new_stop_loss == Decimal("49600")
@@ -309,7 +336,10 @@ class TestFvgReversalRisk:
         position = make_position(entry="50000", stop_loss="49000", take_profit="52000")
         zones = [(Decimal("50400"), Decimal("50600"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("0"), fvg_reversal_zones=zones,
+            position,
+            Decimal("51000"),
+            atr=Decimal("0"),
+            fvg_reversal_zones=zones,
         )
         assert plan.fvg_reversal_risk is False
         assert plan.new_stop_loss is None
@@ -322,7 +352,10 @@ class TestFvgReversalRisk:
         # worse/looser candidate than the trailing stop computed below.
         zones = [(Decimal("50500"), Decimal("51050"))]
         plan = evaluate_exit_actions(
-            position, Decimal("51000"), atr=Decimal("100"), fvg_reversal_zones=zones,
+            position,
+            Decimal("51000"),
+            atr=Decimal("100"),
+            fvg_reversal_zones=zones,
         )
         # Regime-aware trailing stop (low regime, 1.5x): 51000 - 150 = 50850,
         # which is better (higher) than the FVG candidate of 50500.

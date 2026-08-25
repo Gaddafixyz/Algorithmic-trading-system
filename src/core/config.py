@@ -17,7 +17,10 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from src.domain.leverage import LeverageConfig
 
 import yaml
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -136,7 +139,11 @@ class BybitConfig(BaseSettings):
     @field_validator("api_key", "api_secret", mode="before")
     @classmethod
     def validate_not_placeholder_bybit(cls, v: Any) -> Any:
-        if isinstance(v, str) and v.lower() in {"your_api_key_here", "your_api_secret_here", "changeme"}:
+        if isinstance(v, str) and v.lower() in {
+            "your_api_key_here",
+            "your_api_secret_here",
+            "changeme",
+        }:
             raise ValueError(
                 "API credentials must not be placeholder values. "
                 "Set BYBIT_API_KEY and BYBIT_API_SECRET in your .env file."
@@ -434,7 +441,7 @@ class RiskConfig(BaseSettings):
     )
 
     @model_validator(mode="after")
-    def _validate_kelly_thresholds(self) -> "RiskConfig":
+    def _validate_kelly_thresholds(self) -> RiskConfig:
         if self.kelly_min_trades > self.kelly_lookback_trades:
             raise ValueError(
                 f"kelly_min_trades ({self.kelly_min_trades}) cannot exceed "
@@ -473,7 +480,7 @@ class SymbolRiskConfig(BaseSettings):
         ),
     )
 
-    def to_leverage_config(self, symbol: str) -> "LeverageConfig":
+    def to_leverage_config(self, symbol: str) -> LeverageConfig:
         """Build the validated domain model consumed by bootstrap/app.py
 
         (to push leverage + margin type to the exchange) and RiskManager
@@ -530,13 +537,22 @@ class MonitoringConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="")
 
     prometheus_port: int = Field(
-        default=9090, alias="PROMETHEUS_PORT", ge=1024, le=65535,
+        default=9090,
+        alias="PROMETHEUS_PORT",
+        ge=1024,
+        le=65535,
     )
     dashboard_port: int = Field(
-        default=8080, alias="DASHBOARD_PORT", ge=1024, le=65535,
+        default=8080,
+        alias="DASHBOARD_PORT",
+        ge=1024,
+        le=65535,
     )
     dashboard_ws_port: int = Field(
-        default=8081, alias="DASHBOARD_WS_PORT", ge=1024, le=65535,
+        default=8081,
+        alias="DASHBOARD_WS_PORT",
+        ge=1024,
+        le=65535,
         description="Port for the real-time WebSocket push feed (see monitoring/dashboard.py).",
     )
     enable_prometheus: bool = Field(default=True, alias="ENABLE_PROMETHEUS")
@@ -553,7 +569,8 @@ class MonitoringConfig(BaseSettings):
     daily_loss_warning_pct: float = Field(default=3.0, gt=0)
     drawdown_warning_pct: float = Field(default=10.0, gt=0)
     alert_cooldown_minutes: int = Field(
-        default=30, ge=0,
+        default=30,
+        ge=0,
         description="Applied uniformly to all build_standard_alerts() rules when set via yaml.",
     )
     health_check_interval_seconds: float = Field(default=60.0, gt=0)
@@ -612,7 +629,7 @@ class PathConfig(BaseSettings):
     config_dir: Path = Field(default=Path("./configs"), alias="CONFIG_DIR")
 
     @model_validator(mode="after")
-    def create_directories(self) -> "PathConfig":
+    def create_directories(self) -> PathConfig:
         """Ensure runtime directories exist on startup."""
         for path in (self.data_dir, self.log_dir, self.backup_dir, self.models_dir):
             path.mkdir(parents=True, exist_ok=True)
@@ -726,7 +743,7 @@ class Settings(BaseSettings):
         return upper
 
     @model_validator(mode="after")
-    def _populate_exchange_config(self) -> "Settings":
+    def _populate_exchange_config(self) -> Settings:
         """
         Auto-construct the active exchange's credential/connectivity config
         from its BINANCE_*/BYBIT_*-prefixed environment variables.
@@ -822,7 +839,9 @@ class Settings(BaseSettings):
         risk_section: dict[str, Any] = dict(data.get("risk", {}) or {})
         cb_section: dict[str, Any] = data.get("circuit_breaker", {}) or {}
         if "cooldown_minutes" in cb_section:
-            risk_section.setdefault("circuit_breaker_cooldown_minutes", cb_section["cooldown_minutes"])
+            risk_section.setdefault(
+                "circuit_breaker_cooldown_minutes", cb_section["cooldown_minutes"]
+            )
 
         env_provided = self.risk.model_fields_set
         overrides = {
@@ -851,8 +870,8 @@ class Settings(BaseSettings):
         from src.core.validation import validate_leverage
 
         for symbol, cfg in raw_symbols.items():
-            cfg = cfg or {}
-            symbol_cfg = SymbolRiskConfig(**cfg)
+            cfg_data = cfg or {}
+            symbol_cfg = SymbolRiskConfig(**cfg_data)
             validate_leverage(
                 symbol_cfg.leverage,
                 self.risk.max_leverage,
@@ -1037,7 +1056,9 @@ class Settings(BaseSettings):
             if overrides:
                 merged = {**self.binance.model_dump(), **overrides}
                 self.binance = BinanceConfig(**merged)
-                logger.info("Applied exchanges.yaml binance overrides: %s", sorted(overrides.keys()))
+                logger.info(
+                    "Applied exchanges.yaml binance overrides: %s", sorted(overrides.keys())
+                )
 
         if self.bybit is not None:
             bybit_section: dict[str, Any] = data.get("bybit", {}) or {}

@@ -31,9 +31,9 @@ class FairValueGap:
     """A detected fair value gap / imbalance zone."""
 
     fvg_type: FVGType
-    top: Decimal        # Upper boundary of the gap
-    bottom: Decimal     # Lower boundary of the gap
-    bar_index: int      # Middle candle (candle 2) index
+    top: Decimal  # Upper boundary of the gap
+    bottom: Decimal  # Lower boundary of the gap
+    bar_index: int  # Middle candle (candle 2) index
     timestamp: datetime
     is_filled: bool = False
     fill_bar_index: int | None = None
@@ -124,13 +124,15 @@ def detect_fvgs(
                 if atr > 0 and float(gap_size) < atr * float(min_size_atr_mult):
                     continue
 
-            fvgs.append(FairValueGap(
-                fvg_type=FVGType.BULLISH,
-                top=c3.low,
-                bottom=c1.high,
-                bar_index=i,
-                timestamp=c2.timestamp,
-            ))
+            fvgs.append(
+                FairValueGap(
+                    fvg_type=FVGType.BULLISH,
+                    top=c3.low,
+                    bottom=c1.high,
+                    bar_index=i,
+                    timestamp=c2.timestamp,
+                )
+            )
 
         # Bearish FVG: gap between c3 high and c1 low
         elif c3.high < c1.low:
@@ -141,13 +143,15 @@ def detect_fvgs(
                 if atr > 0 and float(gap_size) < atr * float(min_size_atr_mult):
                     continue
 
-            fvgs.append(FairValueGap(
-                fvg_type=FVGType.BEARISH,
-                top=c1.low,
-                bottom=c3.high,
-                bar_index=i,
-                timestamp=c2.timestamp,
-            ))
+            fvgs.append(
+                FairValueGap(
+                    fvg_type=FVGType.BEARISH,
+                    top=c1.low,
+                    bottom=c3.high,
+                    bar_index=i,
+                    timestamp=c2.timestamp,
+                )
+            )
 
     logger.debug("Detected %d FVGs in %d candles", len(fvgs), n)
     return fvgs

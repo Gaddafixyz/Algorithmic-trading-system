@@ -17,7 +17,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestServer
 
 from src.core.enums import OrderSide, OrderType
-from src.core.exceptions import ExchangeAPIError, ExchangeAuthenticationError, OrderNotFoundError
+from src.core.exceptions import ExchangeAPIError, ExchangeAuthenticationError
 from src.exchange.binance.rest import BinanceFuturesRESTClient
 
 
@@ -29,20 +29,31 @@ class _BinanceServerFixture:
         self.client: BinanceFuturesRESTClient | None = None
 
     def queue(
-        self, method: str, path: str, *, status: int = 200, json_body: Any = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        status: int = 200,
+        json_body: Any = None,
     ) -> None:
         key = (method.upper(), path)
         resp = web.Response(
-            status=status, text=json.dumps(json_body), content_type="application/json",
+            status=status,
+            text=json.dumps(json_body),
+            content_type="application/json",
         )
         self._routes.setdefault(key, []).append(resp)
 
     async def _handler(self, request: web.Request) -> web.Response:
         body = await request.text()
-        self.request_log.append({
-            "method": request.method, "path": request.path,
-            "query": dict(request.query), "body": body,
-        })
+        self.request_log.append(
+            {
+                "method": request.method,
+                "path": request.path,
+                "query": dict(request.query),
+                "body": body,
+            }
+        )
         key = (request.method, request.path)
         queue = self._routes.get(key, [])
         if not queue:
@@ -56,7 +67,10 @@ class _BinanceServerFixture:
         await self.server.start_server()
         base_url = f"http://{self.server.host}:{self.server.port}"
         self.client = BinanceFuturesRESTClient(
-            api_key="test-key", api_secret="test-secret", base_url=base_url, max_retries=1,
+            api_key="test-key",
+            api_secret="test-secret",
+            base_url=base_url,
+            max_retries=1,
         )
         return self.client
 
@@ -87,15 +101,20 @@ class TestRateLimiterConstruction:
 
     def test_custom_limits_reach_the_rate_limiter(self) -> None:
         client = BinanceFuturesRESTClient(
-            api_key="k", api_secret="s", base_url="http://example.invalid",
-            max_orders_per_second=3, max_orders_per_minute=90,
+            api_key="k",
+            api_secret="s",
+            base_url="http://example.invalid",
+            max_orders_per_second=3,
+            max_orders_per_minute=90,
         )
         assert client._rate_limiter.max_per_second == 3
         assert client._rate_limiter.max_per_minute == 90
 
     def test_default_limits_unchanged(self) -> None:
         client = BinanceFuturesRESTClient(
-            api_key="k", api_secret="s", base_url="http://example.invalid",
+            api_key="k",
+            api_secret="s",
+            base_url="http://example.invalid",
         )
         assert client._rate_limiter.max_per_second == 10
         assert client._rate_limiter.max_per_minute == 1200
@@ -106,10 +125,14 @@ class TestGetAccountBalance:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v2/balance", json_body=[
-            {"asset": "USDT", "balance": "10000.5"},
-            {"asset": "BNB", "balance": "0"},
-        ])
+        server.queue(
+            "GET",
+            "/fapi/v2/balance",
+            json_body=[
+                {"asset": "USDT", "balance": "10000.5"},
+                {"asset": "BNB", "balance": "0"},
+            ],
+        )
         result = await client.get_account_balance()
         assert result == {"USDT": Decimal("10000.5")}
 
@@ -117,11 +140,21 @@ class TestGetAccountBalance:
 class TestGetPositions:
     async def test_returns_only_non_zero_positions(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v2/positionRisk", json_body=[
-            {"positionAmt": "0.5", "entryPrice": "50000", "symbol": "BTCUSDT",
-             "markPrice": "51000", "notional": "25500", "leverage": "10"},
-            {"positionAmt": "0", "entryPrice": "0", "symbol": "ETHUSDT"},
-        ])
+        server.queue(
+            "GET",
+            "/fapi/v2/positionRisk",
+            json_body=[
+                {
+                    "positionAmt": "0.5",
+                    "entryPrice": "50000",
+                    "symbol": "BTCUSDT",
+                    "markPrice": "51000",
+                    "notional": "25500",
+                    "leverage": "10",
+                },
+                {"positionAmt": "0", "entryPrice": "0", "symbol": "ETHUSDT"},
+            ],
+        )
         result = await client.get_positions()
         assert len(result) == 1
         assert result[0].symbol == "BTCUSDT"
@@ -130,10 +163,20 @@ class TestGetPositions:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v2/positionRisk", json_body=[
-            {"positionAmt": "0.5", "entryPrice": "50000", "symbol": "BTCUSDT",
-             "markPrice": "51000", "notional": "25500", "leverage": "10"},
-        ])
+        server.queue(
+            "GET",
+            "/fapi/v2/positionRisk",
+            json_body=[
+                {
+                    "positionAmt": "0.5",
+                    "entryPrice": "50000",
+                    "symbol": "BTCUSDT",
+                    "markPrice": "51000",
+                    "notional": "25500",
+                    "leverage": "10",
+                },
+            ],
+        )
         await client.get_position("btcusdt")
         assert server.request_log[-1]["query"]["symbol"] == "BTCUSDT"
 
@@ -143,11 +186,20 @@ class TestPlaceOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("POST", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "NEW",
+                "origQty": "0.1",
+                "executedQty": "0",
+            },
+        )
         await client.place_order("BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"))
         sent_query = server.request_log[-1]["query"]
         assert "timeInForce" not in sent_query
@@ -157,11 +209,21 @@ class TestPlaceOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("POST", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "LIMIT", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "price": "50000",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "LIMIT",
+                "status": "NEW",
+                "origQty": "0.1",
+                "executedQty": "0",
+                "price": "50000",
+            },
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.LIMIT, Decimal("0.1"), price=Decimal("50000")
         )
@@ -171,11 +233,20 @@ class TestPlaceOrder:
 
     async def test_zero_price_is_not_sent(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
-        server.queue("POST", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "NEW",
+                "origQty": "0.1",
+                "executedQty": "0",
+            },
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), price=Decimal("0")
         )
@@ -185,11 +256,20 @@ class TestPlaceOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("POST", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "my-id", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "my-id",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "NEW",
+                "origQty": "0.1",
+                "executedQty": "0",
+            },
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), client_order_id="my-id"
         )
@@ -201,11 +281,20 @@ class TestCancelOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("DELETE", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "CANCELED",
-            "origQty": "0.1", "executedQty": "0",
-        })
+        server.queue(
+            "DELETE",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "CANCELED",
+                "origQty": "0.1",
+                "executedQty": "0",
+            },
+        )
         result = await client.cancel_order("BTCUSDT", "123")
         assert result is True
 
@@ -216,9 +305,15 @@ class TestCancelOrder:
         # an already-gone order is treated as a successful cancel
         # outcome (goal already satisfied), not a failure.
         client = await server.start()
-        server.queue("DELETE", "/fapi/v1/order", status=400, json_body={
-            "code": -2011, "msg": "Unknown order sent.",
-        })
+        server.queue(
+            "DELETE",
+            "/fapi/v1/order",
+            status=400,
+            json_body={
+                "code": -2011,
+                "msg": "Unknown order sent.",
+            },
+        )
         result = await client.cancel_order("BTCUSDT", "999")
         assert result is True
 
@@ -226,9 +321,15 @@ class TestCancelOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("DELETE", "/fapi/v1/order", status=400, json_body={
-            "code": -1013, "msg": "Filter failure",
-        })
+        server.queue(
+            "DELETE",
+            "/fapi/v1/order",
+            status=400,
+            json_body={
+                "code": -1013,
+                "msg": "Filter failure",
+            },
+        )
         result = await client.cancel_order("BTCUSDT", "123")
         assert result is False
 
@@ -236,11 +337,20 @@ class TestCancelOrder:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("DELETE", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "ts_abc", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "CANCELED",
-            "origQty": "0.1", "executedQty": "0",
-        })
+        server.queue(
+            "DELETE",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "ts_abc",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "CANCELED",
+                "origQty": "0.1",
+                "executedQty": "0",
+            },
+        )
         await client.cancel_order("BTCUSDT", "ts_abc")
         assert "origClientOrderId" in server.request_log[-1]["query"]
 
@@ -248,11 +358,20 @@ class TestCancelOrder:
 class TestGetOrder:
     async def test_fetches_by_order_id(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v1/order", json_body={
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "FILLED",
-            "origQty": "0.1", "executedQty": "0.1",
-        })
+        server.queue(
+            "GET",
+            "/fapi/v1/order",
+            json_body={
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": "FILLED",
+                "origQty": "0.1",
+                "executedQty": "0.1",
+            },
+        )
         result = await client.get_order("BTCUSDT", "123")
         assert result.exchange_order_id == "1"
 
@@ -266,9 +385,7 @@ class TestGetOpenOrders:
         await client.get_open_orders()
         assert "symbol" not in server.request_log[-1]["query"]
 
-    async def test_includes_symbol_param_when_provided(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_includes_symbol_param_when_provided(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/fapi/v1/openOrders", json_body=[])
         await client.get_open_orders(symbol="btcusdt")
@@ -303,14 +420,13 @@ class TestMarketData:
         self, server: _BinanceServerFixture
     ) -> None:
         from src.core.enums import Timeframe
+
         client = await server.start()
         server.queue("GET", "/fapi/v1/klines", json_body=[])
         await client.get_candles("BTCUSDT", Timeframe.H1, limit=1500)
         assert server.request_log[-1]["query"]["limit"] == "1500"
 
-    async def test_get_mark_price_returns_a_decimal(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_get_mark_price_returns_a_decimal(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/fapi/v1/premiumIndex", json_body={"markPrice": "50123.45"})
         result = await client.get_mark_price("BTCUSDT")
@@ -347,26 +463,36 @@ class TestAccountConfiguration:
     ) -> None:
         # Code -4046 = "No need to change margin type" -- must not raise.
         client = await server.start()
-        server.queue("POST", "/fapi/v1/marginType", status=400, json_body={
-            "code": -4046, "msg": "No need to change margin type.",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/marginType",
+            status=400,
+            json_body={
+                "code": -4046,
+                "msg": "No need to change margin type.",
+            },
+        )
         await client.set_margin_type("BTCUSDT", "ISOLATED")  # must not raise
 
     async def test_set_margin_type_reraises_a_genuine_error(
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("POST", "/fapi/v1/marginType", status=400, json_body={
-            "code": -1013, "msg": "some other failure",
-        })
+        server.queue(
+            "POST",
+            "/fapi/v1/marginType",
+            status=400,
+            json_body={
+                "code": -1013,
+                "msg": "some other failure",
+            },
+        )
         with pytest.raises(ExchangeAPIError):
             await client.set_margin_type("BTCUSDT", "ISOLATED")
 
 
 class TestListenKeyLifecycle:
-    async def test_create_listen_key_returns_the_key(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_create_listen_key_returns_the_key(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
         server.queue("POST", "/fapi/v1/listenKey", json_body={"listenKey": "abc123xyz"})
         result = await client.create_listen_key()
@@ -396,9 +522,15 @@ class TestErrorMapping:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v2/balance", status=400, json_body={
-            "code": -2014, "msg": "API-key format invalid.",
-        })
+        server.queue(
+            "GET",
+            "/fapi/v2/balance",
+            status=400,
+            json_body={
+                "code": -2014,
+                "msg": "API-key format invalid.",
+            },
+        )
         with pytest.raises(ExchangeAuthenticationError):
             await client.get_account_balance()
 
@@ -406,9 +538,15 @@ class TestErrorMapping:
         self, server: _BinanceServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v2/balance", status=400, json_body={
-            "code": -1000, "msg": "unknown error",
-        })
+        server.queue(
+            "GET",
+            "/fapi/v2/balance",
+            status=400,
+            json_body={
+                "code": -1000,
+                "msg": "unknown error",
+            },
+        )
         with pytest.raises(ExchangeAPIError):
             await client.get_account_balance()
 
@@ -429,14 +567,16 @@ class TestMapOrderType:
 
 
 class TestFetchFundingRateHistoryParsed:
-    async def test_parses_records_and_sorts_ascending(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_parses_records_and_sorts_ascending(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/fapi/v1/fundingRate", json_body=[
-            {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingTime": 1000 * 3600},
-            {"symbol": "BTCUSDT", "fundingRate": "-0.0002", "fundingTime": 1008 * 3600},
-        ])
+        server.queue(
+            "GET",
+            "/fapi/v1/fundingRate",
+            json_body=[
+                {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingTime": 1000 * 3600},
+                {"symbol": "BTCUSDT", "fundingRate": "-0.0002", "fundingTime": 1008 * 3600},
+            ],
+        )
         result = await client.fetch_funding_rate_history_parsed(
             "BTCUSDT", start_time=0, end_time=2_000_000_000_000
         )
@@ -447,16 +587,18 @@ class TestFetchFundingRateHistoryParsed:
         # next_funding_time is derived as settlement + 8h
         assert (result[0].next_funding_time - result[0].timestamp).total_seconds() == 8 * 3600
 
-    async def test_paginates_past_the_1000_record_cap(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_paginates_past_the_1000_record_cap(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
         page1 = [
             {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingTime": i * 8 * 3600 * 1000}
             for i in range(1000)
         ]
         page2 = [
-            {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingTime": (1000 + i) * 8 * 3600 * 1000}
+            {
+                "symbol": "BTCUSDT",
+                "fundingRate": "0.0001",
+                "fundingTime": (1000 + i) * 8 * 3600 * 1000,
+            }
             for i in range(5)
         ]
         server.queue("GET", "/fapi/v1/fundingRate", json_body=page1)
@@ -469,9 +611,7 @@ class TestFetchFundingRateHistoryParsed:
         second_request_query = server.request_log[1]["query"]
         assert int(second_request_query["startTime"]) == page1[-1]["fundingTime"] + 1
 
-    async def test_returns_empty_list_when_no_records(
-        self, server: _BinanceServerFixture
-    ) -> None:
+    async def test_returns_empty_list_when_no_records(self, server: _BinanceServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/fapi/v1/fundingRate", json_body=[])
         result = await client.fetch_funding_rate_history_parsed(

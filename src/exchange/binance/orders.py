@@ -13,7 +13,7 @@ import asyncio
 import logging
 from decimal import Decimal
 
-from src.core.enums import OrderSide, OrderType, PositionSide
+from src.core.enums import OrderSide, OrderType
 from src.core.exceptions import InvalidOrderError
 from src.domain.instrument import Instrument
 from src.domain.order import Order
@@ -199,41 +199,64 @@ class BinanceOrderManager:
 
         if entry_price is None:
             entry = await self.place_market_order(
-                symbol, side, quantity, instrument,
-                client_order_id=_cid("entry"), position_side=position_side,
+                symbol,
+                side,
+                quantity,
+                instrument,
+                client_order_id=_cid("entry"),
+                position_side=position_side,
             )
         else:
             entry = await self.place_limit_order(
-                symbol, side, quantity, entry_price, instrument,
-                client_order_id=_cid("entry"), position_side=position_side,
+                symbol,
+                side,
+                quantity,
+                entry_price,
+                instrument,
+                client_order_id=_cid("entry"),
+                position_side=position_side,
             )
         result["entry"] = entry
 
         try:
             result["stop_loss"] = await self.place_stop_market(
-                symbol, exit_side, quantity, stop_price, instrument,
-                client_order_id=_cid("sl"), position_side=position_side,
+                symbol,
+                exit_side,
+                quantity,
+                stop_price,
+                instrument,
+                client_order_id=_cid("sl"),
+                position_side=position_side,
             )
         except Exception as exc:
             logger.error(
                 "Bracket order for %s: entry %s landed but stop-loss leg "
                 "FAILED (%s) — position is currently unprotected. "
                 "Caller must place a stop manually or close the position.",
-                symbol, entry.client_order_id, exc,
+                symbol,
+                entry.client_order_id,
+                exc,
             )
             return result
 
         try:
             result["take_profit"] = await self.place_take_profit_market(
-                symbol, exit_side, quantity, take_profit_price, instrument,
-                client_order_id=_cid("tp"), position_side=position_side,
+                symbol,
+                exit_side,
+                quantity,
+                take_profit_price,
+                instrument,
+                client_order_id=_cid("tp"),
+                position_side=position_side,
             )
         except Exception as exc:
             logger.error(
-                "Bracket order for %s: entry and stop-loss landed but "
-                "take-profit leg FAILED (%s) — position is protected by "
-                "the stop but has no target order.",
-                symbol, entry.client_order_id, exc,
+                "Bracket order for %s (client_order_id=%s): entry and "
+                "stop-loss landed but take-profit leg FAILED (%s) — "
+                "position is protected by the stop but has no target order.",
+                symbol,
+                entry.client_order_id,
+                exc,
             )
             return result
 

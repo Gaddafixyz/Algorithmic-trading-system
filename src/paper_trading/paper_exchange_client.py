@@ -138,9 +138,7 @@ class PaperExchangeClient:
         }
         self._orders: dict[str, Order] = {}  # order_id -> Order
         self._client_id_index: dict[str, str] = {}  # client_order_id -> order_id
-        self._resting_order_ids: dict[str, set[str]] = {
-            symbol: set() for symbol in self._symbols
-        }
+        self._resting_order_ids: dict[str, set[str]] = {symbol: set() for symbol in self._symbols}
 
         self._fill_handler: Any = None
         self._sub_ids: list[str] = []
@@ -177,9 +175,7 @@ class PaperExchangeClient:
             return
         exc = task.exception()
         if exc is not None:
-            logger.exception(
-                "Deferred paper fill simulation failed", exc_info=exc
-            )
+            logger.exception("Deferred paper fill simulation failed", exc_info=exc)
 
     def subscribe_fills(self, handler: Any) -> None:
         """
@@ -203,7 +199,8 @@ class PaperExchangeClient:
         self._started = True
         logger.info(
             "PaperExchangeClient started: %d symbols, initial equity=%s",
-            len(self._symbols), self.equity,
+            len(self._symbols),
+            self.equity,
         )
 
     async def stop(self) -> None:
@@ -326,7 +323,9 @@ class PaperExchangeClient:
 
     # ─── Market data (delegated to the real, credentialed client) ──────
 
-    async def get_candles(self, symbol: str, timeframe: Any, limit: int, start_time: Any = None) -> Any:
+    async def get_candles(
+        self, symbol: str, timeframe: Any, limit: int, start_time: Any = None
+    ) -> Any:
         return await self._delegate.get_candles(symbol, timeframe, limit, start_time)
 
     async def get_ticker(self, symbol: str) -> Any:
@@ -384,7 +383,8 @@ class PaperExchangeClient:
             if order is not None and fill_price is None:
                 logger.warning(
                     "Paper order %s cannot fill: no mark price known for %s yet",
-                    order.client_order_id, order.symbol,
+                    order.client_order_id,
+                    order.symbol,
                 )
             return
 
@@ -396,7 +396,8 @@ class PaperExchangeClient:
         if self._fill_handler is None:
             logger.warning(
                 "Paper fill for %s generated but no fill handler registered "
-                "(subscribe_fills was never called)", order.client_order_id,
+                "(subscribe_fills was never called)",
+                order.client_order_id,
             )
             return
 
@@ -439,8 +440,8 @@ class PaperExchangeClient:
             # Opening or adding to a position: weighted-average entry price.
             new_qty = pos.quantity + signed_qty
             if new_qty != 0:
-                pos.entry_price = (
-                    (pos.entry_price * abs(pos.quantity) + fill_price * qty) / abs(new_qty)
+                pos.entry_price = (pos.entry_price * abs(pos.quantity) + fill_price * qty) / abs(
+                    new_qty
                 )
             pos.quantity = new_qty
         else:

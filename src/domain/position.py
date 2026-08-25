@@ -32,12 +32,12 @@ class Position(MutableModel):
     side: PositionSide
 
     # Size
-    quantity: Decimal          # Current open size
-    entry_quantity: Decimal    # Total qty that entered
+    quantity: Decimal  # Current open size
+    entry_quantity: Decimal  # Total qty that entered
 
     # Prices
-    entry_price: Decimal       # Average weighted entry price
-    mark_price: Decimal        # Latest mark/market price
+    entry_price: Decimal  # Average weighted entry price
+    mark_price: Decimal  # Latest mark/market price
     exit_price: Decimal | None = None
     liquidation_price: Decimal | None = None
 
@@ -82,7 +82,7 @@ class Position(MutableModel):
     tags: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def validate_prices(self) -> "Position":
+    def validate_prices(self) -> Position:
         if self.entry_price <= Decimal("0"):
             raise ValueError(f"Entry price must be positive, got {self.entry_price}")
         if self.quantity < Decimal("0"):
@@ -155,9 +155,7 @@ class Position(MutableModel):
         Returns realized PnL for the closed portion.
         """
         if closed_qty > self.quantity:
-            raise ValueError(
-                f"Cannot close {closed_qty} of position size {self.quantity}"
-            )
+            raise ValueError(f"Cannot close {closed_qty} of position size {self.quantity}")
         if exit_price <= Decimal("0"):
             raise ValueError(f"Exit price must be positive, got {exit_price}")
 
@@ -252,7 +250,9 @@ class Position(MutableModel):
         return (datetime.now(tz=UTC) - self.opened_at).total_seconds()
 
     def __str__(self) -> str:
-        pnl_str = f"PnL:{self.unrealized_pnl:+.4f}" if self.is_open else f"PnL:{self.realized_pnl:+.4f}"
+        pnl_str = (
+            f"PnL:{self.unrealized_pnl:+.4f}" if self.is_open else f"PnL:{self.realized_pnl:+.4f}"
+        )
         return (
             f"Position({self.symbol} {self.side} qty={self.quantity} "
             f"entry={self.entry_price} {pnl_str} [{self.status}])"

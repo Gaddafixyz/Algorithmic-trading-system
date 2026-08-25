@@ -17,7 +17,6 @@ import pytest
 
 from src.bootstrap.startup import startup
 from src.core.enums import AlertSeverity, PositionSide, TradingEnvironment
-from src.core.exceptions import InitializationError
 from src.core.events import (
     AlertFiredEvent,
     ComponentHealthChangedEvent,
@@ -28,6 +27,7 @@ from src.core.events import (
     reset_event_bus,
     set_event_bus,
 )
+from src.core.exceptions import InitializationError
 from src.monitoring.alerts import AlertManager
 from src.monitoring.health import HealthChecker
 
@@ -49,7 +49,13 @@ def _no_real_prometheus_server(monkeypatch: pytest.MonkeyPatch):  # type: ignore
     monkeypatch.setattr("src.monitoring.metrics.start_metrics_server", MagicMock())
 
 
-def _fake_app(settings, *, exchange_provider: str = "binance", equity: Decimal = Decimal("10000"), paper_exchange_client=None):  # type: ignore[no-untyped-def]
+def _fake_app(
+    settings,
+    *,
+    exchange_provider: str = "binance",
+    equity: Decimal = Decimal("10000"),
+    paper_exchange_client=None,
+):  # type: ignore[no-untyped-def]
     app = MagicMock()
     app.settings = settings
     app.exchange_provider = exchange_provider
@@ -107,7 +113,9 @@ def _fake_app(settings, *, exchange_provider: str = "binance", equity: Decimal =
     return app
 
 
-def _make_settings(make_settings, *, trading_env=TradingEnvironment.PAPER, exchange_provider="binance"):  # type: ignore[no-untyped-def]
+def _make_settings(
+    make_settings, *, trading_env=TradingEnvironment.PAPER, exchange_provider="binance"
+):  # type: ignore[no-untyped-def]
     with_bybit = exchange_provider == "bybit"
     settings = make_settings(
         provider=exchange_provider,
@@ -333,12 +341,16 @@ class TestEnvironmentExchangeCrossCheck:
         self, isolated_event_bus: EventBus, make_settings
     ) -> None:
         settings = make_settings(
-            provider="binance", with_binance=False, trading_env=TradingEnvironment.PAPER,
+            provider="binance",
+            with_binance=False,
+            trading_env=TradingEnvironment.PAPER,
         )
         from src.core.config import BinanceConfig
 
         settings.binance = BinanceConfig(
-            api_key="dummy", api_secret="dummy", testnet=False,
+            api_key="dummy",
+            api_secret="dummy",
+            testnet=False,
         )
         app = _fake_app(settings)
 
@@ -695,8 +707,7 @@ class TestOrderStatusChangedAuditTrail:
             )
 
         assert any(
-            "order_status_changed" in r.message and "o-1" in r.message
-            for r in caplog.records
+            "order_status_changed" in r.message and "o-1" in r.message for r in caplog.records
         )
 
 
@@ -728,10 +739,7 @@ class TestSignalExpiredAuditTrail:
                 )
             )
 
-        assert any(
-            "signal_expired" in r.message and "sig-1" in r.message
-            for r in caplog.records
-        )
+        assert any("signal_expired" in r.message and "sig-1" in r.message for r in caplog.records)
 
 
 class TestHardLimitRiskEventWiring:

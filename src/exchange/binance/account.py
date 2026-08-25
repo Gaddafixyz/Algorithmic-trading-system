@@ -8,12 +8,10 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Any
 
 from src.domain.account import Account, AssetBalance
 from src.domain.position import Position
 from src.exchange.binance.rest import BinanceFuturesRESTClient
-from src.exchange.binance.parser import parse_position
 
 logger = logging.getLogger(__name__)
 

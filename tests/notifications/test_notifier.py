@@ -12,8 +12,6 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import AsyncMock
 
-import pytest
-
 from src.core.enums import AlertSeverity
 from src.notifications.notifier import Notifier
 

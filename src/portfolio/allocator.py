@@ -106,7 +106,8 @@ class PortfolioAllocator:
             dropped = set(weights) - {s for s, _ in top}
             logger.info(
                 "Allocation capped at max_open_positions=%d; dropped %s",
-                self.max_open_positions, sorted(dropped),
+                self.max_open_positions,
+                sorted(dropped),
             )
             weights = dict(top)
 
@@ -125,7 +126,10 @@ class PortfolioAllocator:
             if target > cap:
                 logger.debug(
                     "%s target notional %.2f capped to %.2f (max_position_pct_of_equity=%s%%)",
-                    symbol, target, cap, self.max_position_pct_of_equity,
+                    symbol,
+                    target,
+                    cap,
+                    self.max_position_pct_of_equity,
                 )
                 target = cap
             allocation[symbol] = target
@@ -152,7 +156,8 @@ class PortfolioAllocator:
             if missing:
                 logger.info(
                     "RISK_PARITY: no volatility estimate for %s — falling back to equal "
-                    "weight for those symbols", missing,
+                    "weight for those symbols",
+                    missing,
                 )
             weights = risk_parity_weights(have_vol) if have_vol else {}
             if missing:

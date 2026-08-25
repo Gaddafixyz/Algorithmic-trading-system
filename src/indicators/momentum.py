@@ -45,6 +45,7 @@ def stochastic(
 
     # %D is SMA of %K
     from src.indicators.sma import calculate_sma
+
     valid_mask = ~np.isnan(k)
     d = np.full(n, np.nan)
     if valid_mask.sum() >= d_period:

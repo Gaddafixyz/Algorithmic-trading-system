@@ -204,8 +204,7 @@ def format_event(event: BaseEvent) -> tuple[str, AlertSeverity]:
 
     if isinstance(event, DailyLossLimitReachedEvent):
         return (
-            f"🛑 Daily Loss Limit Reached: {event.daily_pnl} "
-            f"(limit {event.limit_pct}%)",
+            f"🛑 Daily Loss Limit Reached: {event.daily_pnl} " f"(limit {event.limit_pct}%)",
             AlertSeverity.CRITICAL,
         )
 
@@ -246,13 +245,13 @@ async def run_worker(
             except asyncio.CancelledError:
                 raise
             except Exception:
-                logger.exception(
-                    "Failed to process event %s", type(event).__name__
-                )
+                logger.exception("Failed to process event %s", type(event).__name__)
 
     logger.info(
         "Notifications worker started: group=%s consumer=%s event_types=%s",
-        group, consumer_name, event_types,
+        group,
+        consumer_name,
+        event_types,
     )
     consume_task = asyncio.create_task(consume(), name="notifications-worker.consume")
     try:
@@ -276,9 +275,7 @@ def main() -> None:
     event_types = [t.strip() for t in args.event_types.split(",") if t.strip()]
 
     try:
-        asyncio.run(
-            run_worker(settings, args.group, consumer_name, event_types, args.block_ms)
-        )
+        asyncio.run(run_worker(settings, args.group, consumer_name, event_types, args.block_ms))
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
         sys.exit(0)

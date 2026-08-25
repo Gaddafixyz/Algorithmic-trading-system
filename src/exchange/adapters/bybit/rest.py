@@ -52,7 +52,7 @@ from src.exchange.base_client import BaseExchangeClient, RateLimiter
 logger = logging.getLogger(__name__)
 
 _CATEGORY = "linear"  # USDT-margined perpetuals; Bybit's other categories
-                      # (spot, inverse, option) are out of scope here.
+# (spot, inverse, option) are out of scope here.
 
 
 def _fmt_decimal(value: Decimal) -> str:
@@ -220,7 +220,9 @@ class BybitFuturesClient(BaseExchangeClient):
             "reduceOnly": reduce_only,
         }
         if order_type != OrderType.MARKET:
-            body["timeInForce"] = "PostOnly" if time_in_force.upper() == "GTX" else time_in_force.upper()
+            body["timeInForce"] = (
+                "PostOnly" if time_in_force.upper() == "GTX" else time_in_force.upper()
+            )
         if price is not None and price > Decimal("0"):
             body["price"] = _fmt_decimal(price)
         if stop_price is not None and stop_price > Decimal("0"):
@@ -231,7 +233,11 @@ class BybitFuturesClient(BaseExchangeClient):
 
         logger.info(
             "Placing Bybit order: %s %s %s qty=%s price=%s",
-            symbol, side, order_type, quantity, price,
+            symbol,
+            side,
+            order_type,
+            quantity,
+            price,
         )
         response = await self._post("/v5/order/create", data=body, signed=True)
         exchange_order_id = response["result"]["orderId"]

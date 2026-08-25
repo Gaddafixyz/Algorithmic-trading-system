@@ -33,10 +33,15 @@ class TestGetAccount:
         self, account_service: BinanceAccountService, rest_client: AsyncMock
     ) -> None:
         rest_client.get_account_info.return_value = {
-            "totalWalletBalance": "10000", "totalUnrealizedProfit": "500",
-            "totalMarginBalance": "10500", "availableBalance": "9000",
-            "totalInitialMargin": "1000", "totalMaintMargin": "100",
-            "canTrade": True, "canDeposit": True, "canWithdraw": False,
+            "totalWalletBalance": "10000",
+            "totalUnrealizedProfit": "500",
+            "totalMarginBalance": "10500",
+            "availableBalance": "9000",
+            "totalInitialMargin": "1000",
+            "totalMaintMargin": "100",
+            "canTrade": True,
+            "canDeposit": True,
+            "canWithdraw": False,
             "assets": [],
         }
         account = await account_service.get_account()
@@ -48,13 +53,22 @@ class TestGetAccount:
         self, account_service: BinanceAccountService, rest_client: AsyncMock
     ) -> None:
         rest_client.get_account_info.return_value = {
-            "totalWalletBalance": "0", "totalUnrealizedProfit": "0",
-            "totalMarginBalance": "0", "availableBalance": "0",
-            "totalInitialMargin": "0", "totalMaintMargin": "0",
+            "totalWalletBalance": "0",
+            "totalUnrealizedProfit": "0",
+            "totalMarginBalance": "0",
+            "availableBalance": "0",
+            "totalInitialMargin": "0",
+            "totalMaintMargin": "0",
             "assets": [
-                {"asset": "USDT", "walletBalance": "10000", "unrealizedProfit": "0",
-                 "marginBalance": "10000", "availableBalance": "9000",
-                 "initialMargin": "1000", "maintMargin": "100"},
+                {
+                    "asset": "USDT",
+                    "walletBalance": "10000",
+                    "unrealizedProfit": "0",
+                    "marginBalance": "10000",
+                    "availableBalance": "9000",
+                    "initialMargin": "1000",
+                    "maintMargin": "100",
+                },
             ],
         }
         account = await account_service.get_account()
@@ -65,9 +79,12 @@ class TestGetAccount:
         self, account_service: BinanceAccountService, rest_client: AsyncMock
     ) -> None:
         rest_client.get_account_info.return_value = {
-            "totalWalletBalance": "0", "totalUnrealizedProfit": "0",
-            "totalMarginBalance": "0", "availableBalance": "0",
-            "totalInitialMargin": "0", "totalMaintMargin": "0",
+            "totalWalletBalance": "0",
+            "totalUnrealizedProfit": "0",
+            "totalMarginBalance": "0",
+            "availableBalance": "0",
+            "totalInitialMargin": "0",
+            "totalMaintMargin": "0",
             "assets": [{"asset": "", "walletBalance": "100"}],
         }
         account = await account_service.get_account()
@@ -87,8 +104,11 @@ class TestGetPositions:
         self, account_service: BinanceAccountService, rest_client: AsyncMock
     ) -> None:
         pos = Position(
-            symbol="BTCUSDT", side=PositionSide.LONG, quantity=Decimal("0.1"),
-            entry_quantity=Decimal("0.1"), entry_price=Decimal("50000"),
+            symbol="BTCUSDT",
+            side=PositionSide.LONG,
+            quantity=Decimal("0.1"),
+            entry_quantity=Decimal("0.1"),
+            entry_price=Decimal("50000"),
             mark_price=Decimal("50000"),
         )
         rest_client.get_positions.return_value = [pos]

@@ -30,26 +30,34 @@ class LiquidityPool:
     """A zone of accumulated liquidity."""
 
     liq_type: LiquidityType
-    price: Decimal          # Level where liquidity sits
-    zone_top: Decimal       # Upper boundary of the zone
-    zone_bottom: Decimal    # Lower boundary
+    price: Decimal  # Level where liquidity sits
+    zone_top: Decimal  # Upper boundary of the zone
+    zone_bottom: Decimal  # Lower boundary
     bar_index: int
     timestamp: datetime
     is_swept: bool = False
     sweep_bar_index: int | None = None
     sweep_price: Decimal | None = None
-    confluence_count: int = 1   # How many touches created this pool
+    confluence_count: int = 1  # How many touches created this pool
     tags: list[str] = field(default_factory=list)
 
     @property
     def is_buy_side(self) -> bool:
         """Buy-side liquidity sits above price (above equal highs)."""
-        return self.liq_type in (LiquidityType.EQUAL_HIGHS, LiquidityType.BSL, LiquidityType.SWING_HIGH)
+        return self.liq_type in (
+            LiquidityType.EQUAL_HIGHS,
+            LiquidityType.BSL,
+            LiquidityType.SWING_HIGH,
+        )
 
     @property
     def is_sell_side(self) -> bool:
         """Sell-side liquidity sits below price (below equal lows)."""
-        return self.liq_type in (LiquidityType.EQUAL_LOWS, LiquidityType.SSL, LiquidityType.SWING_LOW)
+        return self.liq_type in (
+            LiquidityType.EQUAL_LOWS,
+            LiquidityType.SSL,
+            LiquidityType.SWING_LOW,
+        )
 
     def check_sweep(self, candle: OHLCV, bar_index: int) -> bool:
         """
@@ -68,14 +76,12 @@ class LiquidityPool:
                 self.sweep_price = candle.high
                 logger.debug("Buy-side liquidity swept at %s (bar %d)", self.price, bar_index)
                 return True
-        else:
-            # Sell-side swept when price wicks below the level but closes above
-            if candle.low < self.price and candle.close > self.price:
-                self.is_swept = True
-                self.sweep_bar_index = bar_index
-                self.sweep_price = candle.low
-                logger.debug("Sell-side liquidity swept at %s (bar %d)", self.price, bar_index)
-                return True
+        elif candle.low < self.price and candle.close > self.price:
+            self.is_swept = True
+            self.sweep_bar_index = bar_index
+            self.sweep_price = candle.low
+            logger.debug("Sell-side liquidity swept at %s (bar %d)", self.price, bar_index)
+            return True
 
         return False
 
@@ -101,7 +107,7 @@ def identify_equal_highs(
         if i in used:
             continue
         cluster = [sh1]
-        for j, sh2 in enumerate(swing_highs[i + 1:], start=i + 1):
+        for j, sh2 in enumerate(swing_highs[i + 1 :], start=i + 1):
             if j in used:
                 continue
             diff_pct = abs(float(sh1.price - sh2.price)) / float(sh1.price) * 100
@@ -139,7 +145,7 @@ def identify_equal_lows(
         if i in used:
             continue
         cluster = [sl1]
-        for j, sl2 in enumerate(swing_lows[i + 1:], start=i + 1):
+        for j, sl2 in enumerate(swing_lows[i + 1 :], start=i + 1):
             if j in used:
                 continue
             diff_pct = abs(float(sl1.price - sl2.price)) / float(sl1.price) * 100
@@ -172,24 +178,28 @@ def identify_swing_liquidity(
     pools: list[LiquidityPool] = []
 
     for sh in swing_highs:
-        pools.append(LiquidityPool(
-            liq_type=LiquidityType.SWING_HIGH,
-            price=sh.price,
-            zone_top=sh.price * Decimal("1.001"),
-            zone_bottom=sh.price * Decimal("0.999"),
-            bar_index=sh.bar_index,
-            timestamp=sh.timestamp,
-        ))
+        pools.append(
+            LiquidityPool(
+                liq_type=LiquidityType.SWING_HIGH,
+                price=sh.price,
+                zone_top=sh.price * Decimal("1.001"),
+                zone_bottom=sh.price * Decimal("0.999"),
+                bar_index=sh.bar_index,
+                timestamp=sh.timestamp,
+            )
+        )
 
     for sl in swing_lows:
-        pools.append(LiquidityPool(
-            liq_type=LiquidityType.SWING_LOW,
-            price=sl.price,
-            zone_top=sl.price * Decimal("1.001"),
-            zone_bottom=sl.price * Decimal("0.999"),
-            bar_index=sl.bar_index,
-            timestamp=sl.timestamp,
-        ))
+        pools.append(
+            LiquidityPool(
+                liq_type=LiquidityType.SWING_LOW,
+                price=sl.price,
+                zone_top=sl.price * Decimal("1.001"),
+                zone_bottom=sl.price * Decimal("0.999"),
+                bar_index=sl.bar_index,
+                timestamp=sl.timestamp,
+            )
+        )
 
     return pools
 

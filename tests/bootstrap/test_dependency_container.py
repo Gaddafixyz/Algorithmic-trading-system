@@ -11,7 +11,6 @@ them -- keeping this test focused on the wiring logic itself.
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any
 
 import pytest
 
@@ -60,12 +59,24 @@ class TestWireContainer:
         registry = get_registry()
 
         expected_names = {
-            "rest_client", "ws_client", "account_service",
-            "cache", "candle_service", "market_feed",
-            "risk_manager", "portfolio",
-            "order_manager", "position_manager", "execution_engine", "fill_engine",
-            "health_checker", "alert_manager", "notifier", "heartbeat",
-            "database", "scheduler",
+            "rest_client",
+            "ws_client",
+            "account_service",
+            "cache",
+            "candle_service",
+            "market_feed",
+            "risk_manager",
+            "portfolio",
+            "order_manager",
+            "position_manager",
+            "execution_engine",
+            "fill_engine",
+            "health_checker",
+            "alert_manager",
+            "notifier",
+            "heartbeat",
+            "database",
+            "scheduler",
         }
         for name in expected_names:
             # get_optional never raises for a registered name; None would

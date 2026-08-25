@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import time
-from typing import Generator
+from collections.abc import Generator
 
 logger = logging.getLogger(__name__)
 

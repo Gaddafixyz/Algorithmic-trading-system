@@ -67,8 +67,11 @@ class ReconciliationService:
             exchange_positions = await self._exchange.get_positions()
         except Exception as exc:
             self._reconcile_failures += 1
-            logger.error("Reconciliation cycle #%d aborted: could not fetch exchange positions: %s",
-                         self._reconcile_count, exc)
+            logger.error(
+                "Reconciliation cycle #%d aborted: could not fetch exchange positions: %s",
+                self._reconcile_count,
+                exc,
+            )
             return report
 
         exchange_pos_map = {p.symbol: p for p in exchange_positions}
@@ -92,14 +95,17 @@ class ReconciliationService:
                 logger.critical(
                     "RECONCILE: local position %s not found on exchange — "
                     "force-closing locally at last mark price %s",
-                    local_pos.symbol, local_pos.mark_price,
+                    local_pos.symbol,
+                    local_pos.mark_price,
                 )
-                report["position_discrepancies"].append({
-                    "symbol": local_pos.symbol,
-                    "issue": "not_on_exchange",
-                    "local_qty": str(local_pos.quantity),
-                    "action": "force_closed_at_mark_price",
-                })
+                report["position_discrepancies"].append(
+                    {
+                        "symbol": local_pos.symbol,
+                        "issue": "not_on_exchange",
+                        "local_qty": str(local_pos.quantity),
+                        "action": "force_closed_at_mark_price",
+                    }
+                )
                 self._discrepancies_found += 1
                 try:
                     await self._positions.close_position(
@@ -109,18 +115,21 @@ class ReconciliationService:
                 except Exception as exc:
                     logger.error(
                         "RECONCILE: failed to force-close orphaned local position %s: %s",
-                        local_pos.symbol, exc,
+                        local_pos.symbol,
+                        exc,
                     )
-                await self._bus.publish(AlertFiredEvent(
-                    source="reconciliation",
-                    alert_name="position_closed_externally",
-                    severity=AlertSeverity.CRITICAL,
-                    message=(
-                        f"Position {local_pos.symbol} vanished from the exchange and was "
-                        f"force-closed locally at an estimated price — verify realized P&L"
-                    ),
-                    context={"symbol": local_pos.symbol, "position_id": local_pos.position_id},
-                ))
+                await self._bus.publish(
+                    AlertFiredEvent(
+                        source="reconciliation",
+                        alert_name="position_closed_externally",
+                        severity=AlertSeverity.CRITICAL,
+                        message=(
+                            f"Position {local_pos.symbol} vanished from the exchange and was "
+                            f"force-closed locally at an estimated price — verify realized P&L"
+                        ),
+                        context={"symbol": local_pos.symbol, "position_id": local_pos.position_id},
+                    )
+                )
             else:
                 # Sync mark price
                 local_pos.update_mark_price(exch_pos.mark_price)
@@ -129,14 +138,18 @@ class ReconciliationService:
                 if qty_diff > Decimal("0.0001"):
                     logger.warning(
                         "RECONCILE: Position qty mismatch %s: local=%s exchange=%s",
-                        local_pos.symbol, local_pos.quantity, exch_pos.quantity,
+                        local_pos.symbol,
+                        local_pos.quantity,
+                        exch_pos.quantity,
                     )
-                    report["position_discrepancies"].append({
-                        "symbol": local_pos.symbol,
-                        "issue": "qty_mismatch",
-                        "local": str(local_pos.quantity),
-                        "exchange": str(exch_pos.quantity),
-                    })
+                    report["position_discrepancies"].append(
+                        {
+                            "symbol": local_pos.symbol,
+                            "issue": "qty_mismatch",
+                            "local": str(local_pos.quantity),
+                            "exchange": str(exch_pos.quantity),
+                        }
+                    )
                     self._discrepancies_found += 1
 
         # Orphan exchange positions: exist on the exchange but the system has
@@ -153,23 +166,28 @@ class ReconciliationService:
             logger.critical(
                 "RECONCILE: exchange position %s (qty=%s) has no local record — "
                 "untracked by risk management",
-                symbol, exch_pos.quantity,
+                symbol,
+                exch_pos.quantity,
             )
-            report["orphan_positions"].append({
-                "symbol": symbol,
-                "quantity": str(exch_pos.quantity),
-            })
+            report["orphan_positions"].append(
+                {
+                    "symbol": symbol,
+                    "quantity": str(exch_pos.quantity),
+                }
+            )
             self._discrepancies_found += 1
-            await self._bus.publish(AlertFiredEvent(
-                source="reconciliation",
-                alert_name="orphan_exchange_position",
-                severity=AlertSeverity.CRITICAL,
-                message=(
-                    f"Exchange position {symbol} (qty={exch_pos.quantity}) exists with no "
-                    f"local record — untracked by risk management, needs manual review"
-                ),
-                context={"symbol": symbol, "quantity": str(exch_pos.quantity)},
-            ))
+            await self._bus.publish(
+                AlertFiredEvent(
+                    source="reconciliation",
+                    alert_name="orphan_exchange_position",
+                    severity=AlertSeverity.CRITICAL,
+                    message=(
+                        f"Exchange position {symbol} (qty={exch_pos.quantity}) exists with no "
+                        f"local record — untracked by risk management, needs manual review"
+                    ),
+                    context={"symbol": symbol, "quantity": str(exch_pos.quantity)},
+                )
+            )
 
         # 2. Reconcile open orders
         # Batch by symbol: one get_open_orders() call per unique symbol rather
@@ -193,7 +211,10 @@ class ReconciliationService:
 
         for local_order in local_open_orders:
             # If present in the exchange's open-order list, status is still OPEN/PARTIALLY_FILLED
-            if local_order.exchange_order_id and local_order.exchange_order_id in exchange_open_order_map:
+            if (
+                local_order.exchange_order_id
+                and local_order.exchange_order_id in exchange_open_order_map
+            ):
                 exch_order = exchange_open_order_map[local_order.exchange_order_id]
             else:
                 # Not in open-order list — fetch directly to confirm terminal state
@@ -203,7 +224,9 @@ class ReconciliationService:
                         local_order.exchange_order_id or local_order.client_order_id,
                     )
                 except Exception as exc:
-                    logger.warning("Reconcile order check failed for %s: %s", local_order.client_order_id, exc)
+                    logger.warning(
+                        "Reconcile order check failed for %s: %s", local_order.client_order_id, exc
+                    )
                     continue
 
             if exch_order.status == local_order.status:
@@ -257,10 +280,12 @@ class ReconciliationService:
             if hasattr(self._orders, "persist_order"):
                 await self._orders.persist_order(local_order)
 
-            report["order_updates"].append({
-                "order_id": local_order.client_order_id,
-                "new_status": exch_order.status.value,
-            })
+            report["order_updates"].append(
+                {
+                    "order_id": local_order.client_order_id,
+                    "new_status": exch_order.status.value,
+                }
+            )
 
             if newly_filled and (was_unfilled or was_partial_now_full):
                 # Trigger the normal fill pipeline (position creation,
@@ -281,17 +306,19 @@ class ReconciliationService:
                     )
                     self._discrepancies_found += 1
                 else:
-                    await self._bus.publish(OrderFilledEvent(
-                        source="reconciliation",
-                        order_id=local_order.order_id,
-                        symbol=local_order.symbol,
-                        side=local_order.side,
-                        filled_quantity=exch_order.filled_quantity,
-                        fill_price=fill_price,
-                        fee=exch_order.total_fee,
-                        fee_asset=exch_order.fee_asset,
-                        is_partial=exch_order.status == OrderStatus.PARTIALLY_FILLED,
-                    ))
+                    await self._bus.publish(
+                        OrderFilledEvent(
+                            source="reconciliation",
+                            order_id=local_order.order_id,
+                            symbol=local_order.symbol,
+                            side=local_order.side,
+                            filled_quantity=exch_order.filled_quantity,
+                            fill_price=fill_price,
+                            fee=exch_order.total_fee,
+                            fee_asset=exch_order.fee_asset,
+                            is_partial=exch_order.status == OrderStatus.PARTIALLY_FILLED,
+                        )
+                    )
 
         if self._discrepancies_found:
             logger.info(

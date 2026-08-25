@@ -243,9 +243,7 @@ class BybitWebSocket:
         """Start the public stream, and the private stream if credentials
         and a user-data handler are both present."""
         self._running = True
-        self._public_task = asyncio.create_task(
-            self._public_run_loop(), name="bybit_ws.public"
-        )
+        self._public_task = asyncio.create_task(self._public_run_loop(), name="bybit_ws.public")
         if self._user_data_handler is not None:
             if not self._api_key or not self._api_secret:
                 logger.warning(
@@ -297,9 +295,10 @@ class BybitWebSocket:
                 self._reconnect_count += 1
                 ws_reconnects.inc()
                 logger.warning(
-                    "Bybit public WebSocket disconnected (reconnect #%d): %s. "
-                    "Retrying in %.1fs",
-                    self._reconnect_count, exc, delay,
+                    "Bybit public WebSocket disconnected (reconnect #%d): %s. " "Retrying in %.1fs",
+                    self._reconnect_count,
+                    exc,
+                    delay,
                 )
                 if not self._running:
                     return
@@ -311,9 +310,7 @@ class BybitWebSocket:
             await asyncio.sleep(1)
             return
 
-        async with websockets.connect(
-            self._ws_public_url, max_size=10 * 1024 * 1024
-        ) as ws:
+        async with websockets.connect(self._ws_public_url, max_size=10 * 1024 * 1024) as ws:
             self._public_ws = ws
             logger.info("Bybit public WebSocket connected: %s", self._ws_public_url)
 
@@ -383,9 +380,7 @@ class BybitWebSocket:
             # subscribes to; a caller using subscribe_depth() with a
             # higher level still lands in the raw pass-through branch
             # below since its topic won't match "orderbook.1.".
-            await handler(self._normalize_book_ticker(
-                data if isinstance(data, dict) else {}
-            ))
+            await handler(self._normalize_book_ticker(data if isinstance(data, dict) else {}))
         else:
             # orderbook.{50,200,500}.* and anything else: pass through
             # as-is, wrapped so callers can access both the payload and
@@ -485,7 +480,9 @@ class BybitWebSocket:
                 logger.warning(
                     "Bybit private WebSocket disconnected (reconnect #%d): %s. "
                     "Retrying in %.1fs",
-                    self._reconnect_count, exc, delay,
+                    self._reconnect_count,
+                    exc,
+                    delay,
                 )
                 if not self._running:
                     return
@@ -497,22 +494,22 @@ class BybitWebSocket:
             # Invariant enforced by start() (private task is only ever
             # scheduled when both are set) — checked explicitly rather than
             # via assert so the invariant still holds under `python -O`.
-            raise RuntimeError(
-                "_connect_private called without api_key/api_secret set"
-            )
+            raise RuntimeError("_connect_private called without api_key/api_secret set")
 
-        async with websockets.connect(
-            self._ws_private_url, max_size=10 * 1024 * 1024
-        ) as ws:
+        async with websockets.connect(self._ws_private_url, max_size=10 * 1024 * 1024) as ws:
             self._private_ws = ws
             logger.info("Bybit private WebSocket connected: %s", self._ws_private_url)
 
             expires = int(time.time() * 1000) + _AUTH_EXPIRE_WINDOW_MS
             signature = _sign_ws_auth(self._api_secret, expires)
-            await ws.send(json.dumps({
-                "op": "auth",
-                "args": [self._api_key, expires, signature],
-            }))
+            await ws.send(
+                json.dumps(
+                    {
+                        "op": "auth",
+                        "args": [self._api_key, expires, signature],
+                    }
+                )
+            )
 
             # First frame must be the auth ack. Subscribing before a
             # successful ack is rejected by Bybit, so we block on it here

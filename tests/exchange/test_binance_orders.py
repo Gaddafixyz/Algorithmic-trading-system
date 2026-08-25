@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from decimal import Decimal
 from unittest.mock import AsyncMock
 
@@ -18,17 +17,27 @@ from src.exchange.binance.rest import BinanceFuturesRESTClient
 
 def make_instrument() -> Instrument:
     return Instrument(
-        symbol="BTCUSDT", base_asset="BTC", quote_asset="USDT",
+        symbol="BTCUSDT",
+        base_asset="BTC",
+        quote_asset="USDT",
         instrument_type=InstrumentType.PERPETUAL,
-        tick_size=Decimal("0.01"), min_price=Decimal("0.01"), max_price=Decimal("1000000"),
-        step_size=Decimal("0.001"), min_qty=Decimal("0.001"), max_qty=Decimal("1000"),
-        min_notional=Decimal("5"), max_leverage=125, default_leverage=10,
+        tick_size=Decimal("0.01"),
+        min_price=Decimal("0.01"),
+        max_price=Decimal("1000000"),
+        step_size=Decimal("0.001"),
+        min_qty=Decimal("0.001"),
+        max_qty=Decimal("1000"),
+        min_notional=Decimal("5"),
+        max_leverage=125,
+        default_leverage=10,
     )
 
 
 def make_order(status: OrderStatus = OrderStatus.OPEN) -> Order:
     order = Order(
-        symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+        symbol="BTCUSDT",
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
         quantity=Decimal("0.1"),
     )
     if status != OrderStatus.PENDING:
@@ -55,9 +64,7 @@ class TestPlaceMarketOrder:
         rest_client.place_order.return_value = make_order()
         instrument = make_instrument()
 
-        await manager.place_market_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.12345"), instrument
-        )
+        await manager.place_market_order("BTCUSDT", OrderSide.BUY, Decimal("0.12345"), instrument)
 
         rest_client.place_order.assert_awaited_once()
         _, kwargs = rest_client.place_order.call_args
@@ -70,7 +77,10 @@ class TestPlaceMarketOrder:
         instrument = make_instrument()
         with pytest.raises(InvalidOrderError, match="Invalid order params"):
             await manager.place_market_order(
-                "BTCUSDT", OrderSide.BUY, Decimal("0.0001"), instrument  # below min_qty
+                "BTCUSDT",
+                OrderSide.BUY,
+                Decimal("0.0001"),
+                instrument,  # below min_qty
             )
         rest_client.place_order.assert_not_awaited()
 
@@ -86,9 +96,7 @@ class TestPlaceMarketOrder:
         # notional check against a real price -- since we pass
         # min_price*2 as an estimate, this should not raise as long as
         # quantity itself is valid.
-        await manager.place_market_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.01"), instrument
-        )
+        await manager.place_market_order("BTCUSDT", OrderSide.BUY, Decimal("0.01"), instrument)
         rest_client.place_order.assert_awaited_once()
 
 
@@ -124,7 +132,11 @@ class TestPlaceLimitOrder:
         rest_client.place_order.return_value = make_order()
         instrument = make_instrument()
         await manager.place_limit_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), Decimal("50000"), instrument,
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            Decimal("50000"),
+            instrument,
             time_in_force="IOC",
         )
         _, kwargs = rest_client.place_order.call_args
@@ -172,8 +184,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         result = await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-            stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("49000"),
+            take_profit_price=Decimal("52000"),
         )
 
         assert set(result.keys()) == {"entry", "stop_loss", "take_profit"}
@@ -195,8 +211,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-            stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("49000"),
+            take_profit_price=Decimal("52000"),
             entry_price=Decimal("50500"),
         )
 
@@ -211,8 +231,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.SELL, Decimal("0.1"), instrument,
-            stop_price=Decimal("52000"), take_profit_price=Decimal("49000"),
+            "BTCUSDT",
+            OrderSide.SELL,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("52000"),
+            take_profit_price=Decimal("49000"),
         )
 
         calls = rest_client.place_order.call_args_list
@@ -227,8 +251,12 @@ class TestPlaceBracketOrder:
 
         with pytest.raises(RuntimeError, match="rejected"):
             await manager.place_bracket_order(
-                "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-                stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+                "BTCUSDT",
+                OrderSide.BUY,
+                Decimal("0.1"),
+                instrument,
+                stop_price=Decimal("49000"),
+                take_profit_price=Decimal("52000"),
             )
         assert rest_client.place_order.await_count == 1
 
@@ -242,8 +270,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         result = await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-            stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("49000"),
+            take_profit_price=Decimal("52000"),
         )
 
         assert set(result.keys()) == {"entry"}
@@ -260,8 +292,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         result = await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-            stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("49000"),
+            take_profit_price=Decimal("52000"),
         )
 
         assert set(result.keys()) == {"entry", "stop_loss"}
@@ -274,8 +310,12 @@ class TestPlaceBracketOrder:
         instrument = make_instrument()
 
         await manager.place_bracket_order(
-            "BTCUSDT", OrderSide.BUY, Decimal("0.1"), instrument,
-            stop_price=Decimal("49000"), take_profit_price=Decimal("52000"),
+            "BTCUSDT",
+            OrderSide.BUY,
+            Decimal("0.1"),
+            instrument,
+            stop_price=Decimal("49000"),
+            take_profit_price=Decimal("52000"),
             client_order_id_prefix="sig123",
         )
 

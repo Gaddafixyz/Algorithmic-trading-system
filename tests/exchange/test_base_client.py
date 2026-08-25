@@ -100,13 +100,21 @@ class _TestServerFixture:
         self.client: _MinimalClient | None = None
 
     def queue_response(
-        self, method: str, path: str, *, status: int = 200,
-        json_body: Any = None, text_body: str | None = None,
-        content_type: str = "application/json", headers: dict[str, str] | None = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        status: int = 200,
+        json_body: Any = None,
+        text_body: str | None = None,
+        content_type: str = "application/json",
+        headers: dict[str, str] | None = None,
     ) -> None:
         key = (method.upper(), path)
         body = json.dumps(json_body) if json_body is not None else (text_body or "")
-        resp = web.Response(status=status, text=body, content_type=content_type, headers=headers or {})
+        resp = web.Response(
+            status=status, text=body, content_type=content_type, headers=headers or {}
+        )
         self._routes.setdefault(key, []).append(resp)
 
     async def _handler(self, request: web.Request) -> web.Response:
@@ -177,9 +185,7 @@ class TestSuccessfulRequest:
         result = await client._get("/ping")
         assert result == {"ok": True}
 
-    async def test_request_count_increments_on_each_call(
-        self, server: _TestServerFixture
-    ) -> None:
+    async def test_request_count_increments_on_each_call(self, server: _TestServerFixture) -> None:
         client = await server.start()
         server.queue_response("GET", "/ping", json_body={"ok": True})
         server.queue_response("GET", "/ping", json_body={"ok": True})
@@ -214,6 +220,7 @@ class TestRateLimitHandling:
         self, server: _TestServerFixture, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         import asyncio
+
         sleep_calls: list[float] = []
         real_sleep = asyncio.sleep
 
@@ -225,7 +232,10 @@ class TestRateLimitHandling:
 
         client = await server.start()
         server.queue_response(
-            "GET", "/limited", status=429, text_body="rate limited",
+            "GET",
+            "/limited",
+            status=429,
+            text_body="rate limited",
             headers={"Retry-After": "2"},
         )
         server.queue_response("GET", "/limited", json_body={"ok": True})
@@ -241,7 +251,10 @@ class TestNonJsonResponse:
     ) -> None:
         client = await server.start()
         server.queue_response(
-            "GET", "/html-error", status=200, text_body="<html>not json</html>",
+            "GET",
+            "/html-error",
+            status=200,
+            text_body="<html>not json</html>",
             content_type="text/html",
         )
         server.queue_response("GET", "/html-error", json_body={"ok": True})
@@ -256,7 +269,9 @@ class TestClockDriftDetection:
         client = await server.start()
         client._drift_error_codes = (-1021,)
         server.queue_response(
-            "GET", "/signed", status=400,
+            "GET",
+            "/signed",
+            status=400,
             json_body={"code": -1021, "msg": "Timestamp outside recvWindow"},
         )
         server.queue_response("GET", "/signed", json_body={"ok": True})
@@ -266,9 +281,7 @@ class TestClockDriftDetection:
 
 
 class TestHttpVerbMethods:
-    async def test_post_sends_data_and_returns_response(
-        self, server: _TestServerFixture
-    ) -> None:
+    async def test_post_sends_data_and_returns_response(self, server: _TestServerFixture) -> None:
         client = await server.start()
         server.queue_response("POST", "/orders", json_body={"orderId": 1})
         result = await client._post("/orders", data={"symbol": "BTCUSDT"})

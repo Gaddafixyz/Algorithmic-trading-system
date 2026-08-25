@@ -63,7 +63,9 @@ def parse_instruments(exchange_info: dict[str, Any]) -> dict[str, Instrument]:
             symbol = sym["symbol"]
             base = sym["baseAsset"]
             quote = sym["quoteAsset"]
-            max_leverage = int(sym.get("leverageBracket", [{"initialLeverage": 20}])[0].get("initialLeverage", 20))
+            max_leverage = int(
+                sym.get("leverageBracket", [{"initialLeverage": 20}])[0].get("initialLeverage", 20)
+            )
 
             # Parse filters
             filters = {f["filterType"]: f for f in sym.get("filters", [])}
@@ -71,7 +73,7 @@ def parse_instruments(exchange_info: dict[str, Any]) -> dict[str, Instrument]:
             price_filter = filters.get("PRICE_FILTER", {})
             lot_size = filters.get("LOT_SIZE", {})
             min_notional = filters.get("MIN_NOTIONAL", {})
-            market_lot = filters.get("MARKET_LOT_SIZE", lot_size)
+            filters.get("MARKET_LOT_SIZE", lot_size)
 
             tick_size = Decimal(str(price_filter.get("tickSize", "0.01")))
             min_price = Decimal(str(price_filter.get("minPrice", "0")))

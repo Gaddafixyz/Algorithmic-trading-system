@@ -8,8 +8,8 @@ import signal
 from typing import Any
 
 from src.bootstrap.app import Application
-from src.bootstrap.startup import startup
 from src.bootstrap.shutdown import shutdown
+from src.bootstrap.startup import startup
 from src.core.constants import RECONCILE_INTERVAL_SECONDS
 from src.core.exceptions import ShutdownError
 
@@ -78,7 +78,7 @@ class LifecycleManager:
                     asyncio.shield(self._shutdown_event.wait()),
                     timeout=10.0,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # Normal: check again
 
     async def _reconcile_loop(self) -> None:
@@ -96,7 +96,7 @@ class LifecycleManager:
                     timeout=RECONCILE_INTERVAL_SECONDS,
                 )
                 return  # shutdown requested during the wait
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # Normal: time to reconcile
 
             try:

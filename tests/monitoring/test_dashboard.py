@@ -54,25 +54,19 @@ def running_dashboard():
 
 class TestHttpEndpointsWithProviders:
     def test_health_endpoint_returns_provider_data(self, running_dashboard: Dashboard) -> None:
-        running_dashboard.set_providers(
-            lambda: {"status": "healthy"}, lambda: {}, lambda: {}
-        )
+        running_dashboard.set_providers(lambda: {"status": "healthy"}, dict, dict)
         status, body = _get(running_dashboard._server.server_port, "/health")  # noqa: SLF001
         assert status == 200
         assert body == {"status": "healthy"}
 
     def test_status_endpoint_returns_provider_data(self, running_dashboard: Dashboard) -> None:
-        running_dashboard.set_providers(
-            lambda: {}, lambda: {"running": True, "positions": 2}, lambda: {}
-        )
+        running_dashboard.set_providers(dict, lambda: {"running": True, "positions": 2}, dict)
         status, body = _get(running_dashboard._server.server_port, "/status")  # noqa: SLF001
         assert status == 200
         assert body == {"running": True, "positions": 2}
 
     def test_metrics_endpoint_returns_provider_data(self, running_dashboard: Dashboard) -> None:
-        running_dashboard.set_providers(
-            lambda: {}, lambda: {}, lambda: {"win_rate": 0.55}
-        )
+        running_dashboard.set_providers(dict, dict, lambda: {"win_rate": 0.55})
         status, body = _get(running_dashboard._server.server_port, "/metrics")  # noqa: SLF001
         assert status == 200
         assert body == {"win_rate": 0.55}
@@ -124,9 +118,7 @@ class TestHandlerInstantiationRegression:
     thread (which would surface to the client as a broken connection,
     not a clean HTTP error)."""
 
-    def test_multiple_sequential_requests_all_succeed(
-        self, running_dashboard: Dashboard
-    ) -> None:
+    def test_multiple_sequential_requests_all_succeed(self, running_dashboard: Dashboard) -> None:
         port = running_dashboard._server.server_port  # noqa: SLF001
         for _ in range(5):
             status, _ = _get(port, "/health")
@@ -137,10 +129,10 @@ class TestHandlerInstantiationRegression:
         independently-started dashboards must not clobber each other's
         data_provider."""
         d1 = Dashboard(port=0, ws_port=0)
-        d1.set_providers(lambda: {"who": "d1"}, lambda: {}, lambda: {})
+        d1.set_providers(lambda: {"who": "d1"}, dict, dict)
         d1.start()
         d2 = Dashboard(port=0, ws_port=0)
-        d2.set_providers(lambda: {"who": "d2"}, lambda: {}, lambda: {})
+        d2.set_providers(lambda: {"who": "d2"}, dict, dict)
         d2.start()
         time.sleep(0.05)
         try:
@@ -156,9 +148,7 @@ class TestHandlerInstantiationRegression:
 class TestSnapshot:
     def test_snapshot_combines_all_three_providers(self) -> None:
         d = Dashboard()
-        d.set_providers(
-            lambda: {"status": "ok"}, lambda: {"running": True}, lambda: {"pnl": 5.0}
-        )
+        d.set_providers(lambda: {"status": "ok"}, lambda: {"running": True}, lambda: {"pnl": 5.0})
         snap = d._snapshot()  # noqa: SLF001
         assert snap["type"] == "snapshot"
         assert snap["health"] == {"status": "ok"}
@@ -196,7 +186,7 @@ class _FakeWSConnection:
     def close(self) -> None:
         self._closed.set()
 
-    def __aiter__(self) -> "_FakeWSConnection":
+    def __aiter__(self) -> _FakeWSConnection:
         return self
 
     async def __anext__(self) -> None:
@@ -207,7 +197,7 @@ class _FakeWSConnection:
 class TestWebSocketClientHandling:
     async def test_client_receives_immediate_snapshot_on_connect(self) -> None:
         d = Dashboard()
-        d.set_providers(lambda: {"status": "ok"}, lambda: {}, lambda: {})
+        d.set_providers(lambda: {"status": "ok"}, dict, dict)
         conn = _FakeWSConnection()
         task = asyncio.create_task(d._handle_ws_client(conn))  # noqa: SLF001
         await asyncio.sleep(0.05)
@@ -233,7 +223,7 @@ class TestWebSocketClientHandling:
 class TestBroadcastLoop:
     async def test_broadcasts_to_all_connected_clients(self) -> None:
         d = Dashboard()
-        d.set_providers(lambda: {"status": "ok"}, lambda: {}, lambda: {})
+        d.set_providers(lambda: {"status": "ok"}, dict, dict)
         c1, c2 = _FakeWSConnection(), _FakeWSConnection()
         d._ws_clients = {c1, c2}  # noqa: SLF001
         task = asyncio.create_task(d._broadcast_loop(0.01))  # noqa: SLF001
@@ -262,7 +252,7 @@ class TestBroadcastLoop:
         good = _FakeWSConnection()
         bad = _FakeWSConnection(fail_after=0)
         d = Dashboard()
-        d.set_providers(lambda: {"status": "ok"}, lambda: {}, lambda: {})
+        d.set_providers(lambda: {"status": "ok"}, dict, dict)
         d._ws_clients = {good, bad}  # noqa: SLF001
         task = asyncio.create_task(d._broadcast_loop(0.01))  # noqa: SLF001
         await asyncio.sleep(0.05)

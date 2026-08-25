@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.backtesting.commission import ZeroCommission
@@ -10,7 +10,6 @@ from src.backtesting.simulator import (
     BacktestBroker,
     FundingRate,
     PartialFillModel,
-    PendingOrder,
 )
 from src.backtesting.slippage import ZeroSlippage
 from src.core.enums import SignalDirection, SignalStrength, Timeframe
@@ -19,29 +18,48 @@ from src.domain.signal import Signal
 
 
 def make_candle(
-    o: str = "50000", h: str = "50100", low: str = "49900", c: str = "50000",
-    volume: str = "1000", ts: datetime | None = None,
+    o: str = "50000",
+    h: str = "50100",
+    low: str = "49900",
+    c: str = "50000",
+    volume: str = "1000",
+    ts: datetime | None = None,
 ) -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
-        volume=Decimal(volume), timestamp=ts or datetime(2024, 1, 1, tzinfo=UTC),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
+        volume=Decimal(volume),
+        timestamp=ts or datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 
 def make_signal(
     direction: SignalDirection = SignalDirection.LONG,
-    entry: str = "50000", sl: str = "49000", tp: str = "52000",
+    entry: str = "50000",
+    sl: str = "49000",
+    tp: str = "52000",
     symbol: str = "BTCUSDT",
 ) -> Signal:
     return Signal(
-        strategy_id="test", symbol=symbol, timeframe=Timeframe.H1, direction=direction,
-        score=70.0, strength=SignalStrength.STRONG, confidence=0.7,
-        entry_price=Decimal(entry), stop_loss=Decimal(sl), take_profit=Decimal(tp),
+        strategy_id="test",
+        symbol=symbol,
+        timeframe=Timeframe.H1,
+        direction=direction,
+        score=70.0,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal(entry),
+        stop_loss=Decimal(sl),
+        take_profit=Decimal(tp),
     )
 
 
 def make_broker(
-    equity: str = "10000", risk_pct: str = "1.0", max_positions: int = 5,
+    equity: str = "10000",
+    risk_pct: str = "1.0",
+    max_positions: int = 5,
     funding_rates: list[FundingRate] | None = None,
     partial_fill: PartialFillModel | None = None,
 ) -> BacktestBroker:
@@ -94,7 +112,9 @@ class TestNextBarOpenFillSemantics:
         signal_bar = make_candle(o="50000", c="50000")
         broker.place_signal(make_signal(entry="50000"), signal_bar)
 
-        next_bar = make_candle(o="50500", h="50700", low="50400", c="50600")  # a different open price
+        next_bar = make_candle(
+            o="50500", h="50700", low="50400", c="50600"
+        )  # a different open price
         broker.process_pending_orders(next_bar)
 
         assert len(broker.open_positions) == 1
@@ -115,7 +135,6 @@ class TestNextBarOpenFillSemantics:
         broker = make_broker(max_positions=1)
         broker.place_signal(make_signal(symbol="BTCUSDT"), make_candle())
         broker.process_pending_orders(make_candle())
-        equity_after_first = broker.equity
 
         broker.place_signal(make_signal(symbol="ETHUSDT"), make_candle())
         broker.process_pending_orders(make_candle())
@@ -163,7 +182,8 @@ class TestSignalIdPropagation:
 class TestPartialFillCapping:
     def test_large_order_relative_to_volume_is_partially_filled(self) -> None:
         broker = make_broker(
-            equity="1000000", risk_pct="50.0",
+            equity="1000000",
+            risk_pct="50.0",
             partial_fill=PartialFillModel(volume_participation=Decimal("0.1"), enabled=True),
         )
         broker.place_signal(make_signal(entry="50000", sl="49000"), make_candle(volume="1"))
@@ -179,7 +199,8 @@ class TestPartialFillCapping:
         self,
     ) -> None:
         broker = make_broker(
-            equity="1000000", risk_pct="50.0",
+            equity="1000000",
+            risk_pct="50.0",
             partial_fill=PartialFillModel(volume_participation=Decimal("0.1"), enabled=True),
         )
         broker.place_signal(make_signal(entry="50000", sl="49000"), make_candle(volume="1"))
@@ -187,7 +208,9 @@ class TestPartialFillCapping:
         first_qty = broker.open_positions[0].quantity
 
         # Next bar: fills more of the remainder at a different open price.
-        broker.process_pending_orders(make_candle(o="51000", h="51100", low="50900", c="51000", volume="1"))
+        broker.process_pending_orders(
+            make_candle(o="51000", h="51100", low="50900", c="51000", volume="1")
+        )
 
         pos = broker.open_positions[0]
         assert pos.quantity > first_qty
@@ -220,8 +243,10 @@ class TestPositionSizingParity:
         broker.process_pending_orders(make_candle())
 
         expected = calculate_position_size(
-            equity=Decimal("10000"), risk_pct=Decimal("1.0"),
-            entry_price=Decimal("50000"), stop_loss=Decimal("49000"),
+            equity=Decimal("10000"),
+            risk_pct=Decimal("1.0"),
+            entry_price=Decimal("50000"),
+            stop_loss=Decimal("49000"),
             fee_rate=Decimal("0.0004"),
         )
         assert broker.open_positions[0].quantity == expected
@@ -250,12 +275,13 @@ class TestFundingRateAccrual:
         settlement = datetime(2024, 1, 1, 8, 0, tzinfo=UTC)
         broker = make_broker(
             equity="10000",
-            funding_rates=[FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))],
+            funding_rates=[
+                FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))
+            ],
         )
         broker.place_signal(make_signal(), make_candle(ts=datetime(2024, 1, 1, 7, 0, tzinfo=UTC)))
         broker.process_pending_orders(make_candle(ts=datetime(2024, 1, 1, 7, 0, tzinfo=UTC)))
 
-        equity_before = broker.equity
         broker.process_pending_orders(make_candle(ts=datetime(2024, 1, 1, 9, 0, tzinfo=UTC)))
 
         pos = broker.open_positions[0]
@@ -265,7 +291,9 @@ class TestFundingRateAccrual:
         settlement = datetime(2024, 1, 1, 8, 0, tzinfo=UTC)
         broker = make_broker(
             equity="10000",
-            funding_rates=[FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))],
+            funding_rates=[
+                FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))
+            ],
         )
         signal = make_signal(direction=SignalDirection.SHORT, entry="50000", sl="51000", tp="48000")
         broker.place_signal(signal, make_candle(ts=datetime(2024, 1, 1, 7, 0, tzinfo=UTC)))
@@ -279,7 +307,9 @@ class TestFundingRateAccrual:
         settlement = datetime(2024, 1, 1, 8, 0, tzinfo=UTC)
         broker = make_broker(
             equity="10000",
-            funding_rates=[FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))],
+            funding_rates=[
+                FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))
+            ],
         )
         broker.place_signal(make_signal(), make_candle(ts=datetime(2024, 1, 1, 7, 0, tzinfo=UTC)))
         broker.process_pending_orders(make_candle(ts=datetime(2024, 1, 1, 7, 0, tzinfo=UTC)))
@@ -294,7 +324,9 @@ class TestFundingRateAccrual:
         settlement = datetime(2024, 1, 1, 8, 0, tzinfo=UTC)
         broker = make_broker(
             equity="10000",
-            funding_rates=[FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))],
+            funding_rates=[
+                FundingRate(timestamp=settlement, symbol="BTCUSDT", rate=Decimal("0.0001"))
+            ],
         )
         broker.process_pending_orders(make_candle(ts=datetime(2024, 1, 1, 9, 0, tzinfo=UTC)))
         assert broker.equity == Decimal("10000")
@@ -364,9 +396,7 @@ class TestExitDetection:
         broker = make_broker()
         broker.place_signal(make_signal(entry="50000", sl="49000", tp="52000"), make_candle())
         # This bar both fills the entry AND would trigger the stop if checked.
-        broker.process_pending_orders(
-            make_candle(o="50000", h="50100", low="48500", c="49500")
-        )
+        broker.process_pending_orders(make_candle(o="50000", h="50100", low="48500", c="49500"))
         assert len(broker.open_positions) == 1  # not exited on the fill bar
 
 
@@ -397,9 +427,7 @@ class TestEquityProperty:
         broker.process_pending_orders(make_candle(o="50000"))
 
         cash_equity = broker._equity
-        broker.process_pending_orders(
-            make_candle(o="50100", h="51100", low="50050", c="51000")
-        )
+        broker.process_pending_orders(make_candle(o="50100", h="51100", low="50050", c="51000"))
         assert broker.equity != cash_equity  # unrealized gain reflected
 
     def test_equity_with_no_positions_equals_cash(self) -> None:

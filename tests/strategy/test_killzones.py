@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from src.core.enums import KillZone
 from src.smart_money.killzones import kill_zone_score, should_trade_now
 
 LONDON_OPEN = datetime(2024, 1, 2, 8, 0, tzinfo=UTC)

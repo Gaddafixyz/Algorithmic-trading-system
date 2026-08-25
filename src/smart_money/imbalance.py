@@ -9,8 +9,8 @@ with adjacent candles) and volume imbalances.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 
 from src.core.models import OHLCV
 
@@ -57,25 +57,29 @@ def detect_imbalances(candles: list[OHLCV]) -> list[Imbalance]:
         c3_body_bottom = min(c3.open, c3.close)
 
         if c3_body_bottom > c1_body_top:
-            imbalances.append(Imbalance(
-                direction="bullish",
-                top=c3_body_bottom,
-                bottom=c1_body_top,
-                bar_index=i,
-                timestamp=c2.timestamp,
-            ))
+            imbalances.append(
+                Imbalance(
+                    direction="bullish",
+                    top=c3_body_bottom,
+                    bottom=c1_body_top,
+                    bar_index=i,
+                    timestamp=c2.timestamp,
+                )
+            )
 
         # Bearish imbalance: c3 body top < c1 body bottom
         c1_body_bottom = min(c1.open, c1.close)
         c3_body_top = max(c3.open, c3.close)
 
         if c3_body_top < c1_body_bottom:
-            imbalances.append(Imbalance(
-                direction="bearish",
-                top=c1_body_bottom,
-                bottom=c3_body_top,
-                bar_index=i,
-                timestamp=c2.timestamp,
-            ))
+            imbalances.append(
+                Imbalance(
+                    direction="bearish",
+                    top=c1_body_bottom,
+                    bottom=c3_body_top,
+                    bar_index=i,
+                    timestamp=c2.timestamp,
+                )
+            )
 
     return imbalances

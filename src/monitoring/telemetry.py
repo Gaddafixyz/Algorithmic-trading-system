@@ -26,7 +26,6 @@ from typing import Any
 
 import structlog
 
-
 _DEFAULT_NOISY_LOGGERS = ("asyncio", "websockets", "aiohttp", "sqlalchemy.engine")
 
 
@@ -72,8 +71,7 @@ def configure_logging(
     ]
 
     structlog.configure(
-        processors=shared_processors
-        + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
+        processors=[*shared_processors, structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         wrapper_class=structlog.make_filtering_bound_logger(level),
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

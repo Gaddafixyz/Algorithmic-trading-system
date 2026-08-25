@@ -14,7 +14,6 @@ import logging
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from src.core.enums import PositionSide
 from src.domain.position import Position
 
 logger = logging.getLogger(__name__)
@@ -99,9 +98,12 @@ def calculate_partial_tp(
     """
     triggered = []
     for price, fraction in tp_levels:
-        if position.is_long and current_price >= price:
-            triggered.append((price, fraction))
-        elif position.is_short and current_price <= price:
+        if (
+            position.is_long
+            and current_price >= price
+            or position.is_short
+            and current_price <= price
+        ):
             triggered.append((price, fraction))
     return triggered
 
@@ -279,11 +281,13 @@ def evaluate_exit_actions(
             # improves on whatever trailing/breakeven logic above already
             # produced, so this can tighten a stop but never loosen one.
             candidate = top if position.is_short else bottom
-            if plan.new_stop_loss is None:
-                plan.new_stop_loss = candidate
-            elif position.is_long and candidate > plan.new_stop_loss:
-                plan.new_stop_loss = candidate
-            elif position.is_short and candidate < plan.new_stop_loss:
+            if (
+                plan.new_stop_loss is None
+                or position.is_long
+                and candidate > plan.new_stop_loss
+                or position.is_short
+                and candidate < plan.new_stop_loss
+            ):
                 plan.new_stop_loss = candidate
             break  # one confirmed reversal-risk trigger is enough signal
 

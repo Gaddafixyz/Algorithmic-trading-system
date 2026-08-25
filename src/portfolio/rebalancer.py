@@ -64,8 +64,11 @@ class PortfolioRebalancer:
         within ``drift_threshold_pct`` are omitted — use
         ``full_report`` if you need every symbol including HOLDs).
         """
-        return [a for a in self.full_report(portfolio, target_allocation)
-                if a.direction != RebalanceDirection.HOLD]
+        return [
+            a
+            for a in self.full_report(portfolio, target_allocation)
+            if a.direction != RebalanceDirection.HOLD
+        ]
 
     def full_report(
         self,
@@ -105,14 +108,16 @@ class PortfolioRebalancer:
             else:
                 direction = RebalanceDirection.HOLD
 
-            actions.append(RebalanceAction(
-                symbol=symbol,
-                current_notional=current,
-                target_notional=target,
-                delta_notional=delta,
-                drift_pct=drift_pct,
-                direction=direction,
-            ))
+            actions.append(
+                RebalanceAction(
+                    symbol=symbol,
+                    current_notional=current,
+                    target_notional=target,
+                    delta_notional=delta,
+                    drift_pct=drift_pct,
+                    direction=direction,
+                )
+            )
 
         return actions
 
@@ -120,5 +125,7 @@ class PortfolioRebalancer:
     def _current_notional_by_symbol(portfolio: Portfolio) -> dict[str, Decimal]:
         totals: dict[str, Decimal] = {}
         for position in portfolio.open_positions:
-            totals[position.symbol] = totals.get(position.symbol, Decimal("0")) + position.notional_value
+            totals[position.symbol] = (
+                totals.get(position.symbol, Decimal("0")) + position.notional_value
+            )
         return totals

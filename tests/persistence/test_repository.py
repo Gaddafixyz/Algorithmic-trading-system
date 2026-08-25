@@ -93,17 +93,21 @@ class TestUpsert:
         result = await repo.upsert(
             "new-id",
             {
-                "order_id": "new-id", "client_order_id": "c-new", "symbol": "ETHUSDT",
-                "side": "SELL", "order_type": "LIMIT", "status": "PENDING",
-                "quantity": Decimal("1"), "created_at": now, "updated_at": now,
+                "order_id": "new-id",
+                "client_order_id": "c-new",
+                "symbol": "ETHUSDT",
+                "side": "SELL",
+                "order_type": "LIMIT",
+                "status": "PENDING",
+                "quantity": Decimal("1"),
+                "created_at": now,
+                "updated_at": now,
             },
         )
         assert result.symbol == "ETHUSDT"
         assert result.status == "PENDING"
 
-    async def test_upsert_updates_the_existing_row_in_place(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_upsert_updates_the_existing_row_in_place(self, db_session: AsyncSession) -> None:
         repo = BaseRepository(db_session, OrderORM)
         order = make_order_orm(order_id="upsert-1", status="SUBMITTED")
         await repo.save(order)
@@ -147,9 +151,7 @@ class TestGetById:
         result = await repo.get_by_id("findme")
         assert result.order_id == "findme"
 
-    async def test_raises_record_not_found_for_a_missing_id(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_raises_record_not_found_for_a_missing_id(self, db_session: AsyncSession) -> None:
         repo = BaseRepository(db_session, OrderORM)
         with pytest.raises(RecordNotFoundError, match="does-not-exist"):
             await repo.get_by_id("does-not-exist")
@@ -165,9 +167,7 @@ class TestGetById:
 
 
 class TestFindAll:
-    async def test_returns_all_entities_with_no_filters(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_returns_all_entities_with_no_filters(self, db_session: AsyncSession) -> None:
         repo = BaseRepository(db_session, OrderORM)
         await repo.save(make_order_orm(order_id="a", client_order_id="ca"))
         await repo.save(make_order_orm(order_id="b", client_order_id="cb"))
@@ -187,12 +187,12 @@ class TestFindAll:
         self, db_session: AsyncSession
     ) -> None:
         repo = BaseRepository(db_session, OrderORM)
-        await repo.save(make_order_orm(
-            order_id="1", client_order_id="c1", symbol="BTCUSDT", status="OPEN"
-        ))
-        await repo.save(make_order_orm(
-            order_id="2", client_order_id="c2", symbol="BTCUSDT", status="FILLED"
-        ))
+        await repo.save(
+            make_order_orm(order_id="1", client_order_id="c1", symbol="BTCUSDT", status="OPEN")
+        )
+        await repo.save(
+            make_order_orm(order_id="2", client_order_id="c2", symbol="BTCUSDT", status="FILLED")
+        )
 
         result = await repo.find_all(symbol="BTCUSDT", status="OPEN")
         assert len(result) == 1
@@ -209,9 +209,7 @@ class TestFindAll:
         result = await repo.find_all(nonexistent_column="whatever")
         assert len(result) == 1
 
-    async def test_returns_empty_list_when_no_rows_match(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_returns_empty_list_when_no_rows_match(self, db_session: AsyncSession) -> None:
         repo = BaseRepository(db_session, OrderORM)
         await repo.save(make_order_orm())
         result = await repo.find_all(symbol="NONEXISTENT")
@@ -248,9 +246,7 @@ class TestDelete:
 
 
 class TestCount:
-    async def test_count_with_no_filters_returns_total_rows(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_count_with_no_filters_returns_total_rows(self, db_session: AsyncSession) -> None:
         repo = BaseRepository(db_session, OrderORM)
         await repo.save(make_order_orm(order_id="1", client_order_id="c1"))
         await repo.save(make_order_orm(order_id="2", client_order_id="c2"))

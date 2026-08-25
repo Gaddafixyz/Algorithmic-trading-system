@@ -7,8 +7,8 @@ where full account detail is not needed.
 
 from __future__ import annotations
 
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import Field
 
@@ -42,9 +42,7 @@ class Balance(MutableModel):
 
     def reserve(self, amount: Decimal) -> None:
         if amount > self.available:
-            raise ValueError(
-                f"Cannot reserve {amount}: only {self.available} available"
-            )
+            raise ValueError(f"Cannot reserve {amount}: only {self.available} available")
         self.reserved += amount
         self.updated_at = utc_now()
 
@@ -63,8 +61,6 @@ class Balance(MutableModel):
 
     def debit(self, amount: Decimal) -> None:
         if amount > self.available:
-            raise ValueError(
-                f"Insufficient balance: need {amount}, available {self.available}"
-            )
+            raise ValueError(f"Insufficient balance: need {amount}, available {self.available}")
         self.current -= amount
         self.updated_at = utc_now()

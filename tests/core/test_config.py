@@ -21,14 +21,13 @@ max_orders_per_second/max_orders_per_minute weren't fields at all.
 
 from __future__ import annotations
 
-import os
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
 import yaml
 
-from src.core.config import RiskConfig, Settings, get_settings, override_settings, reset_settings
+from src.core.config import Settings, get_settings, override_settings, reset_settings
 from src.core.exceptions import ValidationError
 
 
@@ -44,7 +43,9 @@ def config_dir(tmp_path: Path) -> Path:
 
 
 class TestRiskYamlLoading:
-    def test_yaml_values_apply_when_no_env_override(self, config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_yaml_values_apply_when_no_env_override(
+        self, config_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.delenv("RISK_MAX_PORTFOLIO_RISK_PCT", raising=False)
         _write_yaml(
             config_dir / "risk.yaml",
@@ -63,7 +64,9 @@ class TestRiskYamlLoading:
         assert settings.risk.max_open_positions == 4
         assert settings.risk.circuit_breaker_cooldown_minutes == 45
 
-    def test_env_var_still_wins_over_yaml(self, config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_env_var_still_wins_over_yaml(
+        self, config_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("RISK_MAX_PORTFOLIO_RISK_PCT", "2.0")
         _write_yaml(config_dir / "risk.yaml", {"risk": {"max_portfolio_risk_pct": 0.75}})
 
@@ -226,9 +229,7 @@ class TestLoggingYamlLoading:
         assert settings.logging.file_name == "trading.log"  # unchanged default
         assert settings.logging.max_bytes == 52_428_800  # unchanged default
 
-    def test_default_logger_levels_suppress_the_four_noisy_loggers(
-        self, config_dir: Path
-    ) -> None:
+    def test_default_logger_levels_suppress_the_four_noisy_loggers(self, config_dir: Path) -> None:
         settings = Settings(_env_file=None)
         settings.load_yaml_overrides(config_dir=config_dir)
 
@@ -397,6 +398,7 @@ class TestExchangesYamlLoading:
         assert settings.bybit is None
         settings.load_yaml_overrides(config_dir=config_dir)  # must not raise
         assert settings.bybit is None
+
     """
     settings.binance/settings.bybit were declared as optional fields that
     nothing ever instantiated in the real get_settings() path -- only
@@ -419,9 +421,7 @@ class TestExchangesYamlLoading:
         assert settings.binance.api_key.get_secret_value() == "real_key"
         assert settings.bybit is None
 
-    def test_bybit_env_vars_populate_settings_bybit(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_bybit_env_vars_populate_settings_bybit(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("EXCHANGE_PROVIDER", "bybit")
         monkeypatch.setenv("BYBIT_API_KEY", "real_key")
         monkeypatch.setenv("BYBIT_API_SECRET", "real_secret")

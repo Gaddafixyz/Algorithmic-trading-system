@@ -22,14 +22,13 @@ from src.bootstrap.dependency_container import wire_container
 from src.bootstrap.lifecycle import LifecycleManager
 from src.core.config import get_settings
 from src.core.enums import Timeframe
-from src.market_data.feeds import MarketDataFeed
-from src.smart_money.confluence import ConfluenceWeights
-from src.strategy.orchestrator import StrategyOrchestrator
-from src.strategy.signal_engine import SMCSignalEngine
-from src.strategy.base_strategy import BaseStrategy
-from src.utils.profiling import timer
 from src.core.models import OHLCV
 from src.domain.signal import Signal
+from src.smart_money.confluence import ConfluenceWeights
+from src.strategy.base_strategy import BaseStrategy
+from src.strategy.orchestrator import StrategyOrchestrator
+from src.strategy.signal_engine import SMCSignalEngine
+from src.utils.profiling import timer
 
 if TYPE_CHECKING:
     from src.machine_learning.signal_filter import SignalFilter
@@ -53,15 +52,15 @@ class SMCStrategy(BaseStrategy):
         htf_timeframe: Timeframe | None = None,
         ltf_timeframe: Timeframe | None = None,
         min_score: float = 60.0,
-        signal_filter: "SignalFilter | None" = None,
-        candle_service: "CandleService | None" = None,
+        signal_filter: SignalFilter | None = None,
+        candle_service: CandleService | None = None,
         confluence_weights: ConfluenceWeights | None = None,
         swing_lookback: int | None = None,
         atr_period: int | None = None,
         ob_max_age_bars: int | None = None,
         fvg_min_size_atr_mult: float | None = None,
-        premium_zone: "Decimal | None" = None,
-        discount_zone: "Decimal | None" = None,
+        premium_zone: Decimal | None = None,
+        discount_zone: Decimal | None = None,
         rsi_period: int | None = None,
         ema_fast: int | None = None,
         ema_slow: int | None = None,
@@ -232,7 +231,9 @@ class SMCStrategy(BaseStrategy):
             htf_candles = self._htf_override
         elif self._htf_timeframe is not None and self._candle_service is not None:
             htf_candles = self._candle_service.get_candles(
-                symbol, self._htf_timeframe, limit=500,
+                symbol,
+                self._htf_timeframe,
+                limit=500,
             )
 
         ltf_candles: list[OHLCV] | None = None
@@ -240,7 +241,9 @@ class SMCStrategy(BaseStrategy):
             ltf_candles = self._ltf_override
         elif self._ltf_timeframe is not None and self._candle_service is not None:
             ltf_candles = self._candle_service.get_candles(
-                symbol, self._ltf_timeframe, limit=500,
+                symbol,
+                self._ltf_timeframe,
+                limit=500,
             )
 
         # candle_processing_latency (in orchestrator.py) times this whole
@@ -262,7 +265,9 @@ class SMCStrategy(BaseStrategy):
                 self._signals_ml_blocked += 1
                 logger.info(
                     "ML filter blocked %s %s signal (score=%.1f)",
-                    symbol, signal.direction, signal.score,
+                    symbol,
+                    signal.direction,
+                    signal.score,
                 )
                 return None
 
@@ -285,10 +290,11 @@ class SMCStrategy(BaseStrategy):
         }
 
 
-def build_strategy(settings: object, candle_service: "CandleService | None" = None) -> SMCStrategy:
+def build_strategy(settings: object, candle_service: CandleService | None = None) -> SMCStrategy:
     """Build the trading strategy from configuration."""
-    import yaml
     from pathlib import Path
+
+    import yaml
 
     config_path = Path("configs/strategy.yaml")
     if config_path.exists():
@@ -414,7 +420,8 @@ def _load_smc_indicator_config(cfg: dict) -> dict[str, Any]:
             logger.warning(
                 "strategy.yaml smc.premium_zone (%s) <= smc.discount_zone (%s) "
                 "— both must be in (0, 1) with premium > discount; using defaults for both.",
-                result["premium_zone"], result["discount_zone"],
+                result["premium_zone"],
+                result["discount_zone"],
             )
             del result["premium_zone"]
             del result["discount_zone"]
@@ -500,7 +507,7 @@ def _load_confluence_weights(weights_cfg: dict) -> ConfluenceWeights | None:
         return None
 
 
-def _build_signal_filter(ml_cfg: dict) -> "SignalFilter | None":
+def _build_signal_filter(ml_cfg: dict) -> SignalFilter | None:
     """
     Load the trained ML signal filter if enabled and its model file exists.
 
@@ -538,7 +545,9 @@ def _build_signal_filter(ml_cfg: dict) -> "SignalFilter | None":
         logger.info("ML signal filter loaded from %s: %r", model_path, sf)
         return sf
     except Exception as exc:
-        logger.warning("Failed to load ML signal filter from %s: %s — running WITHOUT it.", model_path, exc)
+        logger.warning(
+            "Failed to load ML signal filter from %s: %s — running WITHOUT it.", model_path, exc
+        )
         return None
 
 
@@ -550,8 +559,9 @@ def _load_min_atr_pct() -> float:
     Returns 0.0 (filter disabled, current default behavior) on any error
     or if the key/file is absent.
     """
-    import yaml
     from pathlib import Path
+
+    import yaml
 
     config_path = Path("configs/strategy.yaml")
     if not config_path.exists():
@@ -577,8 +587,9 @@ def _load_orchestrator_filter_config() -> dict[str, Any]:
     modules existed, fully implemented and unit-tested, with no caller
     anywhere in the strategy pipeline until this wiring.
     """
-    import yaml
     from pathlib import Path
+
+    import yaml
 
     defaults: dict[str, Any] = {
         "rsi_exhaustion_filter": False,

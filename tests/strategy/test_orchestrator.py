@@ -18,9 +18,8 @@ from src.core.events import (
     reset_event_bus,
     set_event_bus,
 )
-from src.domain.signal import Signal
-from src.core.exceptions import NoSignalError, SignalGenerationError
 from src.core.interfaces import IStrategy
+from src.domain.signal import Signal
 from src.market_data.cache import MarketDataCache
 from src.market_data.candles import CandleService
 from src.strategy.orchestrator import StrategyOrchestrator
@@ -37,9 +36,15 @@ def isolated_event_bus():
 
 def make_candle_event(symbol: str = "BTCUSDT", timeframe: str = "1h") -> CandleClosedEvent:
     return CandleClosedEvent(
-        source="test", symbol=symbol, timeframe=timeframe,
-        open=Decimal("100"), high=Decimal("101"), low=Decimal("99"), close=Decimal("100.5"),
-        volume=Decimal("1000"), candle_timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        source="test",
+        symbol=symbol,
+        timeframe=timeframe,
+        open=Decimal("100"),
+        high=Decimal("101"),
+        low=Decimal("99"),
+        close=Decimal("100.5"),
+        volume=Decimal("1000"),
+        candle_timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 
@@ -53,10 +58,18 @@ def make_signal(
     if generated_at is not None:
         kwargs["generated_at"] = generated_at
     return Signal(
-        strategy_id="test-strategy", symbol=symbol, timeframe=Timeframe.H1,
-        direction=SignalDirection.LONG, score=70.0, strength=SignalStrength.STRONG,
-        confidence=0.7, entry_price=Decimal("50000"), stop_loss=Decimal("49000"),
-        take_profit=Decimal("52000"), max_age_seconds=max_age_seconds, **kwargs,
+        strategy_id="test-strategy",
+        symbol=symbol,
+        timeframe=Timeframe.H1,
+        direction=SignalDirection.LONG,
+        score=70.0,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal("50000"),
+        stop_loss=Decimal("49000"),
+        take_profit=Decimal("52000"),
+        max_age_seconds=max_age_seconds,
+        **kwargs,
     )
 
 
@@ -91,9 +104,7 @@ class TestRegisterStrategy:
         orchestrator.register_strategy(make_strategy())
         assert orchestrator.stats["strategies"] == 1
 
-    def test_raises_on_duplicate_strategy_id(
-        self, orchestrator: StrategyOrchestrator
-    ) -> None:
+    def test_raises_on_duplicate_strategy_id(self, orchestrator: StrategyOrchestrator) -> None:
         orchestrator.register_strategy(make_strategy(strategy_id="dup"))
         with pytest.raises(ValueError, match="already registered"):
             orchestrator.register_strategy(make_strategy(strategy_id="dup"))
@@ -201,9 +212,7 @@ class TestSignalPublication:
         isolated_event_bus.subscribe(SignalGeneratedEvent, capture)
 
         signal = make_signal()
-        signal.metadata["open_fvgs"] = [
-            {"type": "bullish", "top": "50500", "bottom": "50300"}
-        ]
+        signal.metadata["open_fvgs"] = [{"type": "bullish", "top": "50500", "bottom": "50300"}]
         strategy = make_strategy(signal_to_return=signal)
         orchestrator.register_strategy(strategy)
         await orchestrator.start()
@@ -211,9 +220,7 @@ class TestSignalPublication:
         await orchestrator._on_candle_closed(make_candle_event())
 
         assert len(received) == 1
-        assert received[0].open_fvgs == [
-            {"type": "bullish", "top": "50500", "bottom": "50300"}
-        ]
+        assert received[0].open_fvgs == [{"type": "bullish", "top": "50500", "bottom": "50300"}]
 
     async def test_no_signal_returned_publishes_nothing(
         self, orchestrator: StrategyOrchestrator, isolated_event_bus: EventBus
@@ -299,14 +306,14 @@ class TestSpreadFiltering:
         assert orchestrator.stats["signals_generated"] == 1
         assert orchestrator.stats["signals_filtered_spread"] == 0
 
-    async def test_rejects_signal_when_spread_too_wide(
-        self, candle_service: AsyncMock
-    ) -> None:
+    async def test_rejects_signal_when_spread_too_wide(self, candle_service: AsyncMock) -> None:
         cache = MarketDataCache()
         # (110 - 100) / 100 * 100 = 10% spread
         cache.put_best_bid_ask("BTCUSDT", Decimal("100"), Decimal("110"))
         orchestrator = StrategyOrchestrator(
-            candle_service, market_data_cache=cache, max_spread_pct=0.05,
+            candle_service,
+            market_data_cache=cache,
+            max_spread_pct=0.05,
         )
 
         strategy = make_strategy(signal_to_return=make_signal())
@@ -323,7 +330,9 @@ class TestSpreadFiltering:
         cache = MarketDataCache()
         cache.put_best_bid_ask("BTCUSDT", Decimal("100"), Decimal("100.02"))
         orchestrator = StrategyOrchestrator(
-            candle_service, market_data_cache=cache, max_spread_pct=0.05,
+            candle_service,
+            market_data_cache=cache,
+            max_spread_pct=0.05,
         )
 
         strategy = make_strategy(signal_to_return=make_signal())
@@ -334,12 +343,12 @@ class TestSpreadFiltering:
         assert orchestrator.stats["signals_generated"] == 1
         assert orchestrator.stats["signals_filtered_spread"] == 0
 
-    async def test_no_op_when_no_cached_quote_for_symbol(
-        self, candle_service: AsyncMock
-    ) -> None:
+    async def test_no_op_when_no_cached_quote_for_symbol(self, candle_service: AsyncMock) -> None:
         cache = MarketDataCache()  # nothing cached for BTCUSDT
         orchestrator = StrategyOrchestrator(
-            candle_service, market_data_cache=cache, max_spread_pct=0.05,
+            candle_service,
+            market_data_cache=cache,
+            max_spread_pct=0.05,
         )
 
         strategy = make_strategy(signal_to_return=make_signal())
@@ -416,7 +425,9 @@ class TestKillZoneFiltering:
     ) -> None:
         self._freeze(monkeypatch, 18, 0)  # NY Lunch KZ (session_score 0.4)
         orchestrator = StrategyOrchestrator(
-            candle_service, kill_zone_filter=True, require_kill_zone=False,
+            candle_service,
+            kill_zone_filter=True,
+            require_kill_zone=False,
         )
 
         strategy = make_strategy(signal_to_return=make_signal())
@@ -444,7 +455,8 @@ class TestSignalExpiry:
         isolated_event_bus.subscribe(SignalGeneratedEvent, generated_received.append)
 
         stale_signal = make_signal(
-            generated_at=datetime(2020, 1, 1, tzinfo=UTC), max_age_seconds=60.0,
+            generated_at=datetime(2020, 1, 1, tzinfo=UTC),
+            max_age_seconds=60.0,
         )
         strategy = make_strategy(signal_to_return=stale_signal)
         orchestrator.register_strategy(strategy)

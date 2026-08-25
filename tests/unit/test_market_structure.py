@@ -5,12 +5,16 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import pytest
-
 from src.core.enums import MarketStructure
 from src.core.models import OHLCV
 from src.smart_money.bos import BOSEvent, detect_bos
-from src.smart_money.choch import CHoCHEvent, detect_choch
+from src.smart_money.choch import detect_choch
+from src.smart_money.liquidity import (
+    LiquidityPool,
+    identify_equal_highs,
+    identify_equal_lows,
+    identify_swing_liquidity,
+)
 from src.smart_money.market_structure import (
     MarketStructureState,
     SwingPoint,
@@ -20,16 +24,7 @@ from src.smart_money.market_structure import (
 )
 from src.smart_money.order_blocks import (
     OrderBlock,
-    get_active_order_blocks,
     identify_order_blocks,
-    update_order_block_mitigation,
-)
-from src.smart_money.liquidity import (
-    LiquidityPool,
-    identify_equal_highs,
-    identify_equal_lows,
-    identify_swing_liquidity,
-    update_liquidity_sweeps,
 )
 
 
@@ -65,7 +60,7 @@ class TestSwingDetection:
         candles = [
             c(0, 105, 107, 103, 104),
             c(1, 104, 106, 102, 103),
-            c(2, 102, 104, 95, 96),   # pivot low
+            c(2, 102, 104, 95, 96),  # pivot low
             c(3, 96, 100, 95, 99),
             c(4, 99, 103, 98, 102),
         ]
@@ -95,7 +90,7 @@ class TestBOS:
     def _make_bullish_bos_series(self):
         """Series where price breaks a previous swing high."""
         return [
-            c(0, 100, 105, 98, 103),   # base
+            c(0, 100, 105, 98, 103),  # base
             c(1, 103, 108, 101, 107),  # swing high at 108
             c(2, 107, 109, 104, 106),
             c(3, 106, 107, 103, 104),
@@ -147,7 +142,6 @@ class TestCHoCH:
 
     def test_choch_requires_structure(self):
         """No CHoCH on unknown structure."""
-        from src.smart_money.market_structure import MarketStructureState
         structure = MarketStructureState()
         structure.structure = MarketStructure.UNKNOWN
         candles = [c(i, 100, 105, 98, 102) for i in range(10)]
@@ -160,9 +154,9 @@ class TestOrderBlocks:
         """Last bearish candle before bullish BOS becomes bullish OB."""
         candles = [
             c(0, 102, 105, 100, 103),
-            c(1, 103, 107, 101, 106),   # swing high
-            c(2, 106, 107, 101, 102),   # bearish candle → potential bullish OB
-            c(3, 102, 115, 101, 113),   # BOS above 107
+            c(1, 103, 107, 101, 106),  # swing high
+            c(2, 106, 107, 101, 102),  # bearish candle → potential bullish OB
+            c(3, 102, 115, 101, 113),  # BOS above 107
         ]
         structure = detect_market_structure(candles, lookback=1)
         bos_events = detect_bos(candles, structure.swing_highs, structure.swing_lows)
@@ -170,12 +164,12 @@ class TestOrderBlocks:
         if bos_events:
             obs = identify_order_blocks(candles, bos_events, max_lookback=3)
             from src.core.enums import OrderBlockType
+
             bullish = [ob for ob in obs if ob.ob_type == OrderBlockType.BULLISH]
             assert len(bullish) >= 0  # May find OB
 
     def test_ob_valid_within_max_age(self):
         from src.core.enums import OrderBlockType
-        from src.smart_money.bos import BOSEvent
         from src.smart_money.market_structure import SwingPoint
 
         swing = SwingPoint(
@@ -202,18 +196,21 @@ class TestOrderBlocks:
             timestamp=ts(2),
             bos_event=bos,
         )
-        assert ob.is_valid(50)    # 50 bars later, within max age
+        assert ob.is_valid(50)  # 50 bars later, within max age
         assert not ob.is_valid(200)  # 200 bars later, too old
 
     def test_ob_mitigation_by_price(self):
         from src.core.enums import OrderBlockType
-        from src.smart_money.bos import BOSEvent
         from src.smart_money.market_structure import SwingPoint
 
         swing = SwingPoint(price=Decimal("105"), timestamp=ts(0), bar_index=0, is_high=True)
         bos = BOSEvent(
-            direction="bullish", broken_price=Decimal("105"), break_candle_index=2,
-            break_price=Decimal("113"), swing_point=swing, timestamp=ts(2),
+            direction="bullish",
+            broken_price=Decimal("105"),
+            break_candle_index=2,
+            break_price=Decimal("113"),
+            swing_point=swing,
+            timestamp=ts(2),
         )
         ob = OrderBlock(
             ob_type=OrderBlockType.BULLISH,
@@ -259,6 +256,7 @@ class TestLiquidity:
 
     def test_liquidity_sweep_detected(self):
         from src.core.enums import LiquidityType
+
         pool = LiquidityPool(
             liq_type=LiquidityType.SWING_HIGH,
             price=Decimal("110"),
@@ -275,6 +273,7 @@ class TestLiquidity:
 
     def test_no_sweep_when_price_closes_above(self):
         from src.core.enums import LiquidityType
+
         pool = LiquidityPool(
             liq_type=LiquidityType.SWING_HIGH,
             price=Decimal("110"),

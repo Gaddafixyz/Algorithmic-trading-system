@@ -76,9 +76,7 @@ class TestFindByStrategy:
 
 
 class TestFindBySymbol:
-    async def test_returns_only_trades_for_the_given_symbol(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_returns_only_trades_for_the_given_symbol(self, db_session: AsyncSession) -> None:
         repo = TradeRepository(db_session)
         await repo.save_trade(make_trade(symbol="BTCUSDT", position_id="p1"))
         await repo.save_trade(make_trade(symbol="ETHUSDT", position_id="p2"))

@@ -21,7 +21,11 @@ from src.core.enums import PositionSide
 from src.domain.portfolio import Portfolio
 from src.domain.position import Position
 from src.risk.exposure import CorrelationTracker
-from src.risk.portfolio_risk import correlation_adjusted_size, portfolio_risk_report, portfolio_var_cvar
+from src.risk.portfolio_risk import (
+    correlation_adjusted_size,
+    portfolio_risk_report,
+    portfolio_var_cvar,
+)
 
 
 def make_position(symbol: str, side: PositionSide, qty: str, entry: str, mark: str) -> Position:
@@ -197,7 +201,7 @@ class TestCorrelationAdjustedSizeWorstCorrelationGuard:
         tracker = CorrelationTracker(symbols=["BTCUSDT", "ETHUSDT"], window=20)
         btc_prices = [100.0, 101.0, 100.0, 101.0, 100.0, 101.0]
         eth_prices = [50.0, 49.0, 51.0, 48.0, 52.0, 47.0]
-        for b, e in zip(btc_prices, eth_prices):
+        for b, e in zip(btc_prices, eth_prices, strict=False):
             tracker.update("BTCUSDT", b)
             tracker.update("ETHUSDT", e)
 
@@ -237,7 +241,7 @@ class TestCorrelationAdjustedSizeWorstCorrelationGuard:
         # series constructed to be (numerically) uncorrelated with it.
         btc_prices = [100.0, 105.0, 95.0, 102.0, 98.0, 103.0, 97.0]
         eth_prices = [50.0, 50.5, 49.5, 50.2, 49.8, 50.5, 49.4]
-        for b, e in zip(btc_prices, eth_prices):
+        for b, e in zip(btc_prices, eth_prices, strict=False):
             tracker.update("BTCUSDT", b)
             tracker.update("ETHUSDT", e)
 

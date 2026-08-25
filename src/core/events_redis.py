@@ -37,9 +37,9 @@ Usage::
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from src.core.events import BaseEvent, EventBus
 
@@ -113,7 +113,9 @@ class RedisEventBus(EventBus):
             self._mirror_errors += 1
             logger.warning(
                 "RedisEventBus: failed to mirror %s (error #%d): %s",
-                event.event_type, self._mirror_errors, exc,
+                event.event_type,
+                self._mirror_errors,
+                exc,
             )
 
     async def close(self) -> None:

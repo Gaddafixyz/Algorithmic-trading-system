@@ -20,7 +20,10 @@ from src.smart_money.order_blocks import (
 
 def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
         volume=Decimal("100"),
         timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=index),
     )
@@ -28,24 +31,35 @@ def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
 
 def make_bos(direction: str, break_candle_index: int) -> BOSEvent:
     swing = SwingPoint(
-        price=Decimal("100"), timestamp=datetime(2024, 1, 1, tzinfo=UTC),
-        bar_index=0, is_high=(direction == "bearish"),
+        price=Decimal("100"),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        bar_index=0,
+        is_high=(direction == "bearish"),
     )
     return BOSEvent(
-        direction=direction, broken_price=Decimal("100"),
-        break_candle_index=break_candle_index, break_price=Decimal("100"),
-        swing_point=swing, timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        direction=direction,
+        broken_price=Decimal("100"),
+        break_candle_index=break_candle_index,
+        break_price=Decimal("100"),
+        swing_point=swing,
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 
 def make_ob(
     ob_type: OrderBlockType = OrderBlockType.BULLISH,
-    top: str = "100", bottom: str = "98", bar_index: int = 5,
+    top: str = "100",
+    bottom: str = "98",
+    bar_index: int = 5,
 ) -> OrderBlock:
     return OrderBlock(
-        ob_type=ob_type, top=Decimal(top), bottom=Decimal(bottom),
-        origin_high=Decimal(top), origin_low=Decimal(bottom),
-        bar_index=bar_index, timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        ob_type=ob_type,
+        top=Decimal(top),
+        bottom=Decimal(bottom),
+        origin_high=Decimal(top),
+        origin_low=Decimal(bottom),
+        bar_index=bar_index,
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
         bos_event=make_bos("bullish" if ob_type == OrderBlockType.BULLISH else "bearish", 10),
     )
 
@@ -167,16 +181,16 @@ class TestCheckMitigationBearish:
 class TestIdentifyOrderBlocksBullish:
     def test_finds_the_last_bearish_candle_before_a_bullish_bos(self) -> None:
         candles = [
-            candle("100", "101", "99", "99.5", 0),   # bearish (close < open)
+            candle("100", "101", "99", "99.5", 0),  # bearish (close < open)
             candle("99.5", "100.5", "99", "100", 1),  # bullish
-            candle("100", "108", "99.8", "107", 2),   # the impulsive move
+            candle("100", "108", "99.8", "107", 2),  # the impulsive move
         ]
         bos = make_bos("bullish", break_candle_index=2)
         result = identify_order_blocks(candles, [bos])
         assert len(result) == 1
         assert result[0].ob_type == OrderBlockType.BULLISH
         assert result[0].bar_index == 0  # the bearish candle
-        assert result[0].top == Decimal("100")   # max(open, close)
+        assert result[0].top == Decimal("100")  # max(open, close)
         assert result[0].bottom == Decimal("99.5")  # min(open, close)
 
     def test_no_bearish_candle_found_within_lookback_produces_nothing(self) -> None:
@@ -195,8 +209,8 @@ class TestIdentifyOrderBlocksBearish:
     def test_finds_the_last_bullish_candle_before_a_bearish_bos(self) -> None:
         candles = [
             candle("99", "101", "98.5", "100.5", 0),  # bullish (close > open)
-            candle("100.5", "101", "99", "99.5", 1),   # bearish
-            candle("99.5", "100", "92", "93", 2),      # the impulsive move down
+            candle("100.5", "101", "99", "99.5", 1),  # bearish
+            candle("99.5", "100", "92", "93", 2),  # the impulsive move down
         ]
         bos = make_bos("bearish", break_candle_index=2)
         result = identify_order_blocks(candles, [bos])
@@ -210,10 +224,10 @@ class TestIdentifyOrderBlocksLookbackWindow:
         # The only bearish candle is 3 bars before the BOS, but
         # max_lookback=1 restricts the search to 1 bar back.
         candles = [
-            candle("100", "101", "99", "99.5", 0),    # bearish, but too far back
+            candle("100", "101", "99", "99.5", 0),  # bearish, but too far back
             candle("99.5", "100.5", "99", "100", 1),  # bullish
             candle("100", "100.8", "99.8", "100.5", 2),  # bullish
-            candle("100.5", "108", "100.3", "107", 3),   # the BOS move
+            candle("100.5", "108", "100.3", "107", 3),  # the BOS move
         ]
         bos = make_bos("bullish", break_candle_index=3)
         result = identify_order_blocks(candles, [bos], max_lookback=1)
@@ -223,7 +237,7 @@ class TestIdentifyOrderBlocksLookbackWindow:
 class TestIdentifyOrderBlocksDeduplication:
     def test_two_bos_events_pointing_to_the_same_ob_candle_produce_one_ob(self) -> None:
         candles = [
-            candle("100", "101", "99", "99.5", 0),   # bearish OB candle
+            candle("100", "101", "99", "99.5", 0),  # bearish OB candle
             candle("99.5", "100.5", "99", "100", 1),
             candle("100", "108", "99.8", "107", 2),
             candle("107", "115", "106.8", "114", 3),
@@ -260,7 +274,7 @@ class TestUpdateOrderBlockMitigation:
         candles = [
             candle("100", "101", "99", "100", 0),
             candle("100.5", "101", "100.2", "100.8", 1),  # low=100.2 > 100: not yet mitigated
-            candle("100.5", "101", "99", "99.5", 2),      # low=99 <= 100 -> mitigated here
+            candle("100.5", "101", "99", "99.5", 2),  # low=99 <= 100 -> mitigated here
         ]
         update_order_block_mitigation([ob], candles)
         assert ob.is_mitigated is True
@@ -270,8 +284,8 @@ class TestUpdateOrderBlockMitigation:
         ob = make_ob(OrderBlockType.BULLISH, top="102", bottom="98", bar_index=0)
         candles = [
             candle("100", "101", "99", "100", 0),
-            candle("100", "101", "99", "99.5", 1),   # mitigates here first
-            candle("100", "101", "50", "60", 2),     # would also mitigate, must not overwrite
+            candle("100", "101", "99", "99.5", 1),  # mitigates here first
+            candle("100", "101", "50", "60", 2),  # would also mitigate, must not overwrite
         ]
         update_order_block_mitigation([ob], candles)
         assert ob.mitigation_bar_index == 1
@@ -288,7 +302,7 @@ class TestUpdateOrderBlockMitigation:
         ob = make_ob(OrderBlockType.BULLISH, top="102", bottom="98", bar_index=0)  # 50% = 100
         candles = [
             candle("100", "101", "99", "100", 0),
-            candle("100", "101", "50", "60", 1),          # would mitigate but skipped by start_bar
+            candle("100", "101", "50", "60", 1),  # would mitigate but skipped by start_bar
             candle("100.5", "101", "100.2", "100.8", 2),  # low=100.2 > 100: genuinely no mitigation
         ]
         update_order_block_mitigation([ob], candles, start_bar=2)
@@ -321,5 +335,6 @@ class TestGetActiveOrderBlocks:
     def test_none_max_age_bars_matches_default(self) -> None:
         ob = make_ob(bar_index=0)
         current = SMC_OB_MAX_AGE_BARS + 100
-        assert get_active_order_blocks([ob], current, max_age_bars=None) == \
-            get_active_order_blocks([ob], current)
+        assert get_active_order_blocks([ob], current, max_age_bars=None) == get_active_order_blocks(
+            [ob], current
+        )

@@ -49,7 +49,5 @@ class Notifier:
         entry = data.get("entry_price", "?")
         exit_p = data.get("exit_price", "?")
         return (
-            f"📊 Trade Closed: {symbol} {side}\n"
-            f"Entry: {entry} → Exit: {exit_p}\n"
-            f"PnL: {pnl}"
+            f"📊 Trade Closed: {symbol} {side}\n" f"Entry: {entry} → Exit: {exit_p}\n" f"PnL: {pnl}"
         )

@@ -13,8 +13,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from src.core.enums import AlertSeverity
 from src.monitoring.alerts import AlertRule, build_standard_alerts
 
@@ -40,15 +38,19 @@ class _FakeRiskManager:
 class TestAlertRuleCooldown:
     def test_never_fired_is_cooled_down(self) -> None:
         rule = AlertRule(
-            name="x", severity=AlertSeverity.WARNING,
-            check_fn=lambda: True, message_fn=lambda: "x",
+            name="x",
+            severity=AlertSeverity.WARNING,
+            check_fn=lambda: True,
+            message_fn=lambda: "x",
         )
         assert rule.is_cooled_down() is True
 
     def test_recently_fired_is_not_cooled_down(self) -> None:
         rule = AlertRule(
-            name="x", severity=AlertSeverity.WARNING,
-            check_fn=lambda: True, message_fn=lambda: "x",
+            name="x",
+            severity=AlertSeverity.WARNING,
+            check_fn=lambda: True,
+            message_fn=lambda: "x",
             cooldown_minutes=30,
         )
         rule.last_fired = datetime.now(tz=UTC)
@@ -56,8 +58,10 @@ class TestAlertRuleCooldown:
 
     def test_cooldown_elapsed_is_cooled_down_again(self) -> None:
         rule = AlertRule(
-            name="x", severity=AlertSeverity.WARNING,
-            check_fn=lambda: True, message_fn=lambda: "x",
+            name="x",
+            severity=AlertSeverity.WARNING,
+            check_fn=lambda: True,
+            message_fn=lambda: "x",
             cooldown_minutes=30,
         )
         rule.last_fired = datetime.now(tz=UTC) - timedelta(minutes=31)
@@ -130,8 +134,7 @@ class TestBuildStandardAlertsConfigurable:
     def test_explicit_cooldown_overrides_all_three_rules_uniformly(self) -> None:
         rm = _FakeRiskManager(equity=1000, daily_pnl=0)
         rules = {
-            r.name: r
-            for r in build_standard_alerts(rm, _FakeCircuitBreaker(), cooldown_minutes=15)
+            r.name: r for r in build_standard_alerts(rm, _FakeCircuitBreaker(), cooldown_minutes=15)
         }
         assert rules["circuit_breaker_open"].cooldown_minutes == 15
         assert rules["daily_loss_high"].cooldown_minutes == 15

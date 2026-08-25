@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any
 
 from src.core.events import OrderFilledEvent, get_event_bus
-from src.domain.order import Fill, Order
+from src.domain.order import Fill
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class FillEngine:
 
         client_id = str(order_data.get("c", ""))
         filled_qty = Decimal(str(order_data.get("l", "0")))  # Last filled qty
-        fill_price = Decimal(str(order_data.get("L", "0")))   # Last fill price
+        fill_price = Decimal(str(order_data.get("L", "0")))  # Last fill price
         fee = Decimal(str(order_data.get("n", "0")))
         fee_asset = str(order_data.get("N", "USDT"))
         is_maker = order_data.get("m", False)
@@ -70,19 +70,25 @@ class FillEngine:
             if hasattr(self._orders, "persist_order"):
                 await self._orders.persist_order(order)
 
-            await self._bus.publish(OrderFilledEvent(
-                source="fill_engine",
-                order_id=order.order_id,
-                symbol=order.symbol,
-                side=order.side,
-                filled_quantity=filled_qty,
-                fill_price=fill_price,
-                fee=fee,
-                fee_asset=fee_asset,
-                is_partial=not order.is_terminal,
-            ))
+            await self._bus.publish(
+                OrderFilledEvent(
+                    source="fill_engine",
+                    order_id=order.order_id,
+                    symbol=order.symbol,
+                    side=order.side,
+                    filled_quantity=filled_qty,
+                    fill_price=fill_price,
+                    fee=fee,
+                    fee_asset=fee_asset,
+                    is_partial=not order.is_terminal,
+                )
+            )
 
             logger.info(
                 "Fill processed: %s qty=%s @%s fee=%s %s",
-                order.symbol, filled_qty, fill_price, fee, fee_asset,
+                order.symbol,
+                filled_qty,
+                fill_price,
+                fee,
+                fee_asset,
             )

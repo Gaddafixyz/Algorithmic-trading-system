@@ -15,7 +15,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -72,7 +72,9 @@ class TestRecordMetricsSnapshot:
 
         app.db.session.assert_not_called()
 
-    async def test_persists_snapshot_when_db_connected(self, app: Application, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_persists_snapshot_when_db_connected(
+        self, app: Application, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         app.db.is_connected = True
         fake_session = MagicMock()
 
@@ -113,7 +115,9 @@ class TestRecordMetricsSnapshot:
         assert snapshot.open_positions == 1
 
     async def test_gauge_exception_does_not_prevent_persistence_attempt(
-        self, app: Application, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # risk_manager.stats missing the expected key -> gauge block raises,
         # is caught, and persistence should still be attempted afterward.
@@ -144,7 +148,9 @@ class TestRecordMetricsSnapshot:
         assert called["save"] is True
 
     async def test_persistence_exception_is_swallowed(
-        self, app: Application, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         app.db.is_connected = True
 

@@ -8,21 +8,35 @@ from src.exchange.binance.exchange_info import parse_instruments
 
 
 def make_symbol_entry(
-    symbol: str = "BTCUSDT", contract_type: str = "PERPETUAL", status: str = "TRADING",
-    base: str = "BTC", quote: str = "USDT",
-    tick_size: str = "0.01", min_price: str = "0.01", max_price: str = "1000000",
-    step_size: str = "0.001", min_qty: str = "0.001", max_qty: str = "1000",
-    min_notional: str = "5", leverage: int = 75,
+    symbol: str = "BTCUSDT",
+    contract_type: str = "PERPETUAL",
+    status: str = "TRADING",
+    base: str = "BTC",
+    quote: str = "USDT",
+    tick_size: str = "0.01",
+    min_price: str = "0.01",
+    max_price: str = "1000000",
+    step_size: str = "0.001",
+    min_qty: str = "0.001",
+    max_qty: str = "1000",
+    min_notional: str = "5",
+    leverage: int = 75,
 ) -> dict:
     return {
-        "symbol": symbol, "contractType": contract_type, "status": status,
-        "baseAsset": base, "quoteAsset": quote,
+        "symbol": symbol,
+        "contractType": contract_type,
+        "status": status,
+        "baseAsset": base,
+        "quoteAsset": quote,
         "leverageBracket": [{"initialLeverage": leverage}],
         "filters": [
-            {"filterType": "PRICE_FILTER", "tickSize": tick_size,
-             "minPrice": min_price, "maxPrice": max_price},
-            {"filterType": "LOT_SIZE", "stepSize": step_size,
-             "minQty": min_qty, "maxQty": max_qty},
+            {
+                "filterType": "PRICE_FILTER",
+                "tickSize": tick_size,
+                "minPrice": min_price,
+                "maxPrice": max_price,
+            },
+            {"filterType": "LOT_SIZE", "stepSize": step_size, "minQty": min_qty, "maxQty": max_qty},
             {"filterType": "MIN_NOTIONAL", "notional": min_notional},
         ],
     }
@@ -45,10 +59,12 @@ class TestFiltering:
         assert result == {}
 
     def test_processes_multiple_symbols(self) -> None:
-        info = {"symbols": [
-            make_symbol_entry(symbol="BTCUSDT"),
-            make_symbol_entry(symbol="ETHUSDT", base="ETH"),
-        ]}
+        info = {
+            "symbols": [
+                make_symbol_entry(symbol="BTCUSDT"),
+                make_symbol_entry(symbol="ETHUSDT", base="ETH"),
+            ]
+        }
         result = parse_instruments(info)
         assert set(result.keys()) == {"BTCUSDT", "ETHUSDT"}
 
@@ -90,10 +106,18 @@ class TestFilterExtraction:
 
 class TestDefaults:
     def test_missing_filters_entirely_uses_documented_defaults(self) -> None:
-        info = {"symbols": [{
-            "symbol": "BTCUSDT", "contractType": "PERPETUAL", "status": "TRADING",
-            "baseAsset": "BTC", "quoteAsset": "USDT", "filters": [],
-        }]}
+        info = {
+            "symbols": [
+                {
+                    "symbol": "BTCUSDT",
+                    "contractType": "PERPETUAL",
+                    "status": "TRADING",
+                    "baseAsset": "BTC",
+                    "quoteAsset": "USDT",
+                    "filters": [],
+                }
+            ]
+        }
         instrument = parse_instruments(info)["BTCUSDT"]
         assert instrument.tick_size == Decimal("0.01")
         assert instrument.min_price == Decimal("0")
@@ -104,10 +128,18 @@ class TestDefaults:
         assert instrument.min_notional == Decimal("5")
 
     def test_missing_leverage_bracket_defaults_to_20(self) -> None:
-        info = {"symbols": [{
-            "symbol": "BTCUSDT", "contractType": "PERPETUAL", "status": "TRADING",
-            "baseAsset": "BTC", "quoteAsset": "USDT", "filters": [],
-        }]}
+        info = {
+            "symbols": [
+                {
+                    "symbol": "BTCUSDT",
+                    "contractType": "PERPETUAL",
+                    "status": "TRADING",
+                    "baseAsset": "BTC",
+                    "quoteAsset": "USDT",
+                    "filters": [],
+                }
+            ]
+        }
         instrument = parse_instruments(info)["BTCUSDT"]
         assert instrument.max_leverage == 20
 
@@ -129,7 +161,9 @@ class TestDefaultLeverageCap:
 class TestPerSymbolErrorIsolation:
     def test_a_malformed_symbol_does_not_prevent_parsing_the_rest(self) -> None:
         malformed = {
-            "symbol": "BROKEN", "contractType": "PERPETUAL", "status": "TRADING",
+            "symbol": "BROKEN",
+            "contractType": "PERPETUAL",
+            "status": "TRADING",
             # Missing baseAsset/quoteAsset entirely -> KeyError inside the try block.
             "filters": [],
         }

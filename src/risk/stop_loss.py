@@ -5,7 +5,6 @@ from __future__ import annotations
 from decimal import Decimal
 
 from src.core.enums import SignalDirection
-from src.domain.signal import Signal
 
 
 def atr_stop_loss(

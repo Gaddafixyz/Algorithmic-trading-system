@@ -20,15 +20,12 @@ from decimal import Decimal
 from typing import Any
 
 from src.analytics.performance import PerformanceReport, calculate_performance
-from src.backtesting.simulator import BacktestBroker, FundingRate, PartialFillModel
 from src.backtesting.commission import CommissionModel
+from src.backtesting.simulator import BacktestBroker, FundingRate, PartialFillModel
 from src.backtesting.slippage import SlippageModel
 from src.core.enums import Timeframe
 from src.core.models import OHLCV
-from src.domain.portfolio import Portfolio
-from src.domain.signal import Signal
 from src.domain.trade import Trade
-from src.risk.risk_manager import RiskManager
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +39,7 @@ class BacktestConfig:
     slippage_model: SlippageModel | None = None
     max_open_positions: int = 5
     risk_pct_per_trade: Decimal = Decimal("1.0")
-    use_limit_entries: bool = False   # Market entries for simplicity
+    use_limit_entries: bool = False  # Market entries for simplicity
     # Historical funding rates to accrue on open positions
     funding_rates: list[FundingRate] | None = None
     # Partial-fill model; set ``enabled=False`` to restore legacy behaviour
@@ -201,7 +198,7 @@ class BacktestEngine:
         # Main backtest loop: O(N) time complexity
         for i in range(50, len(candles)):
             # STRICT: only expose candles[0..i] to strategy — no future data
-            visible_candles = candles[:i + 1]
+            visible_candles = candles[: i + 1]
 
             if supports_htf and htf_candles and htf_duration is not None:
                 current_time = candles[i].timestamp
@@ -251,7 +248,8 @@ class BacktestEngine:
 
         logger.info(
             "Backtest complete: %s %s | %d candles | %d trades | PnL=%s",
-            symbol, timeframe.value,
+            symbol,
+            timeframe.value,
             result.candles_processed,
             len(result.trades),
             result.performance.total_net_pnl if result.performance else "N/A",

@@ -4,21 +4,19 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
-
+from src.core.enums import CircuitBreakerState, PositionSide, SignalDirection
+from src.domain.position import Position
 from src.risk.circuit_breaker import CircuitBreaker
 from src.risk.drawdown import DrawdownTracker
-from src.risk.position_sizing import calculate_position_size, kelly_position_size
-from src.risk.stop_loss import atr_stop_loss, validate_stop_risk
-from src.risk.take_profit import fixed_rr_take_profit, partial_take_profit_levels
-from src.strategy.exit import calculate_trailing_stop, should_move_to_breakeven
 from src.risk.margin import (
     initial_margin,
     liquidation_price_long,
     liquidation_price_short,
 )
-from src.core.enums import CircuitBreakerState, PositionSide, SignalDirection
-from src.domain.position import Position
+from src.risk.position_sizing import calculate_position_size, kelly_position_size
+from src.risk.stop_loss import atr_stop_loss, validate_stop_risk
+from src.risk.take_profit import fixed_rr_take_profit, partial_take_profit_levels
+from src.strategy.exit import calculate_trailing_stop, should_move_to_breakeven
 
 
 def make_position(
@@ -64,13 +62,21 @@ class TestPositionSizing:
         assert qty == Decimal("0")
 
     def test_higher_risk_pct_larger_size(self):
-        small = calculate_position_size(Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("49000"))
-        large = calculate_position_size(Decimal("10000"), Decimal("2"), Decimal("50000"), Decimal("49000"))
+        small = calculate_position_size(
+            Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("49000")
+        )
+        large = calculate_position_size(
+            Decimal("10000"), Decimal("2"), Decimal("50000"), Decimal("49000")
+        )
         assert large > small
 
     def test_wider_stop_smaller_size(self):
-        tight = calculate_position_size(Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("49500"))
-        wide = calculate_position_size(Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("48000"))
+        tight = calculate_position_size(
+            Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("49500")
+        )
+        wide = calculate_position_size(
+            Decimal("10000"), Decimal("1"), Decimal("50000"), Decimal("48000")
+        )
         assert tight > wide
 
     def test_kelly_basic(self):

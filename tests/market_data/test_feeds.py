@@ -54,20 +54,27 @@ def feed(ws_client: MagicMock, candle_service: AsyncMock, cache: MagicMock) -> M
 
 class TestSubscribeMarkPrice:
     async def test_subscribes_to_mark_price_stream_by_default(
-        self, feed: MarketDataFeed, ws_client: MagicMock,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
     ) -> None:
         await feed.subscribe("btcusdt", [Timeframe.H1])
         ws_client.subscribe_mark_price.assert_called_once()
         assert ws_client.subscribe_mark_price.call_args.args[0] == "BTCUSDT"
 
     async def test_can_be_disabled(
-        self, feed: MarketDataFeed, ws_client: MagicMock,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
     ) -> None:
         await feed.subscribe("BTCUSDT", [Timeframe.H1], subscribe_mark_price=False)
         ws_client.subscribe_mark_price.assert_not_called()
 
     async def test_mark_price_handler_publishes_event_with_full_payload(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[MarkPriceUpdatedEvent] = []
 
@@ -79,11 +86,17 @@ class TestSubscribeMarkPrice:
         await feed.subscribe("BTCUSDT", [Timeframe.H1])
         handler = ws_client.subscribe_mark_price.call_args.args[1]
 
-        await handler({
-            "e": "markPriceUpdate", "s": "BTCUSDT",
-            "p": "50123.45", "P": "50120.00", "i": "50100.00",
-            "r": "0.00010000", "T": 1_700_000_000_000,
-        })
+        await handler(
+            {
+                "e": "markPriceUpdate",
+                "s": "BTCUSDT",
+                "p": "50123.45",
+                "P": "50120.00",
+                "i": "50100.00",
+                "r": "0.00010000",
+                "T": 1_700_000_000_000,
+            }
+        )
 
         assert len(received) == 1
         event = received[0]
@@ -94,7 +107,10 @@ class TestSubscribeMarkPrice:
         assert event.next_funding_time is not None
 
     async def test_mark_price_handler_tolerates_missing_optional_fields(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[MarkPriceUpdatedEvent] = []
 
@@ -116,7 +132,10 @@ class TestSubscribeMarkPrice:
         assert event.next_funding_time is None
 
     async def test_mark_price_handler_logs_and_skips_when_price_missing(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[MarkPriceUpdatedEvent] = []
 
@@ -135,7 +154,10 @@ class TestSubscribeMarkPrice:
 
 class TestSubscribeTicks:
     async def test_tick_stream_still_wired_independently_of_mark_price(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[TickReceivedEvent] = []
 
@@ -161,20 +183,27 @@ class TestSubscribeBookTicker:
     """
 
     async def test_subscribes_to_book_ticker_stream_by_default(
-        self, feed: MarketDataFeed, ws_client: MagicMock,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
     ) -> None:
         await feed.subscribe("btcusdt", [Timeframe.H1])
         ws_client.subscribe_book_ticker.assert_called_once()
         assert ws_client.subscribe_book_ticker.call_args.args[0] == "BTCUSDT"
 
     async def test_can_be_disabled(
-        self, feed: MarketDataFeed, ws_client: MagicMock,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
     ) -> None:
         await feed.subscribe("BTCUSDT", [Timeframe.H1], subscribe_book_ticker=False)
         ws_client.subscribe_book_ticker.assert_not_called()
 
     async def test_handler_publishes_best_bid_ask_and_spread(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[OrderBookUpdatedEvent] = []
 
@@ -196,7 +225,10 @@ class TestSubscribeBookTicker:
         assert event.spread == Decimal("0.40")
 
     async def test_handler_updates_market_data_cache(
-        self, feed: MarketDataFeed, ws_client: MagicMock, cache: MagicMock,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        cache: MagicMock,
     ) -> None:
         """
         Regression coverage: OrderBookUpdatedEvent was published but nothing
@@ -214,7 +246,10 @@ class TestSubscribeBookTicker:
         )
 
     async def test_handler_skips_when_bid_side_missing(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[OrderBookUpdatedEvent] = []
         isolated_event_bus.subscribe(OrderBookUpdatedEvent, received.append)
@@ -236,7 +271,10 @@ class TestFundingRateEvent:
     """
 
     async def test_first_funding_rate_seen_publishes_event(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[FundingRateEvent] = []
         isolated_event_bus.subscribe(FundingRateEvent, received.append)
@@ -244,17 +282,25 @@ class TestFundingRateEvent:
         await feed.subscribe("BTCUSDT", [Timeframe.H1])
         handler = ws_client.subscribe_mark_price.call_args.args[1]
 
-        await handler({
-            "e": "markPriceUpdate", "s": "BTCUSDT", "p": "50000.00",
-            "r": "0.00010000", "T": 1_700_000_000_000,
-        })
+        await handler(
+            {
+                "e": "markPriceUpdate",
+                "s": "BTCUSDT",
+                "p": "50000.00",
+                "r": "0.00010000",
+                "T": 1_700_000_000_000,
+            }
+        )
 
         assert len(received) == 1
         assert received[0].symbol == "BTCUSDT"
         assert received[0].rate == Decimal("0.00010000")
 
     async def test_unchanged_rate_on_next_tick_does_not_republish(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[FundingRateEvent] = []
         isolated_event_bus.subscribe(FundingRateEvent, received.append)
@@ -263,8 +309,11 @@ class TestFundingRateEvent:
         handler = ws_client.subscribe_mark_price.call_args.args[1]
 
         msg = {
-            "e": "markPriceUpdate", "s": "BTCUSDT", "p": "50000.00",
-            "r": "0.00010000", "T": 1_700_000_000_000,
+            "e": "markPriceUpdate",
+            "s": "BTCUSDT",
+            "p": "50000.00",
+            "r": "0.00010000",
+            "T": 1_700_000_000_000,
         }
         await handler(msg)
         await handler({**msg, "p": "50001.00"})  # mark price ticks, rate unchanged
@@ -272,7 +321,10 @@ class TestFundingRateEvent:
         assert len(received) == 1  # not republished on the second tick
 
     async def test_rate_change_publishes_a_second_event(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[FundingRateEvent] = []
         isolated_event_bus.subscribe(FundingRateEvent, received.append)
@@ -280,20 +332,33 @@ class TestFundingRateEvent:
         await feed.subscribe("BTCUSDT", [Timeframe.H1])
         handler = ws_client.subscribe_mark_price.call_args.args[1]
 
-        await handler({
-            "e": "markPriceUpdate", "s": "BTCUSDT", "p": "50000.00",
-            "r": "0.00010000", "T": 1_700_000_000_000,
-        })
-        await handler({
-            "e": "markPriceUpdate", "s": "BTCUSDT", "p": "50001.00",
-            "r": "0.00015000", "T": 1_700_028_800_000,
-        })
+        await handler(
+            {
+                "e": "markPriceUpdate",
+                "s": "BTCUSDT",
+                "p": "50000.00",
+                "r": "0.00010000",
+                "T": 1_700_000_000_000,
+            }
+        )
+        await handler(
+            {
+                "e": "markPriceUpdate",
+                "s": "BTCUSDT",
+                "p": "50001.00",
+                "r": "0.00015000",
+                "T": 1_700_028_800_000,
+            }
+        )
 
         assert len(received) == 2
         assert received[1].rate == Decimal("0.00015000")
 
     async def test_no_funding_rate_in_payload_publishes_nothing(
-        self, feed: MarketDataFeed, ws_client: MagicMock, isolated_event_bus: EventBus,
+        self,
+        feed: MarketDataFeed,
+        ws_client: MagicMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         received: list[FundingRateEvent] = []
         isolated_event_bus.subscribe(FundingRateEvent, received.append)

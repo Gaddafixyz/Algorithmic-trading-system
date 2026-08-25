@@ -32,8 +32,8 @@ class SwingPoint:
     price: Decimal
     timestamp: datetime
     bar_index: int
-    is_high: bool       # True = swing high, False = swing low
-    strength: int = 1   # Number of bars confirming on each side
+    is_high: bool  # True = swing high, False = swing low
+    strength: int = 1  # Number of bars confirming on each side
 
     @property
     def is_low(self) -> bool:
@@ -88,13 +88,15 @@ def find_swing_highs(
         right = [candles[i + j].high for j in range(1, lookback + 1)]
 
         if all(pivot_high > h for h in left) and all(pivot_high >= h for h in right):
-            swings.append(SwingPoint(
-                price=pivot_high,
-                timestamp=candles[i].timestamp,
-                bar_index=i,
-                is_high=True,
-                strength=lookback,
-            ))
+            swings.append(
+                SwingPoint(
+                    price=pivot_high,
+                    timestamp=candles[i].timestamp,
+                    bar_index=i,
+                    is_high=True,
+                    strength=lookback,
+                )
+            )
 
     return swings
 
@@ -118,13 +120,15 @@ def find_swing_lows(
         right = [candles[i + j].low for j in range(1, lookback + 1)]
 
         if all(pivot_low < lo for lo in left) and all(pivot_low <= lo for lo in right):
-            swings.append(SwingPoint(
-                price=pivot_low,
-                timestamp=candles[i].timestamp,
-                bar_index=i,
-                is_high=False,
-                strength=lookback,
-            ))
+            swings.append(
+                SwingPoint(
+                    price=pivot_low,
+                    timestamp=candles[i].timestamp,
+                    bar_index=i,
+                    is_high=False,
+                    strength=lookback,
+                )
+            )
 
     return swings
 
@@ -149,9 +153,9 @@ def detect_market_structure(
 
     # Compare last two swing highs and last two swing lows
     hh = state.swing_highs[-1].price > state.swing_highs[-2].price  # Higher high
-    hl = state.swing_lows[-1].price > state.swing_lows[-2].price    # Higher low
+    hl = state.swing_lows[-1].price > state.swing_lows[-2].price  # Higher low
     lh = state.swing_highs[-1].price < state.swing_highs[-2].price  # Lower high
-    ll = state.swing_lows[-1].price < state.swing_lows[-2].price    # Lower low
+    ll = state.swing_lows[-1].price < state.swing_lows[-2].price  # Lower low
 
     if hh and hl:
         state.structure = MarketStructure.BULLISH
@@ -162,7 +166,11 @@ def detect_market_structure(
 
     logger.debug(
         "Market structure: %s (HH=%s HL=%s LH=%s LL=%s)",
-        state.structure, hh, hl, lh, ll,
+        state.structure,
+        hh,
+        hl,
+        lh,
+        ll,
     )
     return state
 

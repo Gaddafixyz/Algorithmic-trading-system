@@ -7,13 +7,12 @@ from decimal import Decimal
 
 import pytest
 
-from src.analytics.performance import (
-    PerformanceReport,
-    calculate_performance,
-    benchmark_returns_for_trades,
-)
 from src.analytics.expectancy import expectancy, r_multiples, system_quality_number
-from src.analytics.sharpe import sharpe_ratio, sortino_ratio, calmar_ratio
+from src.analytics.performance import (
+    benchmark_returns_for_trades,
+    calculate_performance,
+)
+from src.analytics.sharpe import calmar_ratio, sharpe_ratio, sortino_ratio
 from src.core.enums import PositionSide, Timeframe
 from src.core.models import OHLCV
 from src.domain.trade import Trade
@@ -82,7 +81,13 @@ class TestCalculatePerformance:
 
     def test_max_drawdown_detected(self):
         # Equity drops from 10200 to 9800 after two losses
-        trades = [make_trade(100), make_trade(100), make_trade(-200), make_trade(-200), make_trade(300)]
+        trades = [
+            make_trade(100),
+            make_trade(100),
+            make_trade(-200),
+            make_trade(-200),
+            make_trade(300),
+        ]
         report = calculate_performance(trades, initial_equity=10000.0)
         assert report.max_drawdown_pct > 0.0
 
@@ -93,11 +98,7 @@ class TestCalculatePerformance:
 
     def test_streak_counting(self):
         # 3 wins, 2 losses, 2 wins
-        trades = (
-            [make_trade(100)] * 3
-            + [make_trade(-50)] * 2
-            + [make_trade(100)] * 2
-        )
+        trades = [make_trade(100)] * 3 + [make_trade(-50)] * 2 + [make_trade(100)] * 2
         report = calculate_performance(trades)
         assert report.max_consecutive_wins == 3
         assert report.max_consecutive_losses == 2
@@ -118,8 +119,14 @@ class TestCalculatePerformance:
         report = calculate_performance(trades)
         d = report.to_dict()
         required_keys = [
-            "total_trades", "winning_trades", "losing_trades", "win_rate",
-            "total_net_pnl", "profit_factor", "sharpe_ratio", "max_drawdown_pct",
+            "total_trades",
+            "winning_trades",
+            "losing_trades",
+            "win_rate",
+            "total_net_pnl",
+            "profit_factor",
+            "sharpe_ratio",
+            "max_drawdown_pct",
         ]
         for key in required_keys:
             assert key in d, f"Missing key: {key}"
@@ -143,7 +150,7 @@ class TestExpectancy:
         trades = [make_trade(200, initial_risk=100.0), make_trade(-100, initial_risk=100.0)]
         rs = r_multiples(trades)
         assert len(rs) == 2
-        assert abs(rs[0] - 1.98) < 0.05   # 198/100 (net after fees)
+        assert abs(rs[0] - 1.98) < 0.05  # 198/100 (net after fees)
         assert rs[1] < 0.0
 
     def test_r_multiples_excludes_no_risk(self):
@@ -152,8 +159,9 @@ class TestExpectancy:
         assert len(rs) == 1  # Only the one with initial_risk
 
     def test_sqn_positive_for_good_system(self):
-        trades = [make_trade(100, initial_risk=50.0) for _ in range(20)] + \
-                 [make_trade(-40, initial_risk=50.0) for _ in range(10)]
+        trades = [make_trade(100, initial_risk=50.0) for _ in range(20)] + [
+            make_trade(-40, initial_risk=50.0) for _ in range(10)
+        ]
         sqn = system_quality_number(trades)
         assert sqn > 0.0
 
@@ -166,6 +174,7 @@ class TestExpectancy:
 class TestSharpeRatio:
     def test_positive_returns_positive_sharpe(self):
         import numpy as np
+
         rng = np.random.default_rng(42)
         # Returns with clear positive mean and realistic variance
         returns = list(0.008 + rng.normal(0, 0.003, 50))
@@ -182,6 +191,7 @@ class TestSharpeRatio:
 
     def test_negative_returns_negative_sharpe(self):
         import numpy as np
+
         rng = np.random.default_rng(42)
         # Returns with clear negative mean and realistic variance
         returns = list(-0.008 + rng.normal(0, 0.003, 50))
@@ -382,9 +392,13 @@ class TestAdvancedMetricsWiring:
         report = calculate_performance(self._varied_trades())
         d = report.to_dict()
         for key in (
-            "probabilistic_sharpe_ratio", "deflated_sharpe_ratio",
-            "omega_ratio", "tail_ratio", "ulcer_index",
-            "historical_var_95", "historical_cvar_95",
+            "probabilistic_sharpe_ratio",
+            "deflated_sharpe_ratio",
+            "omega_ratio",
+            "tail_ratio",
+            "ulcer_index",
+            "historical_var_95",
+            "historical_cvar_95",
             "system_quality_number",
         ):
             assert key in d
@@ -400,11 +414,11 @@ class TestEngineNTrialsPassthrough:
     """
 
     def test_default_n_trials_is_1(self):
-        from unittest.mock import patch
-        from src.backtesting.engine import BacktestConfig, BacktestEngine
+        from unittest.mock import AsyncMock, patch
+
         from src.backtesting.commission import ZeroCommission
+        from src.backtesting.engine import BacktestConfig, BacktestEngine
         from src.backtesting.slippage import ZeroSlippage
-        from unittest.mock import AsyncMock
         from src.core.interfaces import IStrategy
 
         strategy = AsyncMock(spec=IStrategy)
@@ -418,8 +432,10 @@ class TestEngineNTrialsPassthrough:
         engine = BacktestEngine(strategy, config)
         candles = [
             OHLCV(
-                open=Decimal("50000"), high=Decimal("50050"),
-                low=Decimal("49950"), close=Decimal("50000"),
+                open=Decimal("50000"),
+                high=Decimal("50050"),
+                low=Decimal("49950"),
+                close=Decimal("50000"),
                 volume=Decimal("1000"),
                 timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
             )
@@ -431,15 +447,16 @@ class TestEngineNTrialsPassthrough:
             wraps=calculate_performance,
         ) as spy:
             import asyncio
+
             asyncio.run(engine.run(candles, "BTCUSDT", Timeframe.H1))
             assert spy.call_args.kwargs["n_trials"] == 1
 
     def test_n_trials_forwarded_when_explicitly_passed(self):
-        from unittest.mock import patch
-        from src.backtesting.engine import BacktestConfig, BacktestEngine
+        from unittest.mock import AsyncMock, patch
+
         from src.backtesting.commission import ZeroCommission
+        from src.backtesting.engine import BacktestConfig, BacktestEngine
         from src.backtesting.slippage import ZeroSlippage
-        from unittest.mock import AsyncMock
         from src.core.interfaces import IStrategy
 
         strategy = AsyncMock(spec=IStrategy)
@@ -453,8 +470,10 @@ class TestEngineNTrialsPassthrough:
         engine = BacktestEngine(strategy, config)
         candles = [
             OHLCV(
-                open=Decimal("50000"), high=Decimal("50050"),
-                low=Decimal("49950"), close=Decimal("50000"),
+                open=Decimal("50000"),
+                high=Decimal("50050"),
+                low=Decimal("49950"),
+                close=Decimal("50000"),
                 volume=Decimal("1000"),
                 timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
             )
@@ -466,5 +485,6 @@ class TestEngineNTrialsPassthrough:
             wraps=calculate_performance,
         ) as spy:
             import asyncio
+
             asyncio.run(engine.run(candles, "BTCUSDT", Timeframe.H1, n_trials=75))
             assert spy.call_args.kwargs["n_trials"] == 75

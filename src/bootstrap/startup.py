@@ -28,7 +28,6 @@ from src.core.constants import (
     PORTFOLIO_RISK_CHECK_INTERVAL_SECONDS,
     REBALANCE_CHECK_INTERVAL_SECONDS,
 )
-from src.core.enums import TradingEnvironment
 from src.core.exceptions import InitializationError
 
 logger = logging.getLogger(__name__)
@@ -75,7 +74,8 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
                 "trading_env=production but %s=true — this deployment is "
                 "connected to the exchange TESTNET and will not place real "
                 "orders. If live trading is intended, set %s=false.",
-                env_var, env_var,
+                env_var,
+                env_var,
             )
 
     # 1. Database
@@ -161,9 +161,10 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
 
             # Inject key into WebSocket client and register the renewal callback
             app.ws_client._listen_key = listen_key
+
             async def _renew_listen_key() -> str:
                 await app.rest_client.renew_listen_key(listen_key)
-                return listen_key   # Binance renews in-place; key string stays the same
+                return listen_key  # Binance renews in-place; key string stays the same
 
             app.ws_client.set_renewal_callback(_renew_listen_key)
             logger.info("✓ Listen key created (%s...)", listen_key[:8])
@@ -190,7 +191,10 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
         app.paper_exchange_client.subscribe_fills(app.fill_engine.process_execution_report)
         await app.ws_client.start()
         await app.paper_exchange_client.start()
-        logger.info("✓ Paper exchange client started (simulated fills, live %s market data)", app.exchange_provider)
+        logger.info(
+            "✓ Paper exchange client started (simulated fills, live %s market data)",
+            app.exchange_provider,
+        )
 
     # 7. Execution engine
     await app.execution_engine.start()
@@ -245,12 +249,14 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
     app.scheduler.start()
     logger.info(
         "✓ Scheduler started (equity resync every %.0fs, metrics snapshot every %.0fs)",
-        EQUITY_SYNC_INTERVAL_SECONDS, METRIC_SNAPSHOT_INTERVAL_SECONDS,
+        EQUITY_SYNC_INTERVAL_SECONDS,
+        METRIC_SNAPSHOT_INTERVAL_SECONDS,
     )
 
     # 8. Monitoring
     if settings.monitoring.enable_prometheus:
         from src.monitoring.metrics import start_metrics_server
+
         start_metrics_server(settings.monitoring.prometheus_port)
         logger.info("✓ Prometheus metrics on port %d", settings.monitoring.prometheus_port)
 
@@ -296,13 +302,13 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
     #    and every channel's send_trade_notification() method existed but
     #    were dead code in live trading — no subscriber ever called them.
 
-    from src.monitoring.alerts import build_standard_alerts
     from src.core.events import (
         AlertFiredEvent,
         PositionClosedEvent,
         SystemStartedEvent,
         get_event_bus,
     )
+    from src.monitoring.alerts import build_standard_alerts
 
     bus = get_event_bus()
 
@@ -339,20 +345,23 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
     )
     logger.info(
         "✓ Alert rules registered (%d rules, eval every %.0fs)",
-        len(app.alert_manager._rules), ALERT_EVAL_INTERVAL_SECONDS,
+        len(app.alert_manager._rules),
+        ALERT_EVAL_INTERVAL_SECONDS,
     )
 
     # 3. Send trade-close notifications on every PositionClosedEvent.
     async def _on_position_closed_notify(event: object) -> None:
         if not isinstance(event, PositionClosedEvent):
             return
-        await app.notifier.send_trade({
-            "symbol": event.symbol,
-            "side": event.side.value if hasattr(event.side, "value") else str(event.side),
-            "net_pnl": str(event.realized_pnl - event.fees),
-            "entry_price": str(event.entry_price),
-            "exit_price": str(event.exit_price),
-        })
+        await app.notifier.send_trade(
+            {
+                "symbol": event.symbol,
+                "side": event.side.value if hasattr(event.side, "value") else str(event.side),
+                "net_pnl": str(event.realized_pnl - event.fees),
+                "entry_price": str(event.entry_price),
+                "exit_price": str(event.exit_price),
+            }
+        )
 
     bus.subscribe(PositionClosedEvent, _on_position_closed_notify)
     logger.info("✓ Trade-close notifications wired")
@@ -422,7 +431,10 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
             return
         logger.info(
             "order_status_changed order_id=%s symbol=%s %s -> %s",
-            event.order_id, event.symbol, event.previous_status.value, event.new_status.value,
+            event.order_id,
+            event.symbol,
+            event.previous_status.value,
+            event.new_status.value,
         )
 
     bus.subscribe(OrderStatusChangedEvent, _on_order_status_changed)
@@ -495,7 +507,9 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
             return
         logger.info(
             "signal_expired signal_id=%s symbol=%s reason=%s",
-            event.signal_id, event.symbol, event.reason,
+            event.signal_id,
+            event.symbol,
+            event.reason,
         )
 
     bus.subscribe(SignalExpiredEvent, _on_signal_expired)
@@ -511,6 +525,7 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
     # producer and surfaces DB/exchange-connectivity regressions that the
     # watchdog (event-loop liveness only) can't see.
     import functools
+
     app.health_checker.register(
         "database", functools.partial(app.health_checker.check_database, app.db)
     )
@@ -586,7 +601,9 @@ async def startup(app: Application, strategy_orchestrator: object | None = None)
     # it (e.g. a "system is up" notification) only fires once every prior
     # step has actually succeeded.
     try:
-        from importlib.metadata import PackageNotFoundError, version as _pkg_version
+        from importlib.metadata import PackageNotFoundError
+        from importlib.metadata import version as _pkg_version
+
         app_version = _pkg_version("trading-enhanced-3")
     except (ImportError, PackageNotFoundError):
         app_version = "unknown"

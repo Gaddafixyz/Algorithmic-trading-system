@@ -23,12 +23,9 @@ import asyncio
 import json
 import logging
 from collections.abc import Callable, Coroutine
-from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 
 import websockets
-from websockets.exceptions import ConnectionClosed
 
 from src.core.constants import (
     BINANCE_LISTEN_KEY_REFRESH_MINUTES,
@@ -302,7 +299,9 @@ class BinanceFuturesWebSocket:
                 ws_reconnects.inc()
                 logger.warning(
                     "WebSocket disconnected (reconnect #%d): %s. Retrying in %.1fs",
-                    self._reconnect_count, exc, delay,
+                    self._reconnect_count,
+                    exc,
+                    delay,
                 )
                 if not self._running:
                     return
@@ -373,9 +372,7 @@ class BinanceFuturesWebSocket:
                 if shutdown:
                     # serverShutdown received: close cleanly so _run_loop
                     # reconnects immediately (no backoff, normal return path).
-                    logger.warning(
-                        "serverShutdown event received — closing and reconnecting"
-                    )
+                    logger.warning("serverShutdown event received — closing and reconnecting")
                     await ws.close()
                     return
 

@@ -14,21 +14,19 @@ Orchestrates all SMC analysis modules to produce trade signals:
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
 from src.core.enums import MarketStructure, SignalDirection, Timeframe
 from src.core.models import OHLCV
 from src.domain.signal import Signal
-from src.indicators.atr import calculate_atr, current_atr
+from src.indicators.atr import calculate_atr
 from src.indicators.volume import relative_volume
-from src.smart_money.bos import detect_bos, latest_bos
-from src.smart_money.choch import detect_choch, latest_choch
+from src.smart_money.bos import detect_bos
+from src.smart_money.choch import detect_choch
 from src.smart_money.confluence import (
-    SMCAnalysis,
-    ConfluenceResult,
     ConfluenceWeights,
+    SMCAnalysis,
     score_confluence,
 )
 from src.smart_money.fair_value_gap import detect_fvgs, get_open_fvgs, update_fvg_fills
@@ -42,13 +40,13 @@ from src.smart_money.liquidity import (
 )
 from src.smart_money.market_structure import detect_market_structure
 from src.smart_money.mitigation import extract_mitigation_blocks
-from src.strategy.multi_timeframe import MTFContext
 from src.smart_money.order_blocks import (
     get_active_order_blocks,
     identify_order_blocks,
     update_order_block_mitigation,
 )
 from src.smart_money.premium_discount import calculate_premium_discount
+from src.strategy.multi_timeframe import MTFContext
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +218,11 @@ class SMCSignalEngine:
             )
 
         # ─── 8. ATR and Volume ────────────────────────────────────────────────
-        atr = float(atr_values_arr[-1]) if not __import__("math").isnan(float(atr_values_arr[-1])) else 0.0
+        atr = (
+            float(atr_values_arr[-1])
+            if not __import__("math").isnan(float(atr_values_arr[-1]))
+            else 0.0
+        )
         rv = relative_volume(candles)
 
         # ─── 9. HTF Context ───────────────────────────────────────────────────
@@ -235,7 +237,11 @@ class SMCSignalEngine:
         # MTFContext's HTF_MAP default, since htf_timeframe is separately
         # configurable (configs/strategy.yaml) and can diverge from it.
         self._mtf.update(self.timeframe, candles, self.swing_lookback)
-        if self.htf_timeframe is not None and htf_candles and len(htf_candles) >= self.swing_lookback * 2 + 2:
+        if (
+            self.htf_timeframe is not None
+            and htf_candles
+            and len(htf_candles) >= self.swing_lookback * 2 + 2
+        ):
             self._mtf.update(self.htf_timeframe, htf_candles, self.swing_lookback)
         # LTF tier: same pattern as HTF above, using self.ltf_timeframe
         # explicitly rather than MTFContext's LTF_MAP default for the same
@@ -243,7 +249,11 @@ class SMCSignalEngine:
         # ltf_candles (caller didn't wire a source) leaves LTF simply
         # absent from `_structures`, which alignment_score() already
         # handles by excluding it from the denominator.
-        if self.ltf_timeframe is not None and ltf_candles and len(ltf_candles) >= self.swing_lookback * 2 + 2:
+        if (
+            self.ltf_timeframe is not None
+            and ltf_candles
+            and len(ltf_candles) >= self.swing_lookback * 2 + 2
+        ):
             self._mtf.update(self.ltf_timeframe, ltf_candles, self.swing_lookback)
 
         # ─── 10. Assemble Analysis ────────────────────────────────────────────
@@ -272,7 +282,10 @@ class SMCSignalEngine:
 
         # ─── 11. Score Confluence ─────────────────────────────────────────────
         result = score_confluence(
-            analysis, candles, self.strategy_id, self.risk_reward_min,
+            analysis,
+            candles,
+            self.strategy_id,
+            self.risk_reward_min,
             weights=self.confluence_weights,
             rsi_period=self.rsi_period,
             ema_fast=self.ema_fast,
@@ -285,7 +298,10 @@ class SMCSignalEngine:
         if result is None or result.score < self.min_score:
             logger.debug(
                 "%s %s: no signal (score=%.1f min=%.1f)",
-                self.symbol, self.timeframe, result.score if result else 0.0, self.min_score,
+                self.symbol,
+                self.timeframe,
+                result.score if result else 0.0,
+                self.min_score,
             )
             return None
 
@@ -303,7 +319,10 @@ class SMCSignalEngine:
         if not self._mtf.is_htf_aligned(self.timeframe, direction_str, htf=self.htf_timeframe):
             logger.debug(
                 "%s %s: signal rejected, against HTF bias (direction=%s, htf=%s)",
-                self.symbol, self.timeframe, direction_str, self.htf_timeframe,
+                self.symbol,
+                self.timeframe,
+                direction_str,
+                self.htf_timeframe,
             )
             return None
 
@@ -328,8 +347,12 @@ class SMCSignalEngine:
 
         logger.info(
             "Signal generated: %s %s score=%.1f entry=%s SL=%s TP=%s RR=%.2f",
-            self.symbol, result.direction, result.score,
-            result.entry_price, result.stop_loss, result.take_profit,
+            self.symbol,
+            result.direction,
+            result.score,
+            result.entry_price,
+            result.stop_loss,
+            result.take_profit,
             signal.risk_reward_ratio,
         )
 

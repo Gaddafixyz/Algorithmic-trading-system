@@ -47,7 +47,9 @@ def system_quality_number(trades: list[Trade]) -> float:
     > 2 is good, > 3 is excellent.
     """
     import math
+
     import numpy as np
+
     rs = r_multiples(trades)
     if len(rs) < 3:
         return 0.0

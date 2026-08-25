@@ -11,15 +11,24 @@ from src.strategy.entry import get_entry_order_type, get_order_side, is_entry_va
 
 
 def make_signal(
-    entry: str = "50000", sl: str = "49000", tp: str = "52000",
-    entry_zone_high: str | None = None, entry_zone_low: str | None = None,
+    entry: str = "50000",
+    sl: str = "49000",
+    tp: str = "52000",
+    entry_zone_high: str | None = None,
+    entry_zone_low: str | None = None,
     expires_at: datetime | None = None,
     direction: SignalDirection = SignalDirection.LONG,
 ) -> Signal:
     return Signal(
-        strategy_id="test", symbol="BTCUSDT", timeframe=Timeframe.H1,
-        direction=direction, score=70.0, strength=SignalStrength.STRONG,
-        confidence=0.7, entry_price=Decimal(entry), stop_loss=Decimal(sl),
+        strategy_id="test",
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        direction=direction,
+        score=70.0,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal(entry),
+        stop_loss=Decimal(sl),
         take_profit=Decimal(tp),
         entry_zone_high=Decimal(entry_zone_high) if entry_zone_high else None,
         entry_zone_low=Decimal(entry_zone_low) if entry_zone_low else None,

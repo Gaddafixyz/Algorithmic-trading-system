@@ -9,9 +9,10 @@ alert spam.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 from src.core.enums import AlertSeverity
 from src.core.events import AlertFiredEvent, get_event_bus
@@ -27,9 +28,9 @@ class AlertRule:
 
     name: str
     severity: AlertSeverity
-    check_fn: Callable[[], bool]           # Returns True when alert should fire
-    message_fn: Callable[[], str]          # Generates alert message
-    cooldown_minutes: int = 30             # Min minutes between repeated alerts
+    check_fn: Callable[[], bool]  # Returns True when alert should fire
+    message_fn: Callable[[], str]  # Generates alert message
+    cooldown_minutes: int = 30  # Min minutes between repeated alerts
     enabled: bool = True
 
     # State
@@ -96,12 +97,14 @@ class AlertManager:
                     )
 
                     # Publish to event bus
-                    await self._bus.publish(AlertFiredEvent(
-                        source="alert_manager",
-                        alert_name=rule.name,
-                        severity=rule.severity,
-                        message=message,
-                    ))
+                    await self._bus.publish(
+                        AlertFiredEvent(
+                            source="alert_manager",
+                            alert_name=rule.name,
+                            severity=rule.severity,
+                            message=message,
+                        )
+                    )
 
                     # Dispatch to direct callbacks
                     for cb in self._callbacks:
@@ -175,9 +178,10 @@ def build_standard_alerts(
             name="daily_loss_high",
             severity=AlertSeverity.WARNING,
             check_fn=lambda: (
-                risk_manager.equity > 0 and
-                float(abs(risk_manager.daily_pnl) / risk_manager.equity * 100) > daily_loss_warning_pct and
-                risk_manager.daily_pnl < 0
+                risk_manager.equity > 0
+                and float(abs(risk_manager.daily_pnl) / risk_manager.equity * 100)
+                > daily_loss_warning_pct
+                and risk_manager.daily_pnl < 0
             ),
             message_fn=lambda: (
                 f"Daily loss at {float(abs(risk_manager.daily_pnl) / risk_manager.equity * 100):.1f}%"

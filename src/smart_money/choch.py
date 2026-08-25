@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 class CHoCHEvent:
     """A confirmed Change of Character."""
 
-    direction: str          # "bullish" (reversal up) or "bearish" (reversal down)
-    broken_price: Decimal   # The swing level that was broken
+    direction: str  # "bullish" (reversal up) or "bearish" (reversal down)
+    broken_price: Decimal  # The swing level that was broken
     break_candle_index: int
     break_price: Decimal
     swing_point: SwingPoint
@@ -84,15 +84,17 @@ def detect_choch(
                 if sl.bar_index in broken_indices or sl.bar_index >= i:
                     continue
                 if price < sl.price:
-                    events.append(CHoCHEvent(
-                        direction="bearish",
-                        broken_price=sl.price,
-                        break_candle_index=i,
-                        break_price=price,
-                        swing_point=sl,
-                        timestamp=candle.timestamp,
-                        prior_structure=MarketStructure.BULLISH,
-                    ))
+                    events.append(
+                        CHoCHEvent(
+                            direction="bearish",
+                            broken_price=sl.price,
+                            break_candle_index=i,
+                            break_price=price,
+                            swing_point=sl,
+                            timestamp=candle.timestamp,
+                            prior_structure=MarketStructure.BULLISH,
+                        )
+                    )
                     broken_indices.add(sl.bar_index)
                     logger.debug("Bearish CHoCH at bar %d: broke HL %s", i, sl.price)
 
@@ -103,15 +105,17 @@ def detect_choch(
                 if sh.bar_index in broken_indices or sh.bar_index >= i:
                     continue
                 if price > sh.price:
-                    events.append(CHoCHEvent(
-                        direction="bullish",
-                        broken_price=sh.price,
-                        break_candle_index=i,
-                        break_price=price,
-                        swing_point=sh,
-                        timestamp=candle.timestamp,
-                        prior_structure=MarketStructure.BEARISH,
-                    ))
+                    events.append(
+                        CHoCHEvent(
+                            direction="bullish",
+                            broken_price=sh.price,
+                            break_candle_index=i,
+                            break_price=price,
+                            swing_point=sh,
+                            timestamp=candle.timestamp,
+                            prior_structure=MarketStructure.BEARISH,
+                        )
+                    )
                     broken_indices.add(sh.bar_index)
                     logger.debug("Bullish CHoCH at bar %d: broke LH %s", i, sh.price)
 

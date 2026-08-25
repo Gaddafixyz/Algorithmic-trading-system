@@ -31,9 +31,14 @@ class TestLoadConfluenceWeights:
 
     def test_full_override_builds_matching_weights(self) -> None:
         cfg = {
-            "market_structure": 0.25, "order_block": 0.20, "fair_value_gap": 0.15,
-            "liquidity_sweep": 0.15, "premium_discount": 0.10, "session": 0.10,
-            "volume": 0.03, "htf_alignment": 0.02,
+            "market_structure": 0.25,
+            "order_block": 0.20,
+            "fair_value_gap": 0.15,
+            "liquidity_sweep": 0.15,
+            "premium_discount": 0.10,
+            "session": 0.10,
+            "volume": 0.03,
+            "htf_alignment": 0.02,
         }
         weights = _load_confluence_weights(cfg)
         assert weights is not None
@@ -63,9 +68,14 @@ class TestLoadConfluenceWeights:
         # proportions, so this should round-trip to the same effective
         # weights as the point-budget equivalent.
         fractional_cfg = {
-            "market_structure": 0.20, "order_block": 0.20, "fair_value_gap": 0.15,
-            "liquidity_sweep": 0.15, "premium_discount": 0.10, "session": 0.10,
-            "volume": 0.05, "htf_alignment": 0.05,
+            "market_structure": 0.20,
+            "order_block": 0.20,
+            "fair_value_gap": 0.15,
+            "liquidity_sweep": 0.15,
+            "premium_discount": 0.10,
+            "session": 0.10,
+            "volume": 0.05,
+            "htf_alignment": 0.05,
         }
         fractional = _load_confluence_weights(fractional_cfg).normalized()
         point_budget = ConfluenceWeights().normalized()
@@ -80,7 +90,8 @@ class TestSMCStrategyConfluenceWeights:
     async def test_custom_weights_reach_the_signal_engine(self) -> None:
         custom = ConfluenceWeights(market_structure=35.0)
         strategy = SMCStrategy(
-            symbols=["BTCUSDT"], timeframes=[Timeframe.H1],
+            symbols=["BTCUSDT"],
+            timeframes=[Timeframe.H1],
             confluence_weights=custom,
         )
         await strategy.initialize()
@@ -145,8 +156,11 @@ class TestLoadSmcIndicatorConfig:
         # exactly what's written in it.
         cfg = {
             "smc": {
-                "swing_lookback": 5, "ob_max_age_bars": 100,
-                "fvg_min_size_atr_mult": 0.3, "premium_zone": 0.70, "discount_zone": 0.30,
+                "swing_lookback": 5,
+                "ob_max_age_bars": 100,
+                "fvg_min_size_atr_mult": 0.3,
+                "premium_zone": 0.70,
+                "discount_zone": 0.30,
             },
             "indicators": {"atr_period": 14, "rsi_period": 14, "ema_fast": 12, "ema_slow": 26},
         }
@@ -181,16 +195,12 @@ class TestLoadSmcIndicatorConfig:
         # Nonsensical config (premium <= discount) fails open to defaults
         # for both fields rather than producing a zone classification
         # that's premium and discount simultaneously (or neither).
-        result = _load_smc_indicator_config(
-            {"smc": {"premium_zone": 0.30, "discount_zone": 0.70}}
-        )
+        result = _load_smc_indicator_config({"smc": {"premium_zone": 0.30, "discount_zone": 0.70}})
         assert "premium_zone" not in result
         assert "discount_zone" not in result
 
     def test_premium_zone_equal_to_discount_zone_drops_both(self) -> None:
-        result = _load_smc_indicator_config(
-            {"smc": {"premium_zone": 0.50, "discount_zone": 0.50}}
-        )
+        result = _load_smc_indicator_config({"smc": {"premium_zone": 0.50, "discount_zone": 0.50}})
         assert "premium_zone" not in result
         assert "discount_zone" not in result
 
@@ -220,7 +230,8 @@ class TestSMCStrategySmcIndicatorConfigPassthrough:
 
     async def test_custom_values_reach_the_signal_engine(self) -> None:
         strategy = SMCStrategy(
-            symbols=["BTCUSDT"], timeframes=[Timeframe.H1],
+            symbols=["BTCUSDT"],
+            timeframes=[Timeframe.H1],
             ob_max_age_bars=50,
             fvg_min_size_atr_mult=0.5,
             premium_zone=Decimal("0.70"),
@@ -246,8 +257,10 @@ class TestSMCStrategySmcIndicatorConfigPassthrough:
         # confirms that override path, not just the None-passthrough path
         # the other fields use.
         strategy = SMCStrategy(
-            symbols=["BTCUSDT"], timeframes=[Timeframe.H1],
-            swing_lookback=8, atr_period=21,
+            symbols=["BTCUSDT"],
+            timeframes=[Timeframe.H1],
+            swing_lookback=8,
+            atr_period=21,
         )
         await strategy.initialize()
         engine = strategy._engines["BTCUSDT_1h"]

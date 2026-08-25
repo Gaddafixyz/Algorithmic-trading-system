@@ -6,7 +6,6 @@ import logging
 import logging.handlers
 
 import structlog
-import pytest
 
 from src.monitoring.telemetry import configure_logging, get_logger
 
@@ -120,14 +119,10 @@ class TestConfigureLogging:
         assert file_handler.backupCount == 3
         assert (tmp_path / "trading.log").exists()
 
-    def test_file_sink_always_renders_json_regardless_of_console_mode(
-        self, tmp_path
-    ) -> None:  # type: ignore[no-untyped-def]
+    def test_file_sink_always_renders_json_regardless_of_console_mode(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         configure_logging(json_logs=False, file_enabled=True, log_dir=tmp_path)
         file_handler = logging.getLogger().handlers[1]
-        assert isinstance(
-            file_handler.formatter.processors[-1], structlog.processors.JSONRenderer
-        )
+        assert isinstance(file_handler.formatter.processors[-1], structlog.processors.JSONRenderer)
 
     def test_file_dir_created_if_missing(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         nested = tmp_path / "nested" / "logs"

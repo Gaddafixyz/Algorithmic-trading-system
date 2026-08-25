@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from src.core.models import MutableModel, StrictModel, utc_now
 
@@ -20,7 +20,7 @@ class AssetBalance(StrictModel):
     """Balance for a single asset."""
 
     asset: str
-    wallet_balance: Decimal          # Total in wallet
+    wallet_balance: Decimal  # Total in wallet
     unrealized_pnl: Decimal = Decimal("0")
     margin_balance: Decimal = Decimal("0")
     available_balance: Decimal = Decimal("0")

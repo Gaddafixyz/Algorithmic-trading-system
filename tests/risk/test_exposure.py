@@ -39,18 +39,14 @@ class TestExposureTrackerGrossAndNet:
     def test_gross_exposure_pct_reflects_total_notional_over_equity(self) -> None:
         tracker = ExposureTracker()
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000"))
         # notional = 0.2 * 50000 = 10000; equity = 10000 -> 100%
         assert tracker.gross_exposure_pct(portfolio, Decimal("10000")) == 100.0
 
     def test_gross_exposure_pct_returns_zero_for_non_positive_equity(self) -> None:
         tracker = ExposureTracker()
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000"))
         assert tracker.gross_exposure_pct(portfolio, Decimal("0")) == 0.0
         assert tracker.gross_exposure_pct(portfolio, Decimal("-100")) == 0.0
 
@@ -76,27 +72,21 @@ class TestExposureTrackerLimits:
     def test_is_within_limits_true_when_under_the_max(self) -> None:
         tracker = ExposureTracker(max_gross_exposure_pct=200.0)
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000"))
         # gross = 5000/10000*100 = 50% < 200%
         assert tracker.is_within_limits(portfolio, Decimal("10000")) is True
 
     def test_is_within_limits_false_when_over_the_max(self) -> None:
         tracker = ExposureTracker(max_gross_exposure_pct=50.0)
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000"))
         # gross = 10000/10000*100 = 100% > 50%
         assert tracker.is_within_limits(portfolio, Decimal("10000")) is False
 
     def test_is_within_limits_at_exactly_the_boundary_is_true(self) -> None:
         tracker = ExposureTracker(max_gross_exposure_pct=100.0)
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.2", "50000"))
         # gross = exactly 100%, boundary check is inclusive (<=).
         assert tracker.is_within_limits(portfolio, Decimal("10000")) is True
 
@@ -107,12 +97,8 @@ class TestExposureTrackerConcentration:
     ) -> None:
         tracker = ExposureTracker()
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000")
-        )
-        portfolio.add_position(
-            make_position("ETHUSDT", PositionSide.LONG, "1", "3000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000"))
+        portfolio.add_position(make_position("ETHUSDT", PositionSide.LONG, "1", "3000"))
         # BTC notional = 5000; equity = 10000 -> 50%
         assert tracker.symbol_concentration(portfolio, "BTCUSDT", Decimal("10000")) == 50.0
 
@@ -124,9 +110,7 @@ class TestExposureTrackerConcentration:
     def test_symbol_concentration_returns_zero_for_non_positive_equity(self) -> None:
         tracker = ExposureTracker()
         portfolio = Portfolio()
-        portfolio.add_position(
-            make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000")
-        )
+        portfolio.add_position(make_position("BTCUSDT", PositionSide.LONG, "0.1", "50000"))
         assert tracker.symbol_concentration(portfolio, "BTCUSDT", Decimal("0")) == 0.0
 
 
@@ -243,7 +227,7 @@ class TestCorrelationTrackerHighestCorrelatedPair:
         # A and B move identically (scaled); C moves independently/inversely.
         a_prices = [100.0, 102.0, 101.0, 104.0, 103.0, 106.0]
         c_prices = [50.0, 48.0, 49.5, 46.0, 47.0, 44.0]
-        for a, c in zip(a_prices, c_prices):
+        for a, c in zip(a_prices, c_prices, strict=False):
             tracker.update("A", a)
             tracker.update("B", a * 3.0)
             tracker.update("C", c)
@@ -301,7 +285,7 @@ class TestCorrelationTrackerDiversificationRatio:
         tracker = CorrelationTracker(symbols=["A", "B"], window=20)
         a_prices = [100.0, 102.0, 99.0, 105.0, 98.0, 110.0]
         b_prices = [50.0, 49.0, 51.0, 47.0, 52.0, 45.0]
-        for a, b in zip(a_prices, b_prices):
+        for a, b in zip(a_prices, b_prices, strict=False):
             tracker.update("A", a)
             tracker.update("B", b)
         ratio = tracker.diversification_ratio()

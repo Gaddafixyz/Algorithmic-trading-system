@@ -18,7 +18,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ T = TypeVar("T")
 class DIContainer:
     """Dependency injection container."""
 
-    def __init__(self, parent: "DIContainer | None" = None) -> None:
+    def __init__(self, parent: DIContainer | None = None) -> None:
         self._parent = parent
         self._singletons: dict[type, Any] = {}
         self._singleton_instances: dict[type, Any] = {}
@@ -148,12 +149,16 @@ class DIContainer:
             or (self._parent is not None and self._parent.is_registered(interface))
         )
 
-    def create_child(self) -> "DIContainer":
+    def create_child(self) -> DIContainer:
         """Create a child container that falls back to this one."""
         return DIContainer(parent=self)
 
     def _all_bindings(self) -> list[type]:
-        return list(self._singletons.keys()) + list(self._singleton_instances.keys()) + list(self._factories.keys())
+        return (
+            list(self._singletons.keys())
+            + list(self._singleton_instances.keys())
+            + list(self._factories.keys())
+        )
 
     def clear(self) -> None:
         """Clear all bindings — use in tests only."""

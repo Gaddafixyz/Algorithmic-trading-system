@@ -28,6 +28,7 @@ class HealthChecker:
     async def run_all(self) -> dict[str, Any]:
         """Run all registered health checks and aggregate results."""
         import asyncio
+
         results: dict[str, Any] = {
             "timestamp": datetime.now(tz=UTC).isoformat(),
             "status": HealthStatus.HEALTHY.value,
@@ -51,7 +52,8 @@ class HealthChecker:
 
         # If any check is UNHEALTHY, overall is UNHEALTHY
         unhealthy = [
-            k for k, v in results["checks"].items()
+            k
+            for k, v in results["checks"].items()
             if v.get("status") == HealthStatus.UNHEALTHY.value
         ]
         if unhealthy:

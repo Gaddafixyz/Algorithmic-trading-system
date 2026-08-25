@@ -11,8 +11,12 @@ from src.core.models import OHLCV
 
 def make_candle(o: str = "100", h: str = "102", low: str = "98", c: str = "100") -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
-        volume=Decimal("1000"), timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
+        volume=Decimal("1000"),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 

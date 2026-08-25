@@ -13,7 +13,7 @@ Invariants enforced:
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -95,8 +95,8 @@ class Order(MutableModel):
     filled_quantity: Decimal = Decimal("0")
 
     # Prices
-    price: Decimal | None = None          # Limit price
-    stop_price: Decimal | None = None     # For stop orders
+    price: Decimal | None = None  # Limit price
+    stop_price: Decimal | None = None  # For stop orders
     average_fill_price: Decimal | None = None
 
     # Conditions
@@ -150,7 +150,7 @@ class Order(MutableModel):
         return v
 
     @model_validator(mode="after")
-    def validate_order_type_constraints(self) -> "Order":
+    def validate_order_type_constraints(self) -> Order:
         if self.order_type == OrderType.LIMIT and self.price is None:
             raise ValueError("LIMIT orders require a price")
         if self.order_type in (OrderType.STOP_LIMIT, OrderType.TAKE_PROFIT_LIMIT):

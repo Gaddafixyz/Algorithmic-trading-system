@@ -51,12 +51,8 @@ def portfolio_risk_report(
     symbols = [p.symbol for p in open_positions]
     sides = [p.side.value for p in open_positions]
 
-    long_notional = sum(
-        (p.notional_value for p in open_positions if p.is_long), Decimal("0")
-    )
-    short_notional = sum(
-        (p.notional_value for p in open_positions if p.is_short), Decimal("0")
-    )
+    long_notional = sum((p.notional_value for p in open_positions if p.is_long), Decimal("0"))
+    short_notional = sum((p.notional_value for p in open_positions if p.is_short), Decimal("0"))
 
     report: dict[str, Any] = {
         "equity": str(equity),
@@ -66,7 +62,9 @@ def portfolio_risk_report(
         "total_unrealized_pnl": str(total_unrealized),
         "total_notional": str(total_notional),
         "gross_exposure_pct": float(total_notional / equity * 100) if equity > 0 else 0.0,
-        "net_exposure_pct": float((long_notional - short_notional) / equity * 100) if equity > 0 else 0.0,
+        "net_exposure_pct": float((long_notional - short_notional) / equity * 100)
+        if equity > 0
+        else 0.0,
         "long_notional": str(long_notional),
         "short_notional": str(short_notional),
         "drawdown_pct": float(portfolio.drawdown),
@@ -80,7 +78,9 @@ def portfolio_risk_report(
             pair = correlation_tracker.highest_correlated_pair()
             if pair is not None:
                 report["highest_correlated_pair"] = {
-                    "symbol_a": pair[0], "symbol_b": pair[1], "correlation": pair[2],
+                    "symbol_a": pair[0],
+                    "symbol_b": pair[1],
+                    "correlation": pair[2],
                 }
 
     return report
@@ -155,7 +155,10 @@ def correlation_adjusted_size(
     if scale < 1.0:
         logger.info(
             "Correlation-adjusted sizing: %s worst_corr=%.2f vs held=%s -> scale=%.2f",
-            candidate_symbol, worst, sorted(held_symbols), scale,
+            candidate_symbol,
+            worst,
+            sorted(held_symbols),
+            scale,
         )
     return base_quantity * Decimal(str(scale))
 
@@ -210,7 +213,7 @@ def portfolio_var_cvar(
     # Gaussian-tail CVaR closed form: E[X | X < -VaR] for a normal is
     # mean - std * phi(z)/(1-confidence). Assumes zero-mean returns over
     # the one-period horizon, consistent with the VaR side of this calc.
-    phi_z = math.exp(-z**2 / 2) / math.sqrt(2 * math.pi)
+    phi_z = math.exp(-(z**2) / 2) / math.sqrt(2 * math.pi)
     cvar_pct = (phi_z / (1 - confidence)) * portfolio_std * 100
 
     return {

@@ -58,14 +58,16 @@ async def export_candles(
         )
         writer.writeheader()
         for c in candles:
-            writer.writerow({
-                "timestamp": c.timestamp.isoformat(),
-                "open": str(c.open),
-                "high": str(c.high),
-                "low": str(c.low),
-                "close": str(c.close),
-                "volume": str(c.volume),
-            })
+            writer.writerow(
+                {
+                    "timestamp": c.timestamp.isoformat(),
+                    "open": str(c.open),
+                    "high": str(c.high),
+                    "low": str(c.low),
+                    "close": str(c.close),
+                    "volume": str(c.volume),
+                }
+            )
 
     print(f"Exported {len(candles)} candles to {output}")
 

@@ -5,11 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import pytest
-
 from src.backtesting.commission import PercentageCommission, ZeroCommission
-from src.backtesting.slippage import FixedSlippage, ZeroSlippage
 from src.backtesting.simulator import BacktestBroker
+from src.backtesting.slippage import FixedSlippage, ZeroSlippage
 from src.core.enums import SignalDirection, Timeframe
 from src.core.models import OHLCV
 from src.domain.signal import Signal, SignalStrength
@@ -150,10 +148,7 @@ class TestBacktestBroker:
 
     def test_short_tp_hit(self):
         broker = self._make_broker()
-        signal = make_signal(
-            direction=SignalDirection.SHORT,
-            entry=100.0, sl=102.0, tp=96.0
-        )
+        signal = make_signal(direction=SignalDirection.SHORT, entry=100.0, sl=102.0, tp=96.0)
         broker.place_signal(signal, make_candle(0, 100.0))
         broker.process_pending_orders(make_candle(1, 100.0))
 
@@ -192,8 +187,11 @@ class TestBacktestBroker:
 
         # SL hit
         sl_candle = OHLCV(
-            timestamp=ts(2), open=Decimal("99"),
-            high=Decimal("100"), low=Decimal("96"), close=Decimal("98"),
+            timestamp=ts(2),
+            open=Decimal("99"),
+            high=Decimal("100"),
+            low=Decimal("96"),
+            close=Decimal("98"),
             volume=Decimal("1000"),
         )
         broker.process_pending_orders(sl_candle)

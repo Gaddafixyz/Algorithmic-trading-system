@@ -27,7 +27,6 @@ from src.domain.position import Position
 from src.market_data.cache import MarketDataCache
 from src.market_data.candles import CandleService
 from src.monitoring.metrics import candle_processing_latency
-from src.utils.profiling import RollingTimer
 from src.strategy.filters import (
     filter_by_kill_zone,
     filter_by_macd_trend,
@@ -35,6 +34,7 @@ from src.strategy.filters import (
     filter_by_rsi_exhaustion,
     filter_by_spread,
 )
+from src.utils.profiling import RollingTimer
 
 logger = logging.getLogger(__name__)
 
@@ -191,9 +191,9 @@ class StrategyOrchestrator:
                         f"signal for {symbol} {timeframe.value}: {exc}"
                     ) from exc
                 _elapsed = time.monotonic() - _t0
-                candle_processing_latency.labels(
-                    symbol=symbol, timeframe=timeframe.value
-                ).observe(_elapsed)
+                candle_processing_latency.labels(symbol=symbol, timeframe=timeframe.value).observe(
+                    _elapsed
+                )
                 self._latency_timers.setdefault(
                     strategy.strategy_id, RollingTimer(window=100)
                 ).record(_elapsed * 1000)
@@ -203,8 +203,11 @@ class StrategyOrchestrator:
                         logger.warning(
                             "Strategy '%s' returned an already-expired signal for %s %s "
                             "(generated_at=%s, max_age=%.0fs) — discarding",
-                            strategy.strategy_id, symbol, timeframe,
-                            signal.generated_at.isoformat(), signal.max_age_seconds,
+                            strategy.strategy_id,
+                            symbol,
+                            timeframe,
+                            signal.generated_at.isoformat(),
+                            signal.max_age_seconds,
                         )
                         await self._bus.publish(
                             SignalExpiredEvent(
@@ -223,18 +226,22 @@ class StrategyOrchestrator:
                         logger.info(
                             "Strategy '%s' signal for %s %s filtered: ATR too low "
                             "(min_atr_pct=%.4f)",
-                            strategy.strategy_id, symbol, timeframe, self._min_atr_pct,
+                            strategy.strategy_id,
+                            symbol,
+                            timeframe,
+                            self._min_atr_pct,
                         )
                         continue
 
-                    if self._kill_zone_filter and not filter_by_kill_zone(
-                        self._require_kill_zone
-                    ):
+                    if self._kill_zone_filter and not filter_by_kill_zone(self._require_kill_zone):
                         self._signals_filtered_kill_zone += 1
                         logger.info(
                             "Strategy '%s' signal for %s %s filtered: outside kill zone "
                             "(require_kill_zone=%s)",
-                            strategy.strategy_id, symbol, timeframe, self._require_kill_zone,
+                            strategy.strategy_id,
+                            symbol,
+                            timeframe,
+                            self._require_kill_zone,
                         )
                         continue
 
@@ -247,7 +254,9 @@ class StrategyOrchestrator:
                         self._signals_filtered_rsi += 1
                         logger.info(
                             "Strategy '%s' signal for %s %s filtered: RSI exhaustion",
-                            strategy.strategy_id, symbol, timeframe,
+                            strategy.strategy_id,
+                            symbol,
+                            timeframe,
                         )
                         continue
 
@@ -257,7 +266,9 @@ class StrategyOrchestrator:
                         self._signals_filtered_macd += 1
                         logger.info(
                             "Strategy '%s' signal for %s %s filtered: MACD trend disagreement",
-                            strategy.strategy_id, symbol, timeframe,
+                            strategy.strategy_id,
+                            symbol,
+                            timeframe,
                         )
                         continue
 
@@ -272,7 +283,10 @@ class StrategyOrchestrator:
                                 logger.info(
                                     "Strategy '%s' signal for %s %s filtered: spread too wide "
                                     "(max_spread_pct=%.4f)",
-                                    strategy.strategy_id, symbol, timeframe, self._max_spread_pct,
+                                    strategy.strategy_id,
+                                    symbol,
+                                    timeframe,
+                                    self._max_spread_pct,
                                 )
                                 continue
 
@@ -313,7 +327,10 @@ class StrategyOrchestrator:
             except Exception as exc:
                 logger.exception(
                     "Strategy '%s' error on %s %s: %s",
-                    strategy.strategy_id, symbol, timeframe, exc,
+                    strategy.strategy_id,
+                    symbol,
+                    timeframe,
+                    exc,
                 )
 
     async def _on_position_opened(self, event: Any) -> None:
@@ -365,7 +382,9 @@ class StrategyOrchestrator:
         except Exception as exc:
             logger.exception(
                 "Strategy '%s' error handling position close for %s: %s",
-                strategy.strategy_id, event.symbol, exc,
+                strategy.strategy_id,
+                event.symbol,
+                exc,
             )
 
     @property

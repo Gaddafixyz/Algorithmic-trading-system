@@ -54,7 +54,9 @@ def make_order(
     client_order_id: str | None = None,
 ) -> Order:
     kwargs: dict = dict(
-        symbol=symbol, side=OrderSide.BUY, order_type=OrderType.MARKET,
+        symbol=symbol,
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
         quantity=Decimal(quantity),
     )
     if client_order_id is not None:
@@ -97,7 +99,9 @@ def orders() -> AsyncMock:
 
 @pytest.fixture
 def service(exchange: AsyncMock, positions: AsyncMock, orders: AsyncMock) -> ReconciliationService:
-    return ReconciliationService(exchange=exchange, position_manager=positions, order_manager=orders)
+    return ReconciliationService(
+        exchange=exchange, position_manager=positions, order_manager=orders
+    )
 
 
 class TestReconcileFetchFailure:
@@ -131,7 +135,9 @@ class TestReconcileFetchFailure:
 
 class TestReconcilePositionVanishedFromExchange:
     async def test_force_closes_the_local_position_at_mark_price(
-        self, service: ReconciliationService, exchange: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
         positions: AsyncMock,
     ) -> None:
         local_pos = make_position(mark_price="51000")
@@ -147,8 +153,11 @@ class TestReconcilePositionVanishedFromExchange:
         assert report["position_discrepancies"][0]["issue"] == "not_on_exchange"
 
     async def test_fires_a_critical_alert_for_the_vanished_position(
-        self, service: ReconciliationService, exchange: AsyncMock,
-        positions: AsyncMock, isolated_event_bus: EventBus,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         alerts: list[AlertFiredEvent] = []
 
@@ -193,7 +202,9 @@ class TestReconcilePositionQuantityMismatch:
         local_pos = make_position(quantity="0.1")
         positions.open_positions = [local_pos]
         exchange.get_positions.return_value = [
-            FakeExchangePosition(symbol="BTCUSDT", quantity=Decimal("0.2"), mark_price=Decimal("50000"))
+            FakeExchangePosition(
+                symbol="BTCUSDT", quantity=Decimal("0.2"), mark_price=Decimal("50000")
+            )
         ]
 
         report = await service.reconcile()
@@ -207,7 +218,9 @@ class TestReconcilePositionQuantityMismatch:
         local_pos = make_position(quantity="0.1", mark_price="50000")
         positions.open_positions = [local_pos]
         exchange.get_positions.return_value = [
-            FakeExchangePosition(symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("52000"))
+            FakeExchangePosition(
+                symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("52000")
+            )
         ]
 
         await service.reconcile()
@@ -234,7 +247,9 @@ class TestReconcilePositionQuantityMismatch:
         local_pos = make_position(quantity="0.1")
         positions.open_positions = [local_pos]
         exchange.get_positions.return_value = [
-            FakeExchangePosition(symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("50000"))
+            FakeExchangePosition(
+                symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("50000")
+            )
         ]
 
         report = await service.reconcile()
@@ -257,8 +272,11 @@ class TestReconcileOrphanExchangePositions:
         assert report["orphan_positions"][0]["symbol"] == "SOLUSDT"
 
     async def test_fires_a_critical_alert_for_an_orphan_position(
-        self, service: ReconciliationService, exchange: AsyncMock,
-        positions: AsyncMock, isolated_event_bus: EventBus,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         alerts: list[AlertFiredEvent] = []
 
@@ -284,7 +302,9 @@ class TestReconcileOrphanExchangePositions:
         local_pos = make_position(symbol="BTCUSDT")
         positions.open_positions = [local_pos]
         exchange.get_positions.return_value = [
-            FakeExchangePosition(symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("50000"))
+            FakeExchangePosition(
+                symbol="BTCUSDT", quantity=Decimal("0.1"), mark_price=Decimal("50000")
+            )
         ]
 
         report = await service.reconcile()
@@ -332,7 +352,10 @@ class TestReconcileOrderSync:
         assert local_order.status == OrderStatus.CANCELLED
 
     async def test_a_missed_fill_discovered_via_reconciliation_publishes_order_filled_event(
-        self, service: ReconciliationService, exchange: AsyncMock, orders: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        orders: AsyncMock,
         isolated_event_bus: EventBus,
     ) -> None:
         # This is the recovery path for a fill that happened while the
@@ -366,7 +389,10 @@ class TestReconcileOrderSync:
         assert fill_events[0].filled_quantity == Decimal("0.1")
 
     async def test_does_not_republish_order_filled_for_an_order_already_partially_filled_locally(
-        self, service: ReconciliationService, exchange: AsyncMock, orders: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        orders: AsyncMock,
         isolated_event_bus: EventBus,
     ) -> None:
         fill_events: list[OrderFilledEvent] = []
@@ -397,7 +423,9 @@ class TestReconcileOrderSync:
         # path; the fill data (qty/price/fee) must still be applied
         # even if transition_to() raises, by forcing the status field
         # directly as a fallback.
-        local_order = make_order(status=OrderStatus.FILLED)  # terminal: no further transitions valid
+        local_order = make_order(
+            status=OrderStatus.FILLED
+        )  # terminal: no further transitions valid
         orders.get_open_orders.return_value = [local_order]
         exchange.get_positions.return_value = []
 

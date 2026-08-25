@@ -76,15 +76,24 @@ class TestSessionContextManager:
         await db.connect()
         await db.create_tables()
 
-        from src.persistence.orders import OrderORM
         from datetime import UTC, datetime
 
+        from src.persistence.orders import OrderORM
+
         async with db.session() as session:
-            session.add(OrderORM(
-                order_id="o1", client_order_id="c1", symbol="BTCUSDT", side="BUY",
-                order_type="MARKET", status="OPEN", quantity=Decimal("0.1"),
-                created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-            ))
+            session.add(
+                OrderORM(
+                    order_id="o1",
+                    client_order_id="c1",
+                    symbol="BTCUSDT",
+                    side="BUY",
+                    order_type="MARKET",
+                    status="OPEN",
+                    quantity=Decimal("0.1"),
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
+                )
+            )
 
         # A fresh session should see the committed row.
         async with db.session() as verify_session:
@@ -98,16 +107,25 @@ class TestSessionContextManager:
         await db.connect()
         await db.create_tables()
 
-        from src.persistence.orders import OrderORM
         from datetime import UTC, datetime
+
+        from src.persistence.orders import OrderORM
 
         with pytest.raises(ValueError, match="boom"):
             async with db.session() as session:
-                session.add(OrderORM(
-                    order_id="o2", client_order_id="c2", symbol="BTCUSDT", side="BUY",
-                    order_type="MARKET", status="OPEN", quantity=Decimal("0.1"),
-                    created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
-                ))
+                session.add(
+                    OrderORM(
+                        order_id="o2",
+                        client_order_id="c2",
+                        symbol="BTCUSDT",
+                        side="BUY",
+                        order_type="MARKET",
+                        status="OPEN",
+                        quantity=Decimal("0.1"),
+                        created_at=datetime.now(UTC),
+                        updated_at=datetime.now(UTC),
+                    )
+                )
                 raise ValueError("boom")
 
         # The row must not have been committed.
@@ -119,7 +137,9 @@ class TestSessionContextManager:
 
 
 class TestGetDatabaseSingleton:
-    def test_returns_the_same_instance_on_repeated_calls(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_returns_the_same_instance_on_repeated_calls(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(database_module, "_db", None)
         first = get_database()
         second = get_database()

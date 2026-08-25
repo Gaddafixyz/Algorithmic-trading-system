@@ -7,7 +7,6 @@ from datetime import datetime
 from src.smart_money.sessions import (
     KillZone,
     get_active_kill_zone,
-    is_high_probability_window,
     is_in_kill_zone,
     session_score,
 )

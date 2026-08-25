@@ -25,7 +25,6 @@ from src.core.events import (
     FundingRateEvent,
     MarkPriceUpdatedEvent,
     OrderFilledEvent,
-    PositionOpenedEvent,
     PositionUpdatedEvent,
     SignalExpiredEvent,
     SignalGeneratedEvent,
@@ -215,7 +214,9 @@ class TestOnSignalEntrySubmission:
         risk_manager: AsyncMock,
     ) -> None:
         submitted_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = submitted_order
@@ -343,7 +344,9 @@ class TestOnSignalDuplicatePrevention:
         risk_manager: AsyncMock,
     ) -> None:
         submitted_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = submitted_order
@@ -366,7 +369,9 @@ class TestOnSignalDuplicatePrevention:
         # tracking (e.g. after a restart) -- the open-orders check
         # catches this independently.
         existing_open_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.get_open_orders.return_value = [existing_open_order]
@@ -387,7 +392,9 @@ class TestOnFillCreatesPosition:
         position_manager: AsyncMock,
     ) -> None:
         order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = order
@@ -399,16 +406,26 @@ class TestOnFillCreatesPosition:
         # is tracking, then have get_order return it.
         order.transition_to(OrderStatus.SUBMITTED)
         order.transition_to(OrderStatus.OPEN)
-        order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))  # auto-transitions to FILLED since filled_quantity >= quantity
+        order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )  # auto-transitions to FILLED since filled_quantity >= quantity
         order_manager.get_order.return_value = order
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("2"), fee_asset="USDT",
+            source="test",
+            order_id=order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("2"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
@@ -430,44 +447,54 @@ class TestOnFillCreatesPosition:
         # direction) -> fvg_target_zones, bearish FVGs (opposing) ->
         # fvg_reversal_zones.
         order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = order
 
         await engine.start()
-        await engine._on_signal(make_signal_event(
-            direction=SignalDirection.LONG,
-            open_fvgs=[
-                {"type": "bullish", "top": "50500", "bottom": "50300"},
-                {"type": "bearish", "top": "49900", "bottom": "49700"},
-            ],
-        ))
+        await engine._on_signal(
+            make_signal_event(
+                direction=SignalDirection.LONG,
+                open_fvgs=[
+                    {"type": "bullish", "top": "50500", "bottom": "50300"},
+                    {"type": "bearish", "top": "49900", "bottom": "49700"},
+                ],
+            )
+        )
 
         order.transition_to(OrderStatus.SUBMITTED)
         order.transition_to(OrderStatus.OPEN)
-        order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))
+        order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )
         order_manager.get_order.return_value = order
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("2"), fee_asset="USDT",
+            source="test",
+            order_id=order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("2"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
 
         assert len(portfolio.positions) == 1
         position = next(iter(portfolio.positions.values()))
-        assert position.tags["fvg_target_zones"] == [
-            {"top": "50500", "bottom": "50300"}
-        ]
-        assert position.tags["fvg_reversal_zones"] == [
-            {"top": "49900", "bottom": "49700"}
-        ]
+        assert position.tags["fvg_target_zones"] == [{"top": "50500", "bottom": "50300"}]
+        assert position.tags["fvg_reversal_zones"] == [{"top": "49900", "bottom": "49700"}]
 
     async def test_ignores_fill_events_for_untracked_orders(
         self, engine: ExecutionEngine, order_manager: AsyncMock, portfolio: Portfolio
@@ -476,20 +503,30 @@ class TestOnFillCreatesPosition:
         await engine.start()
 
         fill_event = OrderFilledEvent(
-            source="test", order_id="unknown-order", symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("0"), fee_asset="USDT",
+            source="test",
+            order_id="unknown-order",
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("0"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
         assert len(portfolio.positions) == 0
 
     async def test_ignores_non_terminal_partial_fill(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
-        risk_manager: AsyncMock, portfolio: Portfolio,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
+        risk_manager: AsyncMock,
+        portfolio: Portfolio,
     ) -> None:
         order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = order
@@ -498,16 +535,26 @@ class TestOnFillCreatesPosition:
 
         order.transition_to(OrderStatus.SUBMITTED)
         order.transition_to(OrderStatus.OPEN)
-        order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.05"),
-            fee=Decimal("1"), fee_asset="USDT",
-        ))  # auto-transitions to PARTIALLY_FILLED (not terminal)
+        order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.05"),
+                fee=Decimal("1"),
+                fee_asset="USDT",
+            )
+        )  # auto-transitions to PARTIALLY_FILLED (not terminal)
         order_manager.get_order.return_value = order
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.05"),
-            fill_price=Decimal("50000"), fee=Decimal("1"), fee_asset="USDT",
+            source="test",
+            order_id=order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.05"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("1"),
+            fee_asset="USDT",
             is_partial=True,
         )
         await engine._on_fill(fill_event)
@@ -520,11 +567,16 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
     than silently leave a leveraged position with no stop-loss."""
 
     async def test_stop_loss_placement_success_places_take_profit_too(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
-        risk_manager: AsyncMock, portfolio: Portfolio,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
+        risk_manager: AsyncMock,
+        portfolio: Portfolio,
     ) -> None:
         entry_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
         order_manager.submit_order.return_value = entry_order
@@ -533,24 +585,36 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
 
         entry_order.transition_to(OrderStatus.SUBMITTED)
         entry_order.transition_to(OrderStatus.OPEN)
-        entry_order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))  # auto-transitions to FILLED
+        entry_order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )  # auto-transitions to FILLED
         order_manager.get_order.return_value = entry_order
 
         # Subsequent submit_order calls (SL, then TP) succeed.
         order_manager.submit_order.side_effect = None
         order_manager.submit_order.return_value = Order(
-            symbol="BTCUSDT", side=OrderSide.SELL,
-            order_type=OrderType.STOP_MARKET, quantity=Decimal("0.1"),
+            symbol="BTCUSDT",
+            side=OrderSide.SELL,
+            order_type=OrderType.STOP_MARKET,
+            quantity=Decimal("0.1"),
             stop_price=Decimal("49000"),
         )
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=entry_order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("2"), fee_asset="USDT",
+            source="test",
+            order_id=entry_order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("2"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
@@ -559,11 +623,17 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
         assert order_manager.submit_order.await_count == 3
 
     async def test_stop_loss_failure_after_all_retries_fires_critical_alert(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
-        risk_manager: AsyncMock, portfolio: Portfolio, isolated_event_bus: EventBus,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
+        risk_manager: AsyncMock,
+        portfolio: Portfolio,
+        isolated_event_bus: EventBus,
     ) -> None:
         entry_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
 
@@ -589,16 +659,26 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
 
         entry_order.transition_to(OrderStatus.SUBMITTED)
         entry_order.transition_to(OrderStatus.OPEN)
-        entry_order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))  # auto-transitions to FILLED
+        entry_order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )  # auto-transitions to FILLED
         order_manager.get_order.return_value = entry_order
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=entry_order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("2"), fee_asset="USDT",
+            source="test",
+            order_id=entry_order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("2"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
@@ -612,8 +692,12 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
         assert "BTCUSDT" in alerts_received[0].message
 
     async def test_take_profit_only_failure_fires_a_warning_not_critical_alert(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
-        risk_manager: AsyncMock, portfolio: Portfolio, isolated_event_bus: EventBus,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
+        risk_manager: AsyncMock,
+        portfolio: Portfolio,
+        isolated_event_bus: EventBus,
     ) -> None:
         # Stop-loss succeeds (position IS protected); take-profit fails.
         # This is documented as a degraded-but-safe state and must fire
@@ -621,7 +705,9 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
         # / WARNING) rather than the same CRITICAL unprotected_position
         # alert used for a failed stop-loss.
         entry_order = Order(
-            symbol="BTCUSDT", side=OrderSide.BUY, order_type=OrderType.MARKET,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
             quantity=Decimal("0.1"),
         )
 
@@ -640,8 +726,10 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
                 return entry_order  # entry
             if call_count["n"] == 2:
                 return Order(  # stop-loss succeeds
-                    symbol="BTCUSDT", side=OrderSide.SELL,
-                    order_type=OrderType.STOP_MARKET, quantity=Decimal("0.1"),
+                    symbol="BTCUSDT",
+                    side=OrderSide.SELL,
+                    order_type=OrderType.STOP_MARKET,
+                    quantity=Decimal("0.1"),
                     stop_price=Decimal("49000"),
                 )
             raise RuntimeError("take-profit rejected")  # TP fails
@@ -653,16 +741,26 @@ class TestPlaceExitOrdersUnprotectedPositionAlert:
 
         entry_order.transition_to(OrderStatus.SUBMITTED)
         entry_order.transition_to(OrderStatus.OPEN)
-        entry_order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))  # auto-transitions to FILLED
+        entry_order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )  # auto-transitions to FILLED
         order_manager.get_order.return_value = entry_order
 
         fill_event = OrderFilledEvent(
-            source="test", order_id=entry_order.order_id, symbol="BTCUSDT",
-            side=OrderSide.BUY, filled_quantity=Decimal("0.1"),
-            fill_price=Decimal("50000"), fee=Decimal("2"), fee_asset="USDT",
+            source="test",
+            order_id=entry_order.order_id,
+            symbol="BTCUSDT",
+            side=OrderSide.BUY,
+            filled_quantity=Decimal("0.1"),
+            fill_price=Decimal("50000"),
+            fee=Decimal("2"),
+            fee_asset="USDT",
             is_partial=False,
         )
         await engine._on_fill(fill_event)
@@ -708,25 +806,37 @@ def make_position(
 
 class TestTickDrivenExitManagement:
     async def test_start_subscribes_to_tick_events_by_default(
-        self, engine: ExecutionEngine, isolated_event_bus: EventBus,
+        self,
+        engine: ExecutionEngine,
+        isolated_event_bus: EventBus,
     ) -> None:
         await engine.start()
         assert len(isolated_event_bus._handlers["TickReceivedEvent"]) == 1  # type: ignore[attr-defined]
 
     async def test_tick_ignored_when_no_open_position(
-        self, engine: ExecutionEngine, position_manager: AsyncMock, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
+        order_manager: AsyncMock,
     ) -> None:
         position_manager.get_by_symbol.return_value = []
         await engine.start()
-        await engine._on_tick(TickReceivedEvent(
-            source="test", symbol="BTCUSDT", price=Decimal("51000"),
-            quantity=Decimal("1"), is_buyer_maker=False,
-        ))
+        await engine._on_tick(
+            TickReceivedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                price=Decimal("51000"),
+                quantity=Decimal("1"),
+                is_buyer_maker=False,
+            )
+        )
         order_manager.submit_order.assert_not_awaited()
         order_manager.cancel_order.assert_not_awaited()
 
     async def test_tick_does_not_update_mark_price(
-        self, engine: ExecutionEngine, position_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
     ) -> None:
         # position.mark_price is exchange margin/PnL data and must be
         # sourced only from MarkPriceUpdatedEvent (see TestMarkPriceUpdates
@@ -735,20 +845,31 @@ class TestTickDrivenExitManagement:
         position = make_position()
         position_manager.get_by_symbol.return_value = [position]
         await engine.start()
-        await engine._on_tick(TickReceivedEvent(
-            source="test", symbol="BTCUSDT", price=Decimal("50100"),
-            quantity=Decimal("1"), is_buyer_maker=False,
-        ))
+        await engine._on_tick(
+            TickReceivedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                price=Decimal("50100"),
+                quantity=Decimal("1"),
+                is_buyer_maker=False,
+            )
+        )
         position_manager.update_mark_price.assert_not_called()
 
     async def test_breakeven_move_cancels_old_stop_and_submits_a_new_one(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
     ) -> None:
         position = make_position(entry="50000", sl="49000")  # 1000 risk
         engine._active_stop_orders[position.position_id] = "old-stop-order-id"
         new_stop_order = Order(
-            symbol="BTCUSDT", side=OrderSide.SELL, order_type=OrderType.STOP_MARKET,
-            quantity=Decimal("0.1"), stop_price=Decimal("50000"), reduce_only=True,
+            symbol="BTCUSDT",
+            side=OrderSide.SELL,
+            order_type=OrderType.STOP_MARKET,
+            quantity=Decimal("0.1"),
+            stop_price=Decimal("50000"),
+            reduce_only=True,
         )
         order_manager.submit_order.return_value = new_stop_order
 
@@ -763,7 +884,9 @@ class TestTickDrivenExitManagement:
         assert engine._active_stop_orders[position.position_id] == new_stop_order.order_id
 
     async def test_trailing_stop_update_only_fires_when_it_improves(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
     ) -> None:
         # Already at breakeven, in a low-vol regime (entry_atr=50 vs price
         # ~50000 -> 0.1% -> "low" -> 1.5x multiplier): new trail =
@@ -772,8 +895,12 @@ class TestTickDrivenExitManagement:
         position.breakeven_triggered = True
         engine._active_stop_orders[position.position_id] = "old-stop-order-id"
         new_stop_order = Order(
-            symbol="BTCUSDT", side=OrderSide.SELL, order_type=OrderType.STOP_MARKET,
-            quantity=Decimal("0.1"), stop_price=Decimal("51425"), reduce_only=True,
+            symbol="BTCUSDT",
+            side=OrderSide.SELL,
+            order_type=OrderType.STOP_MARKET,
+            quantity=Decimal("0.1"),
+            stop_price=Decimal("51425"),
+            reduce_only=True,
         )
         order_manager.submit_order.return_value = new_stop_order
 
@@ -784,7 +911,9 @@ class TestTickDrivenExitManagement:
         assert position.stop_loss == Decimal("51425")
 
     async def test_trailing_stop_update_logs_volatility_regime(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Regression: ExitPlan.volatility_regime was computed on every
@@ -797,8 +926,12 @@ class TestTickDrivenExitManagement:
         position = make_position(entry="50000", sl="50000", entry_atr="50")
         position.breakeven_triggered = True  # skip the breakeven branch
         new_stop_order = Order(
-            symbol="BTCUSDT", side=OrderSide.SELL, order_type=OrderType.STOP_MARKET,
-            quantity=Decimal("0.1"), stop_price=Decimal("51425"), reduce_only=True,
+            symbol="BTCUSDT",
+            side=OrderSide.SELL,
+            order_type=OrderType.STOP_MARKET,
+            quantity=Decimal("0.1"),
+            stop_price=Decimal("51425"),
+            reduce_only=True,
         )
         order_manager.submit_order.return_value = new_stop_order
 
@@ -809,7 +942,9 @@ class TestTickDrivenExitManagement:
         assert any("regime=low" in rec.message for rec in caplog.records)
 
     async def test_breakeven_move_does_not_log_a_regime(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """The breakeven target isn't regime-derived, so its log line
@@ -818,8 +953,12 @@ class TestTickDrivenExitManagement:
 
         position = make_position(entry="50000", sl="49000")
         new_stop_order = Order(
-            symbol="BTCUSDT", side=OrderSide.SELL, order_type=OrderType.STOP_MARKET,
-            quantity=Decimal("0.1"), stop_price=Decimal("50000"), reduce_only=True,
+            symbol="BTCUSDT",
+            side=OrderSide.SELL,
+            order_type=OrderType.STOP_MARKET,
+            quantity=Decimal("0.1"),
+            stop_price=Decimal("50000"),
+            reduce_only=True,
         )
         order_manager.submit_order.return_value = new_stop_order
 
@@ -832,7 +971,9 @@ class TestTickDrivenExitManagement:
         assert "regime=" not in stop_logs[0].message
 
     async def test_no_stop_update_when_trail_would_not_improve(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
     ) -> None:
         # Price barely above entry with a wide ATR -> trail candidate is
         # below the existing stop, so nothing should be submitted.
@@ -846,7 +987,9 @@ class TestTickDrivenExitManagement:
         order_manager.submit_order.assert_not_awaited()
 
     async def test_stop_or_tp_already_hit_is_left_to_the_exchange_order(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
     ) -> None:
         position = make_position(entry="50000", sl="49000", tp="52000")
 
@@ -857,7 +1000,9 @@ class TestTickDrivenExitManagement:
         order_manager.submit_order.assert_not_awaited()
 
     async def test_cancel_failure_skips_the_update_instead_of_double_submitting(
-        self, engine: ExecutionEngine, order_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        order_manager: AsyncMock,
     ) -> None:
         position = make_position(entry="50000", sl="49000")
         engine._active_stop_orders[position.position_id] = "old-stop-order-id"
@@ -896,42 +1041,63 @@ class TestMarkPriceUpdates:
     MarkPriceUpdatedEvent rather than trade ticks or candle closes."""
 
     async def test_ignores_non_mark_price_events(
-        self, engine: ExecutionEngine, position_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
     ) -> None:
         await engine.start()
         await engine._on_mark_price(object())
         position_manager.update_mark_price.assert_not_called()
 
     async def test_does_nothing_when_not_running(
-        self, engine: ExecutionEngine, position_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
     ) -> None:
         # Deliberately not calling start().
-        await engine._on_mark_price(MarkPriceUpdatedEvent(
-            source="test", symbol="BTCUSDT", mark_price=Decimal("50100"),
-        ))
+        await engine._on_mark_price(
+            MarkPriceUpdatedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                mark_price=Decimal("50100"),
+            )
+        )
         position_manager.update_mark_price.assert_not_called()
 
     async def test_ignored_when_no_open_position(
-        self, engine: ExecutionEngine, position_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
     ) -> None:
         position_manager.get_by_symbol.return_value = []
         await engine.start()
-        await engine._on_mark_price(MarkPriceUpdatedEvent(
-            source="test", symbol="BTCUSDT", mark_price=Decimal("50100"),
-        ))
+        await engine._on_mark_price(
+            MarkPriceUpdatedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                mark_price=Decimal("50100"),
+            )
+        )
         position_manager.update_mark_price.assert_not_called()
 
     async def test_updates_mark_price_for_open_positions(
-        self, engine: ExecutionEngine, position_manager: AsyncMock,
+        self,
+        engine: ExecutionEngine,
+        position_manager: AsyncMock,
     ) -> None:
         position = make_position()
         position_manager.get_by_symbol.return_value = [position]
         await engine.start()
-        await engine._on_mark_price(MarkPriceUpdatedEvent(
-            source="test", symbol="BTCUSDT", mark_price=Decimal("50250.5"),
-        ))
+        await engine._on_mark_price(
+            MarkPriceUpdatedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                mark_price=Decimal("50250.5"),
+            )
+        )
         position_manager.update_mark_price.assert_called_once_with(
-            "BTCUSDT", Decimal("50250.5"),
+            "BTCUSDT",
+            Decimal("50250.5"),
         )
 
     async def test_updates_mark_price_even_when_trailing_exits_disabled(
@@ -953,11 +1119,16 @@ class TestMarkPriceUpdates:
             manage_trailing_exits=False,
         )
         await engine.start()
-        await engine._on_mark_price(MarkPriceUpdatedEvent(
-            source="test", symbol="BTCUSDT", mark_price=Decimal("50250.5"),
-        ))
+        await engine._on_mark_price(
+            MarkPriceUpdatedEvent(
+                source="test",
+                symbol="BTCUSDT",
+                mark_price=Decimal("50250.5"),
+            )
+        )
         position_manager.update_mark_price.assert_called_once_with(
-            "BTCUSDT", Decimal("50250.5"),
+            "BTCUSDT",
+            Decimal("50250.5"),
         )
 
 
@@ -970,10 +1141,12 @@ class TestFundingRateUpdates:
     """
 
     async def test_not_subscribed_by_default(
-        self, engine: ExecutionEngine, isolated_event_bus: EventBus,
+        self,
+        engine: ExecutionEngine,
+        isolated_event_bus: EventBus,
     ) -> None:
         await engine.start()
-        assert len(isolated_event_bus._handlers.get("FundingRateEvent", []))  == 0  # type: ignore[attr-defined]
+        assert len(isolated_event_bus._handlers.get("FundingRateEvent", [])) == 0  # type: ignore[attr-defined]
 
     async def test_subscribed_when_enabled(
         self,
@@ -1032,10 +1205,14 @@ class TestFundingRateUpdates:
             track_funding_pnl=True,
         )
         # Deliberately not calling start().
-        await engine._on_funding_rate(FundingRateEvent(
-            source="test", symbol="BTCUSDT", rate=Decimal("0.0001"),
-            next_funding_time=datetime.now(tz=UTC),
-        ))
+        await engine._on_funding_rate(
+            FundingRateEvent(
+                source="test",
+                symbol="BTCUSDT",
+                rate=Decimal("0.0001"),
+                next_funding_time=datetime.now(tz=UTC),
+            )
+        )
         position_manager.apply_funding.assert_not_called()
 
     async def test_ignored_when_no_open_position(
@@ -1056,10 +1233,14 @@ class TestFundingRateUpdates:
             track_funding_pnl=True,
         )
         await engine.start()
-        await engine._on_funding_rate(FundingRateEvent(
-            source="test", symbol="BTCUSDT", rate=Decimal("0.0001"),
-            next_funding_time=datetime.now(tz=UTC),
-        ))
+        await engine._on_funding_rate(
+            FundingRateEvent(
+                source="test",
+                symbol="BTCUSDT",
+                rate=Decimal("0.0001"),
+                next_funding_time=datetime.now(tz=UTC),
+            )
+        )
         position_manager.apply_funding.assert_not_called()
 
     async def test_settles_funding_for_open_positions(
@@ -1081,12 +1262,17 @@ class TestFundingRateUpdates:
             track_funding_pnl=True,
         )
         await engine.start()
-        await engine._on_funding_rate(FundingRateEvent(
-            source="test", symbol="BTCUSDT", rate=Decimal("0.0001"),
-            next_funding_time=datetime.now(tz=UTC),
-        ))
+        await engine._on_funding_rate(
+            FundingRateEvent(
+                source="test",
+                symbol="BTCUSDT",
+                rate=Decimal("0.0001"),
+                next_funding_time=datetime.now(tz=UTC),
+            )
+        )
         position_manager.apply_funding.assert_called_once_with(
-            "BTCUSDT", Decimal("0.0001"),
+            "BTCUSDT",
+            Decimal("0.0001"),
         )
 
 

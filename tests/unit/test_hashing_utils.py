@@ -31,10 +31,7 @@ class TestSha256Hex:
         assert sha256_hex("a") != sha256_hex("b")
 
     def test_empty_string_has_the_well_known_sha256_digest(self) -> None:
-        assert (
-            sha256_hex("")
-            == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        )
+        assert sha256_hex("") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
 class TestHmacSha256:
@@ -67,9 +64,7 @@ class TestHmacSha256:
 
 class TestIdempotencyKey:
     def test_is_deterministic_for_the_same_parts(self) -> None:
-        assert idempotency_key("order", "123", "BUY") == idempotency_key(
-            "order", "123", "BUY"
-        )
+        assert idempotency_key("order", "123", "BUY") == idempotency_key("order", "123", "BUY")
 
     def test_order_of_parts_matters(self) -> None:
         assert idempotency_key("a", "b") != idempotency_key("b", "a")

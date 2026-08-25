@@ -11,7 +11,9 @@ from src.portfolio.allocator import AllocationMethod, PortfolioAllocator
 
 class TestEqualWeight:
     def test_splits_evenly(self):
-        allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("100"), max_open_positions=10)
+        allocator = PortfolioAllocator(
+            max_position_pct_of_equity=Decimal("100"), max_open_positions=10
+        )
         result = allocator.allocate(Decimal("10000"), ["BTCUSDT", "ETHUSDT"])
         assert result["BTCUSDT"] == Decimal("5000")
         assert result["ETHUSDT"] == Decimal("5000")
@@ -31,7 +33,9 @@ class TestEqualWeight:
 
 class TestPositionCap:
     def test_caps_at_max_position_pct(self):
-        allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("20"), max_open_positions=10)
+        allocator = PortfolioAllocator(
+            max_position_pct_of_equity=Decimal("20"), max_open_positions=10
+        )
         # Equal weight across 2 symbols would give 50% each — should be
         # capped to 20% of equity per symbol.
         result = allocator.allocate(Decimal("10000"), ["BTCUSDT", "ETHUSDT"])
@@ -41,11 +45,15 @@ class TestPositionCap:
 
 class TestMaxOpenPositionsCap:
     def test_truncates_to_top_weighted_and_renormalizes(self):
-        allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("100"), max_open_positions=2)
+        allocator = PortfolioAllocator(
+            max_position_pct_of_equity=Decimal("100"), max_open_positions=2
+        )
         weights = {"BTCUSDT": Decimal("0.6"), "ETHUSDT": Decimal("0.3"), "SOLUSDT": Decimal("0.1")}
         result = allocator.allocate(
-            Decimal("10000"), list(weights.keys()),
-            method=AllocationMethod.FIXED, fixed_weights=weights,
+            Decimal("10000"),
+            list(weights.keys()),
+            method=AllocationMethod.FIXED,
+            fixed_weights=weights,
         )
         assert "SOLUSDT" not in result
         assert set(result) == {"BTCUSDT", "ETHUSDT"}
@@ -67,7 +75,8 @@ class TestFixedWeights:
     def test_ignores_symbols_not_in_weight_map(self):
         allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("100"))
         result = allocator.allocate(
-            Decimal("10000"), ["BTCUSDT", "ETHUSDT"],
+            Decimal("10000"),
+            ["BTCUSDT", "ETHUSDT"],
             method=AllocationMethod.FIXED,
             fixed_weights={"BTCUSDT": Decimal("1.0")},
         )
@@ -77,9 +86,12 @@ class TestFixedWeights:
 
 class TestRiskParity:
     def test_lower_volatility_gets_higher_weight(self):
-        allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("100"), max_open_positions=10)
+        allocator = PortfolioAllocator(
+            max_position_pct_of_equity=Decimal("100"), max_open_positions=10
+        )
         result = allocator.allocate(
-            Decimal("10000"), ["BTCUSDT", "ETHUSDT"],
+            Decimal("10000"),
+            ["BTCUSDT", "ETHUSDT"],
             method=AllocationMethod.RISK_PARITY,
             volatilities={"BTCUSDT": 0.01, "ETHUSDT": 0.04},
         )
@@ -87,9 +99,12 @@ class TestRiskParity:
         assert result["BTCUSDT"] + result["ETHUSDT"] == Decimal("10000")
 
     def test_missing_volatility_falls_back_without_raising(self):
-        allocator = PortfolioAllocator(max_position_pct_of_equity=Decimal("100"), max_open_positions=10)
+        allocator = PortfolioAllocator(
+            max_position_pct_of_equity=Decimal("100"), max_open_positions=10
+        )
         result = allocator.allocate(
-            Decimal("10000"), ["BTCUSDT", "ETHUSDT"],
+            Decimal("10000"),
+            ["BTCUSDT", "ETHUSDT"],
             method=AllocationMethod.RISK_PARITY,
             volatilities={"BTCUSDT": 0.01},  # ETHUSDT missing
         )

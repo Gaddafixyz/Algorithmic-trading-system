@@ -29,14 +29,14 @@ BYBIT_MAINNET_PRIVATE_WS = "wss://stream.bybit.com/v5/private"
 BYBIT_TESTNET_PRIVATE_WS = "wss://stream-testnet.bybit.com/v5/private"
 
 # Binance API defaults
-BINANCE_RECV_WINDOW_MS: int = 5_000       # Timestamp tolerance window (ms)
-BINANCE_MAX_CANDLES: int = 1_500          # Max klines per REST request
-BINANCE_RATE_LIMIT_WEIGHT: int = 2_400   # Max request weight per minute
+BINANCE_RECV_WINDOW_MS: int = 5_000  # Timestamp tolerance window (ms)
+BINANCE_MAX_CANDLES: int = 1_500  # Max klines per REST request
+BINANCE_RATE_LIMIT_WEIGHT: int = 2_400  # Max request weight per minute
 BINANCE_LISTEN_KEY_REFRESH_MINUTES: int = 30  # User-data stream key renewal interval
 
 # Maker/taker fee rates for Binance Futures (VIP 0, standard)
-BINANCE_MAKER_FEE_RATE: Decimal = Decimal("0.0002")   # 0.02%
-BINANCE_TAKER_FEE_RATE: Decimal = Decimal("0.0004")   # 0.04%
+BINANCE_MAKER_FEE_RATE: Decimal = Decimal("0.0002")  # 0.02%
+BINANCE_TAKER_FEE_RATE: Decimal = Decimal("0.0004")  # 0.04%
 
 # ─── Position Sizing ─────────────────────────────────────────────────────────
 
@@ -182,7 +182,7 @@ REBALANCE_CHECK_INTERVAL_SECONDS: float = 300.0
 
 # Alert cooldown — suppress duplicate alerts for this period
 ALERT_COOLDOWN_SECONDS: float = 1_800.0  # 30 minutes
-ALERT_EVAL_INTERVAL_SECONDS: float = 60.0   # How often AlertManager.evaluate() runs
+ALERT_EVAL_INTERVAL_SECONDS: float = 60.0  # How often AlertManager.evaluate() runs
 
 # ─── Backtesting ─────────────────────────────────────────────────────────────
 

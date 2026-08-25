@@ -75,9 +75,7 @@ class TestEventLoopWatchdogCoroutineCallbackBridging:
             calls.append(1.0)
             fired.set()
 
-        wd = EventLoopWatchdog(
-            timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout
-        )
+        wd = EventLoopWatchdog(timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout)
         wd.start()  # captures this test's running loop
         try:
             await asyncio.wait_for(fired.wait(), timeout=2.0)
@@ -97,9 +95,7 @@ class TestEventLoopWatchdogCoroutineCallbackBridging:
             if call_count >= 2:
                 got_two.set()
 
-        wd = EventLoopWatchdog(
-            timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout
-        )
+        wd = EventLoopWatchdog(timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout)
         wd.start()
         try:
             # Never ping again — stays stalled for many check cycles.
@@ -117,9 +113,7 @@ class TestEventLoopWatchdogCoroutineCallbackBridging:
             nonlocal call_count
             call_count += 1
 
-        wd = EventLoopWatchdog(
-            timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout
-        )
+        wd = EventLoopWatchdog(timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout)
         wd.start()
         try:
             await asyncio.sleep(0.1)  # first stall fires (call_count -> 1)
@@ -139,12 +133,11 @@ class TestEventLoopWatchdogCoroutineCallbackBridging:
         of the watchdog thread or silently constructing a dangling
         coroutine object.
         """
+
         async def on_timeout() -> None:
             pytest.fail("should never run: no loop was available to schedule on")
 
-        wd = EventLoopWatchdog(
-            timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout
-        )
+        wd = EventLoopWatchdog(timeout_seconds=0.02, check_interval=0.01, on_timeout=on_timeout)
         wd._loop = None  # simulate start() outside a running loop  # noqa: SLF001
 
         with caplog.at_level(logging.ERROR, logger="src.monitoring.watchdog"):

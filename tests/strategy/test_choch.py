@@ -13,7 +13,10 @@ from src.smart_money.market_structure import MarketStructureState, SwingPoint
 
 def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
         volume=Decimal("100"),
         timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=index),
     )
@@ -21,8 +24,10 @@ def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
 
 def swing(price: str, bar_index: int, is_high: bool) -> SwingPoint:
     return SwingPoint(
-        price=Decimal(price), timestamp=datetime(2024, 1, 1, tzinfo=UTC),
-        bar_index=bar_index, is_high=is_high,
+        price=Decimal(price),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        bar_index=bar_index,
+        is_high=is_high,
     )
 
 
@@ -41,7 +46,7 @@ class TestBearishChochInBullishStructure:
             candle("105", "106", "104", "105", 0),
             candle("104", "106", "103", "104", 1),
             candle("101", "103", "100", "101", 2),  # the swing low itself
-            candle("100", "101", "97", "98", 3),    # closes below 100 -> CHoCH
+            candle("100", "101", "97", "98", 3),  # closes below 100 -> CHoCH
         ]
         events = detect_choch(candles, structure)
         assert len(events) == 1
@@ -77,7 +82,7 @@ class TestBullishChochInBearishStructure:
         candles = [
             candle("95", "96", "94", "95", 0),
             candle("96", "98", "95", "97", 1),
-            candle("99", "100", "97", "99", 2),   # the swing high itself
+            candle("99", "100", "97", "99", 2),  # the swing high itself
             candle("100", "102", "99", "101", 3),  # closes above 100 -> CHoCH
         ]
         events = detect_choch(candles, structure)
@@ -121,8 +126,8 @@ class TestBrokenSwingSkipGuard:
         candles = [
             candle("103", "104", "101", "102", 0),
             candle("101", "102", "100", "100.5", 1),
-            candle("99", "100", "97", "98", 2),   # breaks below 100
-            candle("97", "98", "95", "96", 3),    # still below 100, same swing already broken
+            candle("99", "100", "97", "98", 2),  # breaks below 100
+            candle("97", "98", "95", "96", 3),  # still below 100, same swing already broken
         ]
         events = detect_choch(candles, structure)
         assert len(events) == 1  # not reported again on candle 3
@@ -132,15 +137,13 @@ class TestMultipleSwingsAndOrdering:
     def test_events_are_returned_sorted_by_break_candle_index(self) -> None:
         hl1 = swing("100", bar_index=1, is_high=False)
         hl2 = swing("95", bar_index=3, is_high=False)
-        structure = MarketStructureState(
-            structure=MarketStructure.BULLISH, swing_lows=[hl1, hl2]
-        )
+        structure = MarketStructureState(structure=MarketStructure.BULLISH, swing_lows=[hl1, hl2])
         candles = [
             candle("103", "104", "101", "102", 0),
             candle("101", "102", "100", "100.5", 1),
-            candle("99", "100", "96", "97", 2),   # breaks hl1 (100)
+            candle("99", "100", "96", "97", 2),  # breaks hl1 (100)
             candle("96", "97", "94", "95.5", 3),
-            candle("94", "95", "90", "91", 4),    # breaks hl2 (95)
+            candle("94", "95", "90", "91", 4),  # breaks hl2 (95)
         ]
         events = detect_choch(candles, structure)
         assert len(events) == 2
@@ -156,9 +159,7 @@ class TestLatestChoch:
     def test_returns_the_most_recent_event(self) -> None:
         hl1 = swing("100", bar_index=1, is_high=False)
         hl2 = swing("95", bar_index=3, is_high=False)
-        structure = MarketStructureState(
-            structure=MarketStructure.BULLISH, swing_lows=[hl1, hl2]
-        )
+        structure = MarketStructureState(structure=MarketStructure.BULLISH, swing_lows=[hl1, hl2])
         candles = [
             candle("103", "104", "101", "102", 0),
             candle("101", "102", "100", "100.5", 1),

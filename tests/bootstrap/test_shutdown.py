@@ -126,7 +126,7 @@ class TestErrorIsolationBetweenSteps:
         self, isolated_event_bus: EventBus, failing_attr: str
     ) -> None:
         app = _fake_app()
-        obj, attr = app, failing_attr
+        obj, _attr = app, failing_attr
         *path, leaf = failing_attr.split(".")
         for part in path:
             obj = getattr(obj, part)
@@ -179,7 +179,10 @@ class TestClosePositions:
     ) -> None:
         app = _fake_app()
         pos = MagicMock(
-            position_id="pos-1", symbol="BTCUSDT", quantity=Decimal("0.5"), is_long=True,
+            position_id="pos-1",
+            symbol="BTCUSDT",
+            quantity=Decimal("0.5"),
+            is_long=True,
         )
         app.position_manager.open_positions = [pos]
         app.instruments = {}
@@ -200,7 +203,10 @@ class TestClosePositions:
     ) -> None:
         app = _fake_app()
         pos = MagicMock(
-            position_id="pos-1", symbol="BTCUSDT", quantity=Decimal("0.5"), is_long=False,
+            position_id="pos-1",
+            symbol="BTCUSDT",
+            quantity=Decimal("0.5"),
+            is_long=False,
         )
         app.position_manager.open_positions = [pos]
         app.instruments = {}
@@ -216,16 +222,20 @@ class TestClosePositions:
     ) -> None:
         app = _fake_app()
         pos1 = MagicMock(
-            position_id="pos-1", symbol="BTCUSDT", quantity=Decimal("0.5"), is_long=True,
+            position_id="pos-1",
+            symbol="BTCUSDT",
+            quantity=Decimal("0.5"),
+            is_long=True,
         )
         pos2 = MagicMock(
-            position_id="pos-2", symbol="ETHUSDT", quantity=Decimal("1"), is_long=True,
+            position_id="pos-2",
+            symbol="ETHUSDT",
+            quantity=Decimal("1"),
+            is_long=True,
         )
         app.position_manager.open_positions = [pos1, pos2]
         app.instruments = {}
-        app.order_manager.submit_order = AsyncMock(
-            side_effect=[RuntimeError("boom"), MagicMock()]
-        )
+        app.order_manager.submit_order = AsyncMock(side_effect=[RuntimeError("boom"), MagicMock()])
 
         with pytest.raises(ShutdownError, match="BTCUSDT"):
             await shutdown(app, close_positions=True)
@@ -384,9 +394,7 @@ class TestPaperExchangeClientTeardown:
         app.rest_client.disconnect.assert_awaited_once()
         app.db.disconnect.assert_awaited_once()
 
-    async def test_no_paper_client_is_a_noop(
-        self, isolated_event_bus: EventBus
-    ) -> None:
+    async def test_no_paper_client_is_a_noop(self, isolated_event_bus: EventBus) -> None:
         app = _fake_app()
         assert app.paper_exchange_client is None
 

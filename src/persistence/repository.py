@@ -105,9 +105,7 @@ class BaseRepository(Generic[T]):
         """
         entity = await self.find_by_id(entity_id)
         if entity is None:
-            raise RecordNotFoundError(
-                f"{self._model.__name__} with id={entity_id!r} not found"
-            )
+            raise RecordNotFoundError(f"{self._model.__name__} with id={entity_id!r} not found")
         return entity
 
     async def find_all(self, **filters: Any) -> list[T]:
@@ -136,6 +134,7 @@ class BaseRepository(Generic[T]):
     async def count(self, **filters: Any) -> int:
         """Count entities matching filters."""
         from sqlalchemy import func
+
         stmt = select(func.count()).select_from(self._model)
         for col_name, value in filters.items():
             col = getattr(self._model, col_name, None)

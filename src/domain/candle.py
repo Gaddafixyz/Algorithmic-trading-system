@@ -37,7 +37,7 @@ class Candle(StrictModel):
     trade_count: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")
-    def validate_prices(self) -> "Candle":
+    def validate_prices(self) -> Candle:
         validate_ohlcv_consistency(self.open, self.high, self.low, self.close, self.volume)
         if self.close_time < self.open_time:
             raise ValueError("close_time must be >= open_time")
@@ -59,7 +59,6 @@ class Candle(StrictModel):
     def is_bearish(self) -> bool:
         return self.close < self.open
 
-    @property
     def is_doji(self, threshold_pct: Decimal = Decimal("0.1")) -> bool:
         """True if body is < threshold_pct of range."""
         if self.range_size == Decimal("0"):
@@ -115,7 +114,7 @@ class Candle(StrictModel):
         symbol: str,
         timeframe: Timeframe,
         close_time: datetime,
-    ) -> "Candle":
+    ) -> Candle:
         """Construct from a core OHLCV value object."""
         return cls(
             symbol=symbol,

@@ -190,11 +190,11 @@ class BaseExchangeClient(ABC):
     async def get_server_time(self) -> int:
         """Fetch exchange server time in milliseconds."""
 
-    async def __aenter__(self) -> "BaseExchangeClient":
+    async def __aenter__(self) -> BaseExchangeClient:
         await self.connect()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.disconnect()
 
     # ─── HTTP helpers ─────────────────────────────────────────────────────────
@@ -264,7 +264,9 @@ class BaseExchangeClient(ABC):
                         if exc.retry_after_seconds:
                             logger.warning(
                                 "Rate limited on %s %s — sleeping %.1fs before retry",
-                                method, path, exc.retry_after_seconds,
+                                method,
+                                path,
+                                exc.retry_after_seconds,
                             )
                             await asyncio.sleep(exc.retry_after_seconds)
                         raise
@@ -324,7 +326,7 @@ class BaseExchangeClient(ABC):
         # received — connection-level failures (ServerTimeoutError,
         # ClientConnectionError below) never reach that point, so they
         # correctly report as "error" rather than a fabricated status code.
-        endpoint = url[len(self.base_url):] if url.startswith(self.base_url) else url
+        endpoint = url[len(self.base_url) :] if url.startswith(self.base_url) else url
         status_label = "error"
         request_start = time.monotonic()
         try:
@@ -343,7 +345,9 @@ class BaseExchangeClient(ABC):
                     if response.status == 418:
                         logger.critical(
                             "Binance IP ban (418) on %s %s — backing off %.0fs",
-                            method, url, retry_after,
+                            method,
+                            url,
+                            retry_after,
                         )
                     raise ExchangeRateLimitError(retry_after)
 
@@ -382,7 +386,10 @@ class BaseExchangeClient(ABC):
                     logger.warning(
                         "Timestamp/recvWindow error on %s %s — resynced clock "
                         "(offset %dms -> %dms), retrying",
-                        method, url, old_offset, self._clock_offset_ms,
+                        method,
+                        url,
+                        old_offset,
+                        self._clock_offset_ms,
                     )
                     raise ExchangeConnectionError(
                         f"Clock drift detected on {method} {url}; resynced and retrying"
@@ -398,25 +405,37 @@ class BaseExchangeClient(ABC):
             raise ExchangeConnectionError(f"Connection error: {exc}") from exc
         finally:
             try:
-                api_requests.labels(
-                    method=method, endpoint=endpoint, status=status_label
-                ).inc()
-                api_latency.labels(endpoint=endpoint).observe(
-                    time.monotonic() - request_start
-                )
+                api_requests.labels(method=method, endpoint=endpoint, status=status_label).inc()
+                api_latency.labels(endpoint=endpoint).observe(time.monotonic() - request_start)
             except Exception:
                 logger.exception("Failed to record API metrics for %s %s", method, endpoint)
 
-    async def _get(self, path: str, params: dict[str, Any] | None = None, signed: bool = False) -> Any:
+    async def _get(
+        self, path: str, params: dict[str, Any] | None = None, signed: bool = False
+    ) -> Any:
         return await self._request("GET", path, params=params, signed=signed)
 
-    async def _post(self, path: str, data: dict[str, Any] | None = None, params: dict[str, Any] | None = None, signed: bool = False) -> Any:
+    async def _post(
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        signed: bool = False,
+    ) -> Any:
         return await self._request("POST", path, params=params, data=data, signed=signed)
 
-    async def _delete(self, path: str, params: dict[str, Any] | None = None, signed: bool = False) -> Any:
+    async def _delete(
+        self, path: str, params: dict[str, Any] | None = None, signed: bool = False
+    ) -> Any:
         return await self._request("DELETE", path, params=params, signed=signed)
 
-    async def _put(self, path: str, data: dict[str, Any] | None = None, params: dict[str, Any] | None = None, signed: bool = False) -> Any:
+    async def _put(
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        signed: bool = False,
+    ) -> Any:
         return await self._request("PUT", path, params=params, data=data, signed=signed)
 
     # ─── Abstract interface ───────────────────────────────────────────────────

@@ -38,8 +38,8 @@ from src.core.exceptions import (
 )
 from src.domain.leverage import LeverageConfig
 from src.domain.portfolio import Portfolio
-from src.monitoring.metrics import risk_validations
 from src.domain.signal import Signal
+from src.monitoring.metrics import risk_validations
 from src.risk.circuit_breaker import CircuitBreaker
 from src.risk.drawdown import DrawdownTracker
 from src.risk.exposure import CorrelationTracker, ExposureTracker
@@ -229,9 +229,7 @@ class RiskManager:
         ):
             self._validations_failed += 1
             risk_validations.labels(result="failed").inc()
-            raise CircuitBreakerOpenError(
-                "HALF_OPEN probation trade already in progress"
-            )
+            raise CircuitBreakerOpenError("HALF_OPEN probation trade already in progress")
 
         # 2. Max positions (counts open positions AND pending/in-flight
         # entry orders for symbols that don't already have an open
@@ -259,9 +257,7 @@ class RiskManager:
         if self._portfolio.has_position_for_symbol(symbol):
             self._validations_failed += 1
             risk_validations.labels(result="failed").inc()
-            raise RiskLimitExceededError(
-                f"already_has_position_{symbol}", 1.0, 0.0
-            )
+            raise RiskLimitExceededError(f"already_has_position_{symbol}", 1.0, 0.0)
 
         # 4. Daily loss limit
         if self._day_start_equity > Decimal("0"):
@@ -307,9 +303,7 @@ class RiskManager:
         if rr < float(self._config.risk_reward_minimum):
             self._validations_failed += 1
             risk_validations.labels(result="failed").inc()
-            raise RiskLimitExceededError(
-                "risk_reward", rr, float(self._config.risk_reward_minimum)
-            )
+            raise RiskLimitExceededError("risk_reward", rr, float(self._config.risk_reward_minimum))
 
         # 6b. Stop-loss distance sanity check. validate_stop_risk() existed
         # as a standalone function but was never called from the live
@@ -349,7 +343,10 @@ class RiskManager:
         risk_validations.labels(result="passed").inc()
         logger.info(
             "Risk validated: %s %s score=%.1f RR=%.2f",
-            symbol, signal.direction, signal.score, rr,
+            symbol,
+            signal.direction,
+            signal.score,
+            rr,
         )
         return True
 
@@ -369,9 +366,7 @@ class RiskManager:
         stop_distance = abs(signal.entry_price - signal.stop_loss)
 
         if stop_distance <= Decimal("0"):
-            raise PositionSizingError(
-                f"Invalid stop distance {stop_distance} for {signal.symbol}"
-            )
+            raise PositionSizingError(f"Invalid stop distance {stop_distance} for {signal.symbol}")
 
         size = calculate_position_size(
             equity=self._equity,
@@ -440,8 +435,10 @@ class RiskManager:
                         "Kelly sizing returned zero/negative edge for %s "
                         "(win_rate=%.2f avg_win=%.2f avg_loss=%.2f) — "
                         "falling back to fixed-fractional size",
-                        signal.symbol, self._trade_tracker.win_rate,
-                        self._trade_tracker.avg_win, self._trade_tracker.avg_loss,
+                        signal.symbol,
+                        self._trade_tracker.win_rate,
+                        self._trade_tracker.avg_win,
+                        self._trade_tracker.avg_loss,
                     )
                     size = calculate_position_size(
                         equity=self._equity,
@@ -454,7 +451,8 @@ class RiskManager:
                     "position_sizing_method='kelly' but only %d/%d closed "
                     "trades tracked — falling back to fixed-fractional "
                     "size for %s until enough live history accumulates",
-                    self._trade_tracker.sample_size, self._config.kelly_min_trades,
+                    self._trade_tracker.sample_size,
+                    self._config.kelly_min_trades,
                     signal.symbol,
                 )
 
@@ -595,7 +593,10 @@ class RiskManager:
 
         logger.debug(
             "Position size: %s qty=%s risk=%s stop_dist=%s",
-            signal.symbol, size, risk_amount, stop_distance,
+            signal.symbol,
+            size,
+            risk_amount,
+            stop_distance,
         )
         return size
 
@@ -647,7 +648,8 @@ class RiskManager:
             gross_pct = self._exposure_tracker.gross_exposure_pct(self._portfolio, self._equity)
             logger.warning(
                 "Portfolio gross exposure %.2f%% exceeds %.2f%% limit — tripping circuit breaker",
-                gross_pct, self._config.max_gross_exposure_pct,
+                gross_pct,
+                self._config.max_gross_exposure_pct,
             )
             self._circuit_breaker.trip(f"Gross exposure {gross_pct:.2f}%")
             await self._bus.publish(

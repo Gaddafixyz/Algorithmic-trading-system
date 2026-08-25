@@ -19,7 +19,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from src.core.constants import SMC_DISCOUNT_ZONE, SMC_PREMIUM_ZONE
-from src.core.models import OHLCV
 from src.smart_money.market_structure import SwingPoint
 
 

@@ -54,7 +54,7 @@ def calculate_atr(
 
     # Wilder's RMA (exponential with alpha = 1/period)
     atr = np.full(n, np.nan)
-    alpha = 1.0 / period
+    1.0 / period
 
     # Seed with simple average of first `period` TRs
     atr[period - 1] = np.mean(tr[:period])

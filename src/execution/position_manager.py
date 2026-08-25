@@ -31,7 +31,9 @@ class PositionManager:
     Maintained in-memory; persisted via repository on each change.
     """
 
-    def __init__(self, db: Any | None = None, max_closed_trades: int = _MAX_CLOSED_TRADES_IN_MEMORY) -> None:
+    def __init__(
+        self, db: Any | None = None, max_closed_trades: int = _MAX_CLOSED_TRADES_IN_MEMORY
+    ) -> None:
         self._positions: dict[str, Position] = {}  # position_id → Position
         # deque with maxlen evicts the oldest entry automatically when full,
         # bounding memory growth in long-running processes without requiring
@@ -147,28 +149,35 @@ class PositionManager:
             # sufficient: the dict still grows and every O(n) scan slows down.
             self._positions.pop(position.position_id, None)
 
-            await self._bus.publish(PositionClosedEvent(
-                source="position_manager",
-                position_id=position.position_id,
-                symbol=position.symbol,
-                side=position.side,
-                entry_price=position.entry_price,
-                exit_price=exit_price,
-                quantity=position.entry_quantity,
-                realized_pnl=position.realized_pnl,
-                fees=position.total_fees,
-                strategy_id=position.strategy_id,
-            ))
+            await self._bus.publish(
+                PositionClosedEvent(
+                    source="position_manager",
+                    position_id=position.position_id,
+                    symbol=position.symbol,
+                    side=position.side,
+                    entry_price=position.entry_price,
+                    exit_price=exit_price,
+                    quantity=position.entry_quantity,
+                    realized_pnl=position.realized_pnl,
+                    fees=position.total_fees,
+                    strategy_id=position.strategy_id,
+                )
+            )
 
             logger.info(
                 "Position closed: %s PnL=%s fee=%s",
-                position, position.net_realized_pnl, position.total_fees,
+                position,
+                position.net_realized_pnl,
+                position.total_fees,
             )
             return trade
 
         logger.debug(
             "Partial close: %s qty=%s remaining=%s pnl=%s",
-            position.symbol, close_qty, position.quantity, realized,
+            position.symbol,
+            close_qty,
+            position.quantity,
+            realized,
         )
         return None
 
@@ -187,7 +196,5 @@ class PositionManager:
         return {
             "open_positions": len(self.open_positions),
             "closed_trades": len(self._closed_trades),
-            "total_realized_pnl": str(
-                sum(t.net_pnl for t in self._closed_trades)
-            ),
+            "total_realized_pnl": str(sum(t.net_pnl for t in self._closed_trades)),
         }

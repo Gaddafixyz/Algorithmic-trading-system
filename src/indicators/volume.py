@@ -53,9 +53,7 @@ def vwap(candles: list[OHLCV]) -> float:
 
     Computes across all provided candles (session VWAP when daily candles passed).
     """
-    numerator = sum(
-        float(c.typical_price) * float(c.volume) for c in candles
-    )
+    numerator = sum(float(c.typical_price) * float(c.volume) for c in candles)
     denominator = sum(float(c.volume) for c in candles)
     if denominator == 0.0:
         return float(candles[-1].close)

@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from src.core.enums import OrderSide, OrderStatus, OrderType, PositionSide
 from src.core.exceptions import DuplicateOrderError, OrderSubmissionError
-from src.domain.order import Fill, Order
+from src.domain.order import Order
 from src.domain.position import Position
+from src.execution.fill_engine import FillEngine
 from src.execution.order_manager import OrderManager
 from src.execution.position_manager import PositionManager
-from src.execution.fill_engine import FillEngine
 
 
 def make_order(**kwargs) -> Order:
@@ -191,7 +190,9 @@ class TestPositionManager:
     @pytest.mark.asyncio
     async def test_stats(self):
         pm = PositionManager()
-        pos = make_position(entry_price=Decimal("50000"), quantity=Decimal("1.0"), entry_quantity=Decimal("1.0"))
+        pos = make_position(
+            entry_price=Decimal("50000"), quantity=Decimal("1.0"), entry_quantity=Decimal("1.0")
+        )
         pm.register(pos)
         await pm.close_position(pos.position_id, Decimal("51000"), fee=Decimal("0"))
         stats = pm.stats
@@ -213,9 +214,9 @@ class TestFillEngine:
             "e": "ORDER_TRADE_UPDATE",
             "o": {
                 "c": order.client_order_id,
-                "l": "0.1",      # last filled qty
-                "L": "50000",    # last fill price
-                "n": "2.0",      # fee
+                "l": "0.1",  # last filled qty
+                "L": "50000",  # last fill price
+                "n": "2.0",  # fee
                 "N": "USDT",
                 "m": False,
             },

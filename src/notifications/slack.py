@@ -22,7 +22,9 @@ class SlackNotifier:
         payload = {"text": f"{emoji} {message}"}
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(self._url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                async with session.post(
+                    self._url, json=payload, timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
                     if resp.status == 200:
                         self._sent += 1
                         return True

@@ -55,7 +55,7 @@ class Instrument(StrictModel):
         return v.upper().strip()
 
     @model_validator(mode="after")
-    def validate_constraints(self) -> "Instrument":
+    def validate_constraints(self) -> Instrument:
         if self.min_qty >= self.max_qty:
             raise ValueError(f"min_qty ({self.min_qty}) >= max_qty ({self.max_qty})")
         if self.min_price >= self.max_price:

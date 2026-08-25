@@ -11,9 +11,15 @@ from src.strategy.scoring import classify_strength, position_size_multiplier
 
 def make_signal(strength: SignalStrength, score: float = 70.0) -> Signal:
     return Signal(
-        strategy_id="test", symbol="BTCUSDT", timeframe=Timeframe.H1,
-        direction=SignalDirection.LONG, score=score, strength=strength,
-        confidence=0.7, entry_price=Decimal("50000"), stop_loss=Decimal("49000"),
+        strategy_id="test",
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        direction=SignalDirection.LONG,
+        score=score,
+        strength=strength,
+        confidence=0.7,
+        entry_price=Decimal("50000"),
+        stop_loss=Decimal("49000"),
         take_profit=Decimal("52000"),
     )
 

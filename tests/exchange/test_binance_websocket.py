@@ -229,7 +229,9 @@ class TestRunLoopBackoff:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         ws = BinanceFuturesWebSocket(
-            "wss://fstream.binance.com", reconnect_delay=1.0, max_reconnect_delay=5.0,
+            "wss://fstream.binance.com",
+            reconnect_delay=1.0,
+            max_reconnect_delay=5.0,
         )
         ws._connect_and_listen = failing_connect_and_listen
         ws._running = True
@@ -267,7 +269,9 @@ class TestRunLoopBackoff:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         ws = BinanceFuturesWebSocket(
-            "wss://fstream.binance.com", reconnect_delay=1.0, max_reconnect_delay=30.0,
+            "wss://fstream.binance.com",
+            reconnect_delay=1.0,
+            max_reconnect_delay=30.0,
         )
         ws._connect_and_listen = flaky_connect_and_listen
         ws._running = True

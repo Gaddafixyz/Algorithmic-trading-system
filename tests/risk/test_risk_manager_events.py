@@ -15,7 +15,7 @@ from decimal import Decimal
 import pytest
 
 from src.core.config import RiskConfig
-from src.core.enums import SignalDirection, Timeframe
+from src.core.enums import PositionSide, SignalDirection, Timeframe
 from src.core.events import (
     DailyLossLimitReachedEvent,
     EventBus,
@@ -23,11 +23,10 @@ from src.core.events import (
     reset_event_bus,
     set_event_bus,
 )
-from src.core.exceptions import DailyLossLimitError, PositionSizingError, RiskLimitExceededError
+from src.core.exceptions import DailyLossLimitError, RiskLimitExceededError
 from src.domain.portfolio import Portfolio
 from src.domain.position import Position
 from src.domain.signal import Signal, SignalStrength
-from src.core.enums import PositionSide
 from src.risk.risk_manager import RiskManager
 
 
@@ -161,9 +160,12 @@ class TestGrossExposureRiskLimitBreachedEventIsPublished:
         received = _recorder(isolated_event_bus, RiskLimitBreachedEvent)
         portfolio.add_position(
             Position(
-                symbol="BTCUSDT", side=PositionSide.LONG,
-                quantity=Decimal("0.5"), entry_quantity=Decimal("0.5"),
-                entry_price=Decimal("50000"), mark_price=Decimal("50000"),
+                symbol="BTCUSDT",
+                side=PositionSide.LONG,
+                quantity=Decimal("0.5"),
+                entry_quantity=Decimal("0.5"),
+                entry_price=Decimal("50000"),
+                mark_price=Decimal("50000"),
             )
         )
         config = self._exposed_config(max_gross_exposure_pct=Decimal("100"))

@@ -20,20 +20,30 @@ from src.domain.signal import Signal
 def make_candles(count: int, base_price: float = 50000.0) -> list[OHLCV]:
     candles = []
     for i in range(count):
-        candles.append(OHLCV(
-            open=Decimal(str(base_price)), high=Decimal(str(base_price + 50)),
-            low=Decimal(str(base_price - 50)), close=Decimal(str(base_price)),
-            volume=Decimal("1000"),
-            timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
-        ))
+        candles.append(
+            OHLCV(
+                open=Decimal(str(base_price)),
+                high=Decimal(str(base_price + 50)),
+                low=Decimal(str(base_price - 50)),
+                close=Decimal(str(base_price)),
+                volume=Decimal("1000"),
+                timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
+            )
+        )
     return candles
 
 
 def make_signal() -> Signal:
     return Signal(
-        strategy_id="test", symbol="BTCUSDT", timeframe=Timeframe.H1,
-        direction=SignalDirection.LONG, score=70.0, strength=SignalStrength.STRONG,
-        confidence=0.7, entry_price=Decimal("50000"), stop_loss=Decimal("49000"),
+        strategy_id="test",
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        direction=SignalDirection.LONG,
+        score=70.0,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal("50000"),
+        stop_loss=Decimal("49000"),
         take_profit=Decimal("52000"),
     )
 
@@ -70,7 +80,6 @@ class TestNoLookAheadBias:
 
         async def capture_on_candle(symbol, timeframe, candles):
             received_lengths.append(len(candles))
-            return None
 
         strategy = AsyncMock(spec=IStrategy)
         strategy.on_candle.side_effect = capture_on_candle
@@ -88,7 +97,6 @@ class TestNoLookAheadBias:
 
         async def capture_on_candle(symbol, timeframe, candles):
             seen_last_candles.append(candles[-1])
-            return None
 
         strategy = AsyncMock(spec=IStrategy)
         strategy.on_candle.side_effect = capture_on_candle
@@ -206,8 +214,10 @@ class TestLtfNoLookAhead:
         exec_candles = make_candles(55)  # hourly, 2024-01-01T00:00 onward
         ltf_candles = [
             OHLCV(
-                open=Decimal("50000"), high=Decimal("50050"),
-                low=Decimal("49950"), close=Decimal("50000"),
+                open=Decimal("50000"),
+                high=Decimal("50050"),
+                low=Decimal("49950"),
+                close=Decimal("50000"),
                 volume=Decimal("100"),
                 timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(minutes=15 * i),
             )
@@ -215,8 +225,11 @@ class TestLtfNoLookAhead:
         ]
 
         await engine.run(
-            exec_candles, "BTCUSDT", Timeframe.H1,
-            ltf_candles=ltf_candles, ltf_timeframe=Timeframe.M15,
+            exec_candles,
+            "BTCUSDT",
+            Timeframe.H1,
+            ltf_candles=ltf_candles,
+            ltf_timeframe=Timeframe.M15,
         )
 
         # At bar i (execution TF, hourly), current_time = candles[i].timestamp.
@@ -242,9 +255,13 @@ class TestLtfNoLookAhead:
 class TestBacktestResultSummarize:
     async def test_summarize_returns_empty_dict_when_performance_is_none(self) -> None:
         from src.backtesting.engine import BacktestResult
+
         result = BacktestResult(
-            config=make_config(), symbol="BTCUSDT", timeframe=Timeframe.H1,
-            start_date=datetime(2024, 1, 1, tzinfo=UTC), end_date=datetime(2024, 1, 2, tzinfo=UTC),
+            config=make_config(),
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            start_date=datetime(2024, 1, 1, tzinfo=UTC),
+            end_date=datetime(2024, 1, 2, tzinfo=UTC),
         )
         assert result.summarize() == {}
 

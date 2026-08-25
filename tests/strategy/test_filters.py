@@ -23,12 +23,21 @@ from src.strategy.filters import (
 
 
 def make_signal(
-    entry: str = "50000", sl: str = "49000", tp: str = "52000", score: float = 70.0,
+    entry: str = "50000",
+    sl: str = "49000",
+    tp: str = "52000",
+    score: float = 70.0,
 ) -> Signal:
     return Signal(
-        strategy_id="test", symbol="BTCUSDT", timeframe=Timeframe.H1,
-        direction=SignalDirection.LONG, score=score, strength=SignalStrength.STRONG,
-        confidence=0.7, entry_price=Decimal(entry), stop_loss=Decimal(sl),
+        strategy_id="test",
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        direction=SignalDirection.LONG,
+        score=score,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal(entry),
+        stop_loss=Decimal(sl),
         take_profit=Decimal(tp),
     )
 
@@ -38,11 +47,15 @@ class TestFilterBySpread:
         signal = make_signal()
         # spread = (100.1 - 100) / 100 * 100 = 0.1% < 0.05%? No: 0.1 > 0.05
         # use tighter spread to genuinely pass
-        assert filter_by_spread(signal, best_bid=100.0, best_ask=100.02, max_spread_pct=0.05) is True
+        assert (
+            filter_by_spread(signal, best_bid=100.0, best_ask=100.02, max_spread_pct=0.05) is True
+        )
 
     def test_false_when_spread_exceeds_the_max(self) -> None:
         signal = make_signal()
-        assert filter_by_spread(signal, best_bid=100.0, best_ask=100.5, max_spread_pct=0.05) is False
+        assert (
+            filter_by_spread(signal, best_bid=100.0, best_ask=100.5, max_spread_pct=0.05) is False
+        )
 
     def test_true_when_no_spread_data_is_available(self) -> None:
         signal = make_signal()
@@ -103,9 +116,7 @@ class TestFilterByKillZone:
     strategy pipeline before this wiring.
     """
 
-    def test_true_during_an_active_kill_zone(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_true_during_an_active_kill_zone(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class _FrozenDatetime(datetime):
             @classmethod
             def now(cls, tz: object = None) -> datetime:
@@ -114,9 +125,7 @@ class TestFilterByKillZone:
         monkeypatch.setattr(filters_module, "datetime", _FrozenDatetime)
         assert filter_by_kill_zone() is True
 
-    def test_false_outside_any_kill_zone(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_false_outside_any_kill_zone(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class _FrozenDatetime(datetime):
             @classmethod
             def now(cls, tz: object = None) -> datetime:
@@ -125,9 +134,7 @@ class TestFilterByKillZone:
         monkeypatch.setattr(filters_module, "datetime", _FrozenDatetime)
         assert filter_by_kill_zone() is False
 
-    def test_relaxed_session_score_mode(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_relaxed_session_score_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class _FrozenDatetime(datetime):
             @classmethod
             def now(cls, tz: object = None) -> datetime:
@@ -230,7 +237,9 @@ class TestApplyAllFilters:
     def test_correlated_positions_check_applied_when_open_symbols_supplied(self) -> None:
         signal = make_signal(score=70.0, entry="50000", sl="49000", tp="52000")
         passed, reasons = apply_all_filters(
-            signal, open_symbols=["BTCUSDT", "BTCUSDT"], max_correlated_positions=2,
+            signal,
+            open_symbols=["BTCUSDT", "BTCUSDT"],
+            max_correlated_positions=2,
         )
         assert passed is False
         assert any("correlated" in r for r in reasons)
@@ -239,24 +248,38 @@ class TestApplyAllFilters:
 class TestFilterByCorrelatedPositions:
     def test_true_when_below_the_max(self) -> None:
         signal = make_signal()
-        assert filter_by_correlated_positions(signal, ["ETHUSDT"], max_correlated_positions=2) is True
+        assert (
+            filter_by_correlated_positions(signal, ["ETHUSDT"], max_correlated_positions=2) is True
+        )
 
     def test_false_when_at_or_above_the_max_for_exact_symbol(self) -> None:
         signal = make_signal()  # BTCUSDT
-        assert filter_by_correlated_positions(
-            signal, ["BTCUSDT", "BTCUSDT"], max_correlated_positions=2
-        ) is False
+        assert (
+            filter_by_correlated_positions(
+                signal, ["BTCUSDT", "BTCUSDT"], max_correlated_positions=2
+            )
+            is False
+        )
 
     def test_uses_correlation_group_when_supplied(self) -> None:
         signal = make_signal()  # BTCUSDT
         groups = {"BTCUSDT": ["BTCUSDT", "ETHUSDT"]}
-        assert filter_by_correlated_positions(
-            signal, ["ETHUSDT"], correlation_groups=groups, max_correlated_positions=1
-        ) is False
+        assert (
+            filter_by_correlated_positions(
+                signal, ["ETHUSDT"], correlation_groups=groups, max_correlated_positions=1
+            )
+            is False
+        )
 
     def test_symbols_outside_the_group_do_not_count(self) -> None:
         signal = make_signal()  # BTCUSDT
         groups = {"BTCUSDT": ["BTCUSDT", "ETHUSDT"]}
-        assert filter_by_correlated_positions(
-            signal, ["SOLUSDT", "SOLUSDT"], correlation_groups=groups, max_correlated_positions=1
-        ) is True
+        assert (
+            filter_by_correlated_positions(
+                signal,
+                ["SOLUSDT", "SOLUSDT"],
+                correlation_groups=groups,
+                max_correlated_positions=1,
+            )
+            is True
+        )

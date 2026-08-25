@@ -87,9 +87,7 @@ class TestAsyncRetry:
 
         calls = 0
 
-        @async_retry(
-            max_attempts=4, base_delay=1.0, max_delay=3.0, backoff=2.0
-        )
+        @async_retry(max_attempts=4, base_delay=1.0, max_delay=3.0, backoff=2.0)
         async def always_fails() -> None:
             nonlocal calls
             calls += 1

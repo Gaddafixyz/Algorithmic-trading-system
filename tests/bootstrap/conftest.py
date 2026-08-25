@@ -10,7 +10,7 @@ Provides:
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import pytest
 
@@ -30,11 +30,15 @@ def make_settings() -> Callable[..., Settings]:
         kwargs: dict[str, object] = {"exchange_provider": provider}
         if with_binance:
             kwargs["binance"] = BinanceConfig(
-                api_key="dummy_api_key", api_secret="dummy_api_secret", testnet=True,
+                api_key="dummy_api_key",
+                api_secret="dummy_api_secret",
+                testnet=True,
             )
         if with_bybit:
             kwargs["bybit"] = BybitConfig(
-                api_key="dummy_api_key", api_secret="dummy_api_secret", testnet=True,
+                api_key="dummy_api_key",
+                api_secret="dummy_api_secret",
+                testnet=True,
             )
         kwargs.update(overrides)
         return Settings(_env_file=None, **kwargs)  # type: ignore[arg-type]

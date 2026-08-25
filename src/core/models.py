@@ -36,7 +36,7 @@ class StrictModel(BaseModel):
         str_strip_whitespace=True,
     )
 
-    def model_copy_update(self, **kwargs: Any) -> "StrictModel":
+    def model_copy_update(self, **kwargs: Any) -> StrictModel:
         """Return a copy with updated fields (works with frozen models)."""
         return self.model_copy(update=kwargs)
 
@@ -68,28 +68,28 @@ class Price(StrictModel):
             raise ValueError(f"Price must be non-negative, got {d}")
         return d
 
-    def __gt__(self, other: "Price") -> bool:
+    def __gt__(self, other: Price) -> bool:
         return self.value > other.value
 
-    def __ge__(self, other: "Price") -> bool:
+    def __ge__(self, other: Price) -> bool:
         return self.value >= other.value
 
-    def __lt__(self, other: "Price") -> bool:
+    def __lt__(self, other: Price) -> bool:
         return self.value < other.value
 
-    def __le__(self, other: "Price") -> bool:
+    def __le__(self, other: Price) -> bool:
         return self.value <= other.value
 
-    def __mul__(self, other: "Decimal | float | int") -> "Price":
+    def __mul__(self, other: Decimal | float | int) -> Price:
         return Price(value=self.value * Decimal(str(other)))
 
-    def __truediv__(self, other: "Decimal | float | int") -> "Price":
+    def __truediv__(self, other: Decimal | float | int) -> Price:
         return Price(value=self.value / Decimal(str(other)))
 
-    def __add__(self, other: "Price") -> "Price":
+    def __add__(self, other: Price) -> Price:
         return Price(value=self.value + other.value)
 
-    def __sub__(self, other: "Price") -> "Price":
+    def __sub__(self, other: Price) -> Price:
         return Price(value=self.value - other.value)
 
     def __str__(self) -> str:
@@ -115,7 +115,7 @@ class Quantity(StrictModel):
             raise ValueError(f"Quantity must be positive, got {d}")
         return d
 
-    def __mul__(self, other: "Decimal | float | int | Price") -> Decimal:
+    def __mul__(self, other: Decimal | float | int | Price) -> Decimal:
         if isinstance(other, Price):
             return self.value * other.value
         return self.value * Decimal(str(other))
@@ -159,7 +159,7 @@ class OHLCV(StrictModel):
     timestamp: datetime
 
     @model_validator(mode="after")
-    def validate_ohlcv(self) -> "OHLCV":
+    def validate_ohlcv(self) -> OHLCV:
         if self.high < self.low:
             raise ValueError(f"High ({self.high}) < Low ({self.low})")
         if self.high < self.open or self.high < self.close:
@@ -228,8 +228,8 @@ class OrderBook(StrictModel):
     """Snapshot of order book depth."""
 
     symbol: str
-    bids: list[BookLevel]   # Sorted descending by price
-    asks: list[BookLevel]   # Sorted ascending by price
+    bids: list[BookLevel]  # Sorted descending by price
+    asks: list[BookLevel]  # Sorted ascending by price
     timestamp: datetime
     last_update_id: int
 

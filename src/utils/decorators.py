@@ -5,7 +5,8 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
@@ -13,6 +14,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def log_call(fn: F) -> F:
     """Log entry and exit of a function with timing."""
+
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         logger.debug("→ %s()", fn.__qualname__)
@@ -21,6 +23,7 @@ def log_call(fn: F) -> F:
         elapsed = (time.perf_counter() - t0) * 1000
         logger.debug("← %s() %.1fms", fn.__qualname__, elapsed)
         return result
+
     return wrapper  # type: ignore[return-value]
 
 
@@ -39,6 +42,7 @@ def singleton(cls: type) -> type:
 
 def validate_positive(param_name: str) -> Callable[[F], F]:
     """Decorator that validates a named parameter is positive."""
+
     def decorator(fn: F) -> F:
         @functools.wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -46,5 +50,7 @@ def validate_positive(param_name: str) -> Callable[[F], F]:
             if value is not None and value <= 0:
                 raise ValueError(f"{param_name} must be positive, got {value}")
             return fn(*args, **kwargs)
+
         return wrapper  # type: ignore[return-value]
+
     return decorator

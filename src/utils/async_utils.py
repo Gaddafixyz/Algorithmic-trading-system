@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine
+from collections.abc import Coroutine
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ async def run_with_timeout(
     """Run a coroutine with a timeout; return `default` on timeout."""
     try:
         return await asyncio.wait_for(coro, timeout=timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("Operation timed out after %.1fs", timeout)
         return default
 
@@ -39,6 +40,7 @@ def create_task_with_log(
     name: str | None = None,
 ) -> asyncio.Task[Any]:
     """Create a task that logs exceptions instead of swallowing them."""
+
     async def _wrapper() -> Any:
         try:
             return await coro

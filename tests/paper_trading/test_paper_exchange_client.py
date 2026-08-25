@@ -8,9 +8,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.core.enums import OrderSide, OrderStatus, OrderType
+from src.core.enums import OrderSide, OrderType
 from src.core.exceptions import OrderNotFoundError
-from src.paper_trading.paper_exchange_client import PaperExchangeClient, _crosses, _trigger_direction
+from src.paper_trading.paper_exchange_client import (
+    PaperExchangeClient,
+    _crosses,
+    _trigger_direction,
+)
 
 
 def _make_ws_client() -> MagicMock:
@@ -99,7 +103,11 @@ class TestMarketOrders:
     async def test_market_order_fills_at_mark_price(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="c1",
         )
         # Fill delivery is deferred via asyncio.create_task — let it run.
@@ -113,11 +121,13 @@ class TestMarketOrders:
         assert Decimal(fill["L"]) == Decimal("50000")
         assert Decimal(fill["l"]) == Decimal("0.1")
 
-    async def test_market_order_before_any_price_does_not_crash_and_does_not_fill(
-        self, client
-    ):
+    async def test_market_order_before_any_price_does_not_crash_and_does_not_fill(self, client):
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="c_no_price",
         )
         await asyncio.sleep(0)
@@ -135,7 +145,11 @@ class TestMarketOrders:
         registered_before_fill = []
 
         order = await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="c2",
         )
         # Simulate OrderManager's post-place_order bookkeeping happening here,
@@ -153,8 +167,13 @@ class TestStopAndLimitOrders:
     async def test_stop_market_sell_fills_on_price_drop(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.STOP_MARKET, Decimal("0.1"),
-            None, stop_price=Decimal("49000"), client_order_id="sl1",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.STOP_MARKET,
+            Decimal("0.1"),
+            None,
+            stop_price=Decimal("49000"),
+            client_order_id="sl1",
         )
         await asyncio.sleep(0)
         assert client._test_fills == []  # not triggered yet
@@ -168,8 +187,13 @@ class TestStopAndLimitOrders:
     async def test_stop_market_sell_does_not_fire_on_price_rise(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.STOP_MARKET, Decimal("0.1"),
-            None, stop_price=Decimal("49000"), client_order_id="sl2",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.STOP_MARKET,
+            Decimal("0.1"),
+            None,
+            stop_price=Decimal("49000"),
+            client_order_id="sl2",
         )
         await _push_price(ws_client, "BTCUSDT", "51000")
         await asyncio.sleep(0)
@@ -178,8 +202,13 @@ class TestStopAndLimitOrders:
     async def test_take_profit_market_sell_fills_on_price_rise(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.TAKE_PROFIT_MARKET, Decimal("0.1"),
-            None, stop_price=Decimal("51000"), client_order_id="tp1",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.TAKE_PROFIT_MARKET,
+            Decimal("0.1"),
+            None,
+            stop_price=Decimal("51000"),
+            client_order_id="tp1",
         )
         await _push_price(ws_client, "BTCUSDT", "51100")
         await asyncio.sleep(0)
@@ -189,8 +218,12 @@ class TestStopAndLimitOrders:
     async def test_limit_order_fills_at_limit_price_not_mark_price(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.LIMIT, Decimal("0.1"),
-            Decimal("49500"), client_order_id="lim1",
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.LIMIT,
+            Decimal("0.1"),
+            Decimal("49500"),
+            client_order_id="lim1",
         )
         await _push_price(ws_client, "BTCUSDT", "49400")
         await asyncio.sleep(0)
@@ -203,8 +236,13 @@ class TestOrderQueries:
     async def test_cancel_order_removes_resting_order(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         order = await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.STOP_MARKET, Decimal("0.1"),
-            None, stop_price=Decimal("49000"), client_order_id="c3",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.STOP_MARKET,
+            Decimal("0.1"),
+            None,
+            stop_price=Decimal("49000"),
+            client_order_id="c3",
         )
         cancelled = await client.cancel_order("BTCUSDT", order.order_id)
         assert cancelled is True
@@ -219,8 +257,13 @@ class TestOrderQueries:
 
     async def test_get_open_orders_filters_by_symbol(self, client):
         await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.STOP_MARKET, Decimal("0.1"),
-            None, stop_price=Decimal("49000"), client_order_id="c4",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.STOP_MARKET,
+            Decimal("0.1"),
+            None,
+            stop_price=Decimal("49000"),
+            client_order_id="c4",
         )
         open_orders = await client.get_open_orders("BTCUSDT")
         assert len(open_orders) == 1
@@ -233,7 +276,11 @@ class TestLedgerAndEquity:
         await _push_price(ws_client, "BTCUSDT", "50000")
         starting_equity = client.equity
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("1"),
+            None,
             client_order_id="c5",
         )
         await asyncio.sleep(0)
@@ -243,7 +290,11 @@ class TestLedgerAndEquity:
     async def test_realized_pnl_applied_on_close(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("1"),
+            None,
             client_order_id="open1",
         )
         await asyncio.sleep(0)
@@ -252,8 +303,13 @@ class TestLedgerAndEquity:
 
         await _push_price(ws_client, "BTCUSDT", "51000")
         await client.place_order(
-            "BTCUSDT", OrderSide.SELL, OrderType.MARKET, Decimal("1"), None,
-            reduce_only=True, client_order_id="close1",
+            "BTCUSDT",
+            OrderSide.SELL,
+            OrderType.MARKET,
+            Decimal("1"),
+            None,
+            reduce_only=True,
+            client_order_id="close1",
         )
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -265,7 +321,11 @@ class TestLedgerAndEquity:
     async def test_get_positions_reflects_open_position(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.5"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.5"),
+            None,
             client_order_id="c6",
         )
         await asyncio.sleep(0)
@@ -294,7 +354,11 @@ class TestBackgroundFillTaskTracking:
     async def test_task_is_tracked_while_pending(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="track1",
         )
         assert len(client._background_tasks) == 1
@@ -302,7 +366,11 @@ class TestBackgroundFillTaskTracking:
     async def test_task_is_removed_from_tracking_once_done(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="track2",
         )
         await asyncio.sleep(0)
@@ -319,7 +387,11 @@ class TestBackgroundFillTaskTracking:
 
         with caplog.at_level(logging.ERROR):
             await client.place_order(
-                "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+                "BTCUSDT",
+                OrderSide.BUY,
+                OrderType.MARKET,
+                Decimal("0.1"),
+                None,
                 client_order_id="track3",
             )
             await asyncio.sleep(0)
@@ -331,7 +403,11 @@ class TestBackgroundFillTaskTracking:
     async def test_stop_cancels_pending_background_tasks(self, client, ws_client):
         await _push_price(ws_client, "BTCUSDT", "50000")
         await client.place_order(
-            "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), None,
+            "BTCUSDT",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            Decimal("0.1"),
+            None,
             client_order_id="track4",
         )
         assert len(client._background_tasks) == 1

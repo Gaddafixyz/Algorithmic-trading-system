@@ -6,12 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Index, Numeric, String, Float
+from sqlalchemy import DateTime, Float, Index, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from src.domain.signal import Signal as DomainSignal
 from src.persistence.database import Base
 from src.persistence.repository import BaseRepository
-from src.domain.signal import Signal as DomainSignal
 
 
 class SignalORM(Base):

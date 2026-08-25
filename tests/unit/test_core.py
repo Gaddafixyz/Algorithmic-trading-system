@@ -2,47 +2,40 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
 
 from src.core.enums import (
-    OrderSide,
-    OrderStatus,
-    OrderType,
-    SignalDirection,
     Timeframe,
 )
 from src.core.events import (
     BaseEvent,
     CandleClosedEvent,
     EventBus,
-    OrderFilledEvent,
-    SignalGeneratedEvent,
     reset_event_bus,
 )
 from src.core.exceptions import (
-    InvalidSymbolError,
+    CircuitBreakerOpenError,
+    DataQualityError,
     InvalidPriceError,
     InvalidQuantityError,
-    ValidationError,
-    DataQualityError,
+    InvalidSymbolError,
     RiskLimitExceededError,
-    CircuitBreakerOpenError,
+    ValidationError,
 )
-from src.core.models import OHLCV, BookLevel, OrderBook, Price, Quantity, Percentage, SymbolFilter
+from src.core.models import OHLCV, BookLevel, OrderBook, Percentage, Price, Quantity, SymbolFilter
+from src.core.registry import ComponentRegistry
 from src.core.validation import (
-    validate_symbol,
+    validate_ohlcv_consistency,
     validate_price,
     validate_quantity,
-    validate_timeframe,
     validate_stop_loss,
+    validate_symbol,
     validate_take_profit,
-    validate_ohlcv_consistency,
+    validate_timeframe,
 )
-from src.core.registry import ComponentRegistry
 
 
 class TestEventBus:
@@ -78,8 +71,11 @@ class TestEventBus:
     async def test_multiple_handlers(self):
         calls = []
 
-        async def h1(e): calls.append("h1")
-        async def h2(e): calls.append("h2")
+        async def h1(e):
+            calls.append("h1")
+
+        async def h2(e):
+            calls.append("h2")
 
         self.bus.subscribe(CandleClosedEvent, h1)
         self.bus.subscribe(CandleClosedEvent, h2)
@@ -135,11 +131,19 @@ class TestEventBus:
 
         self.bus.subscribe_all(global_handler)
 
-        await self.bus.publish(CandleClosedEvent(
-            source="test", symbol="BTC", timeframe="1h",
-            open=Decimal("1"), high=Decimal("2"), low=Decimal("0.5"), close=Decimal("1.5"),
-            volume=Decimal("100"), candle_timestamp=datetime.now(tz=UTC),
-        ))
+        await self.bus.publish(
+            CandleClosedEvent(
+                source="test",
+                symbol="BTC",
+                timeframe="1h",
+                open=Decimal("1"),
+                high=Decimal("2"),
+                low=Decimal("0.5"),
+                close=Decimal("1.5"),
+                volume=Decimal("100"),
+                candle_timestamp=datetime.now(tz=UTC),
+            )
+        )
         assert "CandleClosedEvent" in received_types
 
     @pytest.mark.asyncio
@@ -152,33 +156,59 @@ class TestEventBus:
         self.bus.subscribe(CandleClosedEvent, handler)
         self.bus.unsubscribe(CandleClosedEvent, handler)
 
-        await self.bus.publish(CandleClosedEvent(
-            source="test", symbol="BTC", timeframe="1h",
-            open=Decimal("1"), high=Decimal("2"), low=Decimal("0.5"), close=Decimal("1.5"),
-            volume=Decimal("100"), candle_timestamp=datetime.now(tz=UTC),
-        ))
+        await self.bus.publish(
+            CandleClosedEvent(
+                source="test",
+                symbol="BTC",
+                timeframe="1h",
+                open=Decimal("1"),
+                high=Decimal("2"),
+                low=Decimal("0.5"),
+                close=Decimal("1.5"),
+                volume=Decimal("100"),
+                candle_timestamp=datetime.now(tz=UTC),
+            )
+        )
         assert calls == []
 
     @pytest.mark.asyncio
     async def test_stats_updated(self):
-        async def handler(e): pass
+        async def handler(e):
+            pass
+
         self.bus.subscribe(CandleClosedEvent, handler)
 
-        await self.bus.publish(CandleClosedEvent(
-            source="test", symbol="BTC", timeframe="1h",
-            open=Decimal("1"), high=Decimal("2"), low=Decimal("0.5"), close=Decimal("1.5"),
-            volume=Decimal("100"), candle_timestamp=datetime.now(tz=UTC),
-        ))
+        await self.bus.publish(
+            CandleClosedEvent(
+                source="test",
+                symbol="BTC",
+                timeframe="1h",
+                open=Decimal("1"),
+                high=Decimal("2"),
+                low=Decimal("0.5"),
+                close=Decimal("1.5"),
+                volume=Decimal("100"),
+                candle_timestamp=datetime.now(tz=UTC),
+            )
+        )
         assert self.bus.stats["published"] == 1
 
     @pytest.mark.asyncio
     async def test_no_handlers_no_error(self):
         # Publishing with no subscribers should not raise
-        await self.bus.publish(CandleClosedEvent(
-            source="test", symbol="BTC", timeframe="1h",
-            open=Decimal("1"), high=Decimal("2"), low=Decimal("0.5"), close=Decimal("1.5"),
-            volume=Decimal("100"), candle_timestamp=datetime.now(tz=UTC),
-        ))
+        await self.bus.publish(
+            CandleClosedEvent(
+                source="test",
+                symbol="BTC",
+                timeframe="1h",
+                open=Decimal("1"),
+                high=Decimal("2"),
+                low=Decimal("0.5"),
+                close=Decimal("1.5"),
+                volume=Decimal("100"),
+                candle_timestamp=datetime.now(tz=UTC),
+            )
+        )
 
 
 class TestValidation:
@@ -225,6 +255,7 @@ class TestValidation:
 
     def test_invalid_timeframe(self):
         from src.core.exceptions import InvalidTimeframeError
+
         with pytest.raises(InvalidTimeframeError):
             validate_timeframe("7h")
 

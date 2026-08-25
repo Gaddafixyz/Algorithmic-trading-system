@@ -13,7 +13,9 @@ from src.persistence.orders import OrderRepository
 
 def make_domain_order(symbol: str = "BTCUSDT", quantity: str = "0.1") -> Order:
     return Order(
-        symbol=symbol, side=OrderSide.BUY, order_type=OrderType.MARKET,
+        symbol=symbol,
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
         quantity=Decimal(quantity),
     )
 
@@ -57,10 +59,15 @@ class TestSaveOrder:
 
         order.transition_to(OrderStatus.SUBMITTED)
         order.transition_to(OrderStatus.OPEN)
-        order.add_fill(Fill(
-            fill_id="f1", price=Decimal("50000"), quantity=Decimal("0.1"),
-            fee=Decimal("2"), fee_asset="USDT",
-        ))
+        order.add_fill(
+            Fill(
+                fill_id="f1",
+                price=Decimal("50000"),
+                quantity=Decimal("0.1"),
+                fee=Decimal("2"),
+                fee_asset="USDT",
+            )
+        )
         await repo.save_order(order)
 
         found = await repo.find_by_id(order.order_id)

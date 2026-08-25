@@ -29,14 +29,16 @@ def make_candles(n: int, base_price: float = 100.0, trend: float = 0.1) -> list[
         low = Decimal(str(price - 1.0))
         open_ = Decimal(str(price - 0.3))
         close = Decimal(str(price + 0.3))
-        candles.append(OHLCV(
-            timestamp=now + timedelta(hours=i),
-            open=open_,
-            high=high,
-            low=low,
-            close=close,
-            volume=Decimal("100.0"),
-        ))
+        candles.append(
+            OHLCV(
+                timestamp=now + timedelta(hours=i),
+                open=open_,
+                high=high,
+                low=low,
+                close=close,
+                volume=Decimal("100.0"),
+            )
+        )
     return candles
 
 

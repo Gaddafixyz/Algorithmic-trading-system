@@ -35,19 +35,18 @@ from src.core.constants import (
     SMC_OB_MAX_AGE_BARS,
 )
 from src.core.enums import MarketStructure, SignalDirection, SignalStrength
-from src.core.models import OHLCV
-from src.domain.signal import Signal, SignalComponent, Timeframe
-from src.risk.stop_loss import atr_stop_loss, structure_stop_loss
-from src.risk.take_profit import fixed_rr_take_profit, liquidity_target
-from src.strategy.scoring import classify_strength
 from src.core.exceptions import InsufficientDataError
+from src.core.models import OHLCV
+from src.domain.signal import SignalComponent, Timeframe
 from src.indicators.atr import current_atr
 from src.indicators.macd import macd_from_candles
 from src.indicators.momentum import stochastic, williams_r
 from src.indicators.rsi import current_rsi
 from src.indicators.statistics import linear_regression_slope, zscore
 from src.indicators.volatility import bollinger_bands, historical_volatility
-from src.indicators.volume import obv, relative_volume, vwap
+from src.indicators.volume import obv, vwap
+from src.risk.stop_loss import atr_stop_loss, structure_stop_loss
+from src.risk.take_profit import fixed_rr_take_profit, liquidity_target
 from src.smart_money.bos import BOSEvent
 from src.smart_money.choch import CHoCHEvent
 from src.smart_money.fair_value_gap import FairValueGap, fvg_at_price
@@ -58,6 +57,7 @@ from src.smart_money.mitigation import MitigationBlock
 from src.smart_money.order_blocks import OrderBlock
 from src.smart_money.premium_discount import PremiumDiscountZones
 from src.smart_money.sessions import session_score
+from src.strategy.scoring import classify_strength
 
 logger = logging.getLogger(__name__)
 
@@ -108,16 +108,21 @@ class ConfluenceWeights:
     @property
     def _values(self) -> tuple[float, ...]:
         return (
-            self.market_structure, self.order_block, self.fair_value_gap,
-            self.liquidity_sweep, self.premium_discount, self.session,
-            self.volume, self.htf_alignment,
+            self.market_structure,
+            self.order_block,
+            self.fair_value_gap,
+            self.liquidity_sweep,
+            self.premium_discount,
+            self.session,
+            self.volume,
+            self.htf_alignment,
         )
 
     @property
     def total(self) -> float:
         return sum(self._values)
 
-    def normalized(self) -> "ConfluenceWeights":
+    def normalized(self) -> ConfluenceWeights:
         """Rescaled so the 8 budgets sum to exactly 100."""
         factor = 100.0 / self.total
         return ConfluenceWeights(*(v * factor for v in self._values))
@@ -206,7 +211,7 @@ class SMCAnalysis:
 class ConfluenceResult:
     """Result of confluence scoring."""
 
-    score: float                    # 0–100
+    score: float  # 0–100
     direction: SignalDirection
     strength: SignalStrength
     components: list[SignalComponent] = field(default_factory=list)
@@ -308,8 +313,10 @@ def score_confluence(
         )
     except InsufficientDataError:
         macd_result = None
-    if macd_result is not None and len(macd_result.histogram) and not np.isnan(
-        macd_result.histogram[-1]
+    if (
+        macd_result is not None
+        and len(macd_result.histogram)
+        and not np.isnan(macd_result.histogram[-1])
     ):
         macd_histogram = float(macd_result.histogram[-1])
 
@@ -390,9 +397,7 @@ def score_confluence(
                 # same window converts it to "OBV momentum in units of
                 # average volume per bar", which is comparable across
                 # symbols the same way relative_volume already is.
-                avg_vol = float(
-                    np.mean([float(c.volume) for c in candles[-slope_window:]])
-                )
+                avg_vol = float(np.mean([float(c.volume) for c in candles[-slope_window:]]))
                 obv_slope = raw_slope / avg_vol if avg_vol > 0 else None
     except (ValueError, IndexError):
         obv_slope = None
@@ -427,15 +432,19 @@ def score_confluence(
 
     if analysis.recent_choch:
         # CHoCH increases score but flips direction
-        structure_score = min(weights.market_structure, structure_score + weights.market_structure * 0.25)
+        structure_score = min(
+            weights.market_structure, structure_score + weights.market_structure * 0.25
+        )
         structure_direction = analysis.recent_choch.direction
 
-    components.append(SignalComponent(
-        name="market_structure",
-        score=structure_score,
-        weight=weights.market_structure / 100.0,
-        description=f"Structure: {analysis.structure.structure if analysis.structure else 'unknown'}",
-    ))
+    components.append(
+        SignalComponent(
+            name="market_structure",
+            score=structure_score,
+            weight=weights.market_structure / 100.0,
+            description=f"Structure: {analysis.structure.structure if analysis.structure else 'unknown'}",
+        )
+    )
     total_score += structure_score
 
     if structure_direction is None:
@@ -499,14 +508,16 @@ def score_confluence(
                 ob_score = candidate_score
 
     ob_score = round(ob_score, 2)
-    components.append(SignalComponent(
-        name="order_block",
-        score=ob_score,
-        weight=weights.order_block / 100.0,
-        description=(
-            f"OB: {'found (fresh)' if ob_score >= 19.0 else 'found (aged/off-zone)' if relevant_ob else 'none'}"
-        ),
-    ))
+    components.append(
+        SignalComponent(
+            name="order_block",
+            score=ob_score,
+            weight=weights.order_block / 100.0,
+            description=(
+                f"OB: {'found (fresh)' if ob_score >= 19.0 else 'found (aged/off-zone)' if relevant_ob else 'none'}"
+            ),
+        )
+    )
     total_score += ob_score
 
     # ─── 3. Fair Value Gap (15 pts, graded by gap size + proximity) ──────────
@@ -544,12 +555,14 @@ def score_confluence(
             relevant_fvg = fvg
 
     fvg_score = round(fvg_score, 2)
-    components.append(SignalComponent(
-        name="fair_value_gap",
-        score=fvg_score,
-        weight=weights.fair_value_gap / 100.0,
-        description=f"FVG: {'aligned' if relevant_fvg else 'none'}",
-    ))
+    components.append(
+        SignalComponent(
+            name="fair_value_gap",
+            score=fvg_score,
+            weight=weights.fair_value_gap / 100.0,
+            description=f"FVG: {'aligned' if relevant_fvg else 'none'}",
+        )
+    )
     total_score += fvg_score
 
     # ─── 4. Liquidity Sweep (15 pts) ──────────────────────────────────────────
@@ -564,14 +577,19 @@ def score_confluence(
 
     if analysis.recent_inducement:
         ind = analysis.recent_inducement
-        if direction == SignalDirection.LONG and ind.is_bullish:
-            liq_score = 15.0 * liq_scale
-        elif direction == SignalDirection.SHORT and ind.is_bearish:
+        if (
+            direction == SignalDirection.LONG
+            and ind.is_bullish
+            or direction == SignalDirection.SHORT
+            and ind.is_bearish
+        ):
             liq_score = 15.0 * liq_scale
     else:
         aligned_swept = [
-            p for p in analysis.active_liquidity
-            if p.is_swept and (
+            p
+            for p in analysis.active_liquidity
+            if p.is_swept
+            and (
                 (direction == SignalDirection.LONG and p.is_sell_side)
                 or (direction == SignalDirection.SHORT and p.is_buy_side)
             )
@@ -586,12 +604,14 @@ def score_confluence(
             # direction — weak, non-directional signal only.
             liq_score = 4.0 * liq_scale
 
-    components.append(SignalComponent(
-        name="liquidity_sweep",
-        score=liq_score,
-        weight=weights.liquidity_sweep / 100.0,
-        description=f"Liquidity: {'swept' if liq_score > 0 else 'none'}",
-    ))
+    components.append(
+        SignalComponent(
+            name="liquidity_sweep",
+            score=liq_score,
+            weight=weights.liquidity_sweep / 100.0,
+            description=f"Liquidity: {'swept' if liq_score > 0 else 'none'}",
+        )
+    )
     total_score += liq_score
 
     # ─── 5. Premium/Discount Zone (10 pts) ────────────────────────────────────
@@ -599,30 +619,37 @@ def score_confluence(
     pd_scale = weights.premium_discount / 10.0  # original budget for this factor
     if analysis.premium_discount:
         pd = analysis.premium_discount
-        if direction == SignalDirection.LONG and pd.is_discount:
-            pd_score = 10.0 * pd_scale
-        elif direction == SignalDirection.SHORT and pd.is_premium:
+        if (
+            direction == SignalDirection.LONG
+            and pd.is_discount
+            or direction == SignalDirection.SHORT
+            and pd.is_premium
+        ):
             pd_score = 10.0 * pd_scale
         elif not pd.is_premium and not pd.is_discount:
             pd_score = 3.0 * pd_scale  # Equilibrium — partial score
 
-    components.append(SignalComponent(
-        name="premium_discount",
-        score=pd_score,
-        weight=weights.premium_discount / 100.0,
-        description=f"Zone: {analysis.premium_discount.zone_label if analysis.premium_discount else 'unknown'}",
-    ))
+    components.append(
+        SignalComponent(
+            name="premium_discount",
+            score=pd_score,
+            weight=weights.premium_discount / 100.0,
+            description=f"Zone: {analysis.premium_discount.zone_label if analysis.premium_discount else 'unknown'}",
+        )
+    )
     total_score += pd_score
 
     # ─── 6. Session/Kill Zone (10 pts) ────────────────────────────────────────
     now = analysis.timestamp
     sess_score_val = session_score(now) * weights.session
-    components.append(SignalComponent(
-        name="session",
-        score=sess_score_val,
-        weight=weights.session / 100.0,
-        description=f"Session score: {sess_score_val:.1f}/10",
-    ))
+    components.append(
+        SignalComponent(
+            name="session",
+            score=sess_score_val,
+            weight=weights.session / 100.0,
+            description=f"Session score: {sess_score_val:.1f}/10",
+        )
+    )
     total_score += sess_score_val
 
     # ─── 7. Volume Confirmation (5 pts) ───────────────────────────────────────
@@ -636,12 +663,14 @@ def score_confluence(
     elif rv >= 1.0:
         vol_score = 1.0 * vol_scale
 
-    components.append(SignalComponent(
-        name="volume",
-        score=vol_score,
-        weight=weights.volume / 100.0,
-        description=f"Relative volume: {rv:.2f}x",
-    ))
+    components.append(
+        SignalComponent(
+            name="volume",
+            score=vol_score,
+            weight=weights.volume / 100.0,
+            description=f"Relative volume: {rv:.2f}x",
+        )
+    )
     total_score += vol_score
 
     # ─── 8. HTF/MTF Alignment (5 pts) ─────────────────────────────────────────
@@ -656,30 +685,42 @@ def score_confluence(
         # below — a smoother, multi-timeframe-aware version of the same
         # factor. See src/strategy/multi_timeframe.py::MTFContext.
         alignment = analysis.mtf_context.alignment_score(
-            analysis.timeframe, direction_str,
-            htf=analysis.htf_timeframe, ltf=analysis.ltf_timeframe,
+            analysis.timeframe,
+            direction_str,
+            htf=analysis.htf_timeframe,
+            ltf=analysis.ltf_timeframe,
         )
         htf_score = alignment * 5.0 * htf_scale
         htf_description = f"MTF alignment: {alignment:.2f}"
     elif analysis.htf_structure != MarketStructure.UNKNOWN:
-        if direction == SignalDirection.LONG and analysis.htf_structure == MarketStructure.BULLISH:
-            htf_score = 5.0 * htf_scale
-        elif direction == SignalDirection.SHORT and analysis.htf_structure == MarketStructure.BEARISH:
+        if (
+            direction == SignalDirection.LONG
+            and analysis.htf_structure == MarketStructure.BULLISH
+            or direction == SignalDirection.SHORT
+            and analysis.htf_structure == MarketStructure.BEARISH
+        ):
             htf_score = 5.0 * htf_scale
         elif analysis.htf_structure == MarketStructure.RANGING:
             htf_score = 1.0 * htf_scale
 
-    components.append(SignalComponent(
-        name="htf_alignment",
-        score=htf_score,
-        weight=weights.htf_alignment / 100.0,
-        description=htf_description,
-    ))
+    components.append(
+        SignalComponent(
+            name="htf_alignment",
+            score=htf_score,
+            weight=weights.htf_alignment / 100.0,
+            description=htf_description,
+        )
+    )
     total_score += htf_score
 
     # ─── Determine entry parameters ───────────────────────────────────────────
     entry_price, stop_loss, take_profit = _calculate_trade_params(
-        analysis, direction, relevant_ob, relevant_fvg, atr, risk_reward_min,
+        analysis,
+        direction,
+        relevant_ob,
+        relevant_fvg,
+        atr,
+        risk_reward_min,
         stop_loss_method=stop_loss_method,
     )
 
@@ -824,9 +865,7 @@ def _calculate_trade_params(
     # fixed_rr_take_profit() rather than reimplemented inline, which is
     # what this used to do (entry ± risk*risk_reward_min duplicated
     # exactly what that function already computes).
-    tp = fixed_rr_take_profit(
-        entry, sl, direction, risk_reward=Decimal(str(risk_reward_min))
-    )
+    tp = fixed_rr_take_profit(entry, sl, direction, risk_reward=Decimal(str(risk_reward_min)))
 
     # Prefer targeting the nearest un-swept liquidity pool in the trade's
     # favor over the blind fixed-RR target, when one exists and clearing
@@ -840,8 +879,10 @@ def _calculate_trade_params(
     risk = abs(entry - sl)
     if risk > Decimal("0"):
         candidate_pools = [
-            p for p in analysis.active_liquidity
-            if not p.is_swept and (
+            p
+            for p in analysis.active_liquidity
+            if not p.is_swept
+            and (
                 (direction == SignalDirection.LONG and p.is_buy_side and p.price > entry)
                 or (direction == SignalDirection.SHORT and p.is_sell_side and p.price < entry)
             )

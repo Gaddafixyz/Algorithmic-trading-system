@@ -56,11 +56,11 @@ class Signal(StrictModel):
     entry_price: Decimal
     stop_loss: Decimal
     take_profit: Decimal
-    entry_zone_high: Decimal | None = None   # Acceptable entry range
+    entry_zone_high: Decimal | None = None  # Acceptable entry range
     entry_zone_low: Decimal | None = None
 
     # Context
-    timeframe_context: str = ""   # Higher TF narrative
+    timeframe_context: str = ""  # Higher TF narrative
     components: list[SignalComponent] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -68,14 +68,14 @@ class Signal(StrictModel):
     # Timing
     generated_at: datetime = Field(default_factory=utc_now)
     expires_at: datetime | None = None
-    max_age_seconds: float = 3600.0   # Default: valid for 1 hour
+    max_age_seconds: float = 3600.0  # Default: valid for 1 hour
 
     # Market context at generation time
     atr: Decimal | None = None
     market_structure: str = ""
 
     @model_validator(mode="after")
-    def validate_trade_params(self) -> "Signal":
+    def validate_trade_params(self) -> Signal:
         is_long = self.direction == SignalDirection.LONG
         try:
             validate_stop_loss(self.stop_loss, self.entry_price, is_long)

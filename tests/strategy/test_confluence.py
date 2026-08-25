@@ -37,34 +37,40 @@ from src.smart_money.premium_discount import PremiumDiscountZones
 # consistent, known session_score (1.0) across all tests unless a test
 # specifically wants to vary it.
 KILL_ZONE_TS = datetime(2024, 1, 2, 13, 30, tzinfo=UTC)  # 13:30 UTC: NY open KZ
-OFF_HOURS_TS = datetime(2024, 1, 2, 3, 30, tzinfo=UTC)   # off-hours
+OFF_HOURS_TS = datetime(2024, 1, 2, 3, 30, tzinfo=UTC)  # off-hours
 
 
 def make_candles(count: int = 30, base_price: float = 50000.0) -> list[OHLCV]:
     candles = []
     for i in range(count):
-        candles.append(OHLCV(
-            timestamp=datetime(2024, 1, 1, tzinfo=UTC),
-            open=Decimal(str(base_price)),
-            high=Decimal(str(base_price + 100)),
-            low=Decimal(str(base_price - 100)),
-            close=Decimal(str(base_price)),
-            volume=Decimal("1000"),
-        ))
+        candles.append(
+            OHLCV(
+                timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+                open=Decimal(str(base_price)),
+                high=Decimal(str(base_price + 100)),
+                low=Decimal(str(base_price - 100)),
+                close=Decimal(str(base_price)),
+                volume=Decimal("1000"),
+            )
+        )
     return candles
 
 
 def make_swing(price: str, is_high: bool, bar_index: int = 0) -> SwingPoint:
     return SwingPoint(
-        price=Decimal(price), timestamp=datetime(2024, 1, 1, tzinfo=UTC),
-        bar_index=bar_index, is_high=is_high,
+        price=Decimal(price),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        bar_index=bar_index,
+        is_high=is_high,
     )
 
 
 def make_bos(direction: str = "bullish", broken_price: str = "49500") -> BOSEvent:
     return BOSEvent(
-        direction=direction, broken_price=Decimal(broken_price),
-        break_candle_index=5, break_price=Decimal(broken_price),
+        direction=direction,
+        broken_price=Decimal(broken_price),
+        break_candle_index=5,
+        break_price=Decimal(broken_price),
         swing_point=make_swing(broken_price, is_high=(direction == "bearish")),
         timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     )
@@ -72,22 +78,33 @@ def make_bos(direction: str = "bullish", broken_price: str = "49500") -> BOSEven
 
 def make_ob(
     ob_type: OrderBlockType = OrderBlockType.BULLISH,
-    top: str = "50000", bottom: str = "49800", bar_index: int = 10,
+    top: str = "50000",
+    bottom: str = "49800",
+    bar_index: int = 10,
 ) -> OrderBlock:
     return OrderBlock(
-        ob_type=ob_type, top=Decimal(top), bottom=Decimal(bottom),
-        origin_high=Decimal(top), origin_low=Decimal(bottom),
-        bar_index=bar_index, timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        ob_type=ob_type,
+        top=Decimal(top),
+        bottom=Decimal(bottom),
+        origin_high=Decimal(top),
+        origin_low=Decimal(bottom),
+        bar_index=bar_index,
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
         bos_event=make_bos("bullish" if ob_type == OrderBlockType.BULLISH else "bearish"),
     )
 
 
 def make_fvg(
-    fvg_type: FVGType = FVGType.BULLISH, top: str = "50000", bottom: str = "49900",
+    fvg_type: FVGType = FVGType.BULLISH,
+    top: str = "50000",
+    bottom: str = "49900",
 ) -> FairValueGap:
     return FairValueGap(
-        fvg_type=fvg_type, top=Decimal(top), bottom=Decimal(bottom),
-        bar_index=8, timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        fvg_type=fvg_type,
+        top=Decimal(top),
+        bottom=Decimal(bottom),
+        bar_index=8,
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 
@@ -144,8 +161,10 @@ class TestMitigationBlockFallback:
     """
 
     def _make_mitigation_block(
-        self, ob_type: OrderBlockType = OrderBlockType.BULLISH,
-        remaining_top: str = "50100", remaining_bottom: str = "50000",
+        self,
+        ob_type: OrderBlockType = OrderBlockType.BULLISH,
+        remaining_top: str = "50100",
+        remaining_bottom: str = "50000",
     ) -> MitigationBlock:
         ob = make_ob(ob_type, top="50200", bottom="49900")
         return MitigationBlock(
@@ -176,9 +195,7 @@ class TestMitigationBlockFallback:
             active_obs=[],
             mitigation_blocks=[mb],
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", use_mitigation_blocks=True
-        )
+        result = score_confluence(analysis, make_candles(), "test", use_mitigation_blocks=True)
         assert result is not None
         ob_component = next(c for c in result.components if c.name == "order_block")
         assert ob_component.score > 0.0
@@ -191,9 +208,7 @@ class TestMitigationBlockFallback:
             active_obs=[],
             mitigation_blocks=[mb],
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", use_mitigation_blocks=True
-        )
+        result = score_confluence(analysis, make_candles(), "test", use_mitigation_blocks=True)
         assert result is not None
         ob_component = next(c for c in result.components if c.name == "order_block")
         assert ob_component.score == 0.0
@@ -207,9 +222,7 @@ class TestMitigationBlockFallback:
             active_obs=[],
             mitigation_blocks=[mb],
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", use_mitigation_blocks=True
-        )
+        result = score_confluence(analysis, make_candles(), "test", use_mitigation_blocks=True)
         assert result is not None
         ob_component = next(c for c in result.components if c.name == "order_block")
         assert ob_component.score == 0.0
@@ -223,9 +236,7 @@ class TestMitigationBlockFallback:
             active_obs=[active],
             mitigation_blocks=[mb],
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", use_mitigation_blocks=True
-        )
+        result = score_confluence(analysis, make_candles(), "test", use_mitigation_blocks=True)
         assert result is not None
         ob_component = next(c for c in result.components if c.name == "order_block")
         # Full active-OB scoring path, not the 60%-scaled fallback.
@@ -263,9 +274,7 @@ class TestStopLossMethod:
             active_obs=[],
             swing_lows=[swing_low],
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", stop_loss_method="structure"
-        )
+        result = score_confluence(analysis, make_candles(), "test", stop_loss_method="structure")
         assert result is not None
         assert result.stop_loss is not None
         # structure_stop_loss anchors just beyond the swing (49500 - a
@@ -280,9 +289,7 @@ class TestStopLossMethod:
             active_obs=[],
             swing_lows=[],  # nothing to anchor to
         )
-        result = score_confluence(
-            analysis, make_candles(), "test", stop_loss_method="structure"
-        )
+        result = score_confluence(analysis, make_candles(), "test", stop_loss_method="structure")
         assert result is not None
         assert result.stop_loss is not None
         assert abs(result.stop_loss - Decimal("49700")) < Decimal("1")
@@ -293,10 +300,14 @@ class TestStopLossMethod:
         ob = make_ob(OrderBlockType.BULLISH, top="50100", bottom="49900")
         swing_low = make_swing("40000", is_high=False)  # far away, would differ a lot
         analysis_atr = make_analysis(
-            structure=MarketStructure.BULLISH, active_obs=[ob], swing_lows=[swing_low],
+            structure=MarketStructure.BULLISH,
+            active_obs=[ob],
+            swing_lows=[swing_low],
         )
         analysis_structure = make_analysis(
-            structure=MarketStructure.BULLISH, active_obs=[ob], swing_lows=[swing_low],
+            structure=MarketStructure.BULLISH,
+            active_obs=[ob],
+            swing_lows=[swing_low],
         )
         result_atr = score_confluence(analysis_atr, make_candles(), "test")
         result_structure = score_confluence(
@@ -304,7 +315,6 @@ class TestStopLossMethod:
         )
         assert result_atr is not None and result_structure is not None
         assert result_atr.stop_loss == result_structure.stop_loss
-
 
     def test_returns_none_when_structure_is_unknown_and_no_choch(self) -> None:
         analysis = make_analysis(structure=MarketStructure.UNKNOWN)
@@ -421,9 +431,12 @@ class TestFairValueGapScoring:
 class TestLiquiditySweepScoring:
     def test_bullish_inducement_matching_long_direction_scores_full(self) -> None:
         inducement = InducementEvent(
-            direction="bullish_inducement", swept_price=Decimal("49700"),
-            sweep_high=Decimal("49750"), sweep_low=Decimal("49650"),
-            rejection_price=Decimal("49900"), bar_index=9,
+            direction="bullish_inducement",
+            swept_price=Decimal("49700"),
+            sweep_high=Decimal("49750"),
+            sweep_low=Decimal("49650"),
+            rejection_price=Decimal("49900"),
+            bar_index=9,
             timestamp=datetime(2024, 1, 1, tzinfo=UTC),
         )
         analysis = make_analysis(
@@ -439,9 +452,13 @@ class TestLiquiditySweepScoring:
 
     def test_swept_liquidity_pool_without_inducement_scores_partial(self) -> None:
         pool = LiquidityPool(
-            liq_type=LiquidityType.EQUAL_LOWS, price=Decimal("49700"),
-            zone_top=Decimal("49720"), zone_bottom=Decimal("49680"),
-            bar_index=5, timestamp=datetime(2024, 1, 1, tzinfo=UTC), is_swept=True,
+            liq_type=LiquidityType.EQUAL_LOWS,
+            price=Decimal("49700"),
+            zone_top=Decimal("49720"),
+            zone_bottom=Decimal("49680"),
+            bar_index=5,
+            timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+            is_swept=True,
         )
         analysis = make_analysis(
             structure=MarketStructure.BULLISH,
@@ -458,7 +475,8 @@ class TestLiquiditySweepScoring:
 class TestPremiumDiscountScoring:
     def test_long_in_discount_zone_scores_full(self) -> None:
         pd = PremiumDiscountZones(
-            swing_high=Decimal("51000"), swing_low=Decimal("49000"),
+            swing_high=Decimal("51000"),
+            swing_low=Decimal("49000"),
             current_price=Decimal("49500"),  # well below equilibrium of 50000 -> discount
         )
         analysis = make_analysis(
@@ -622,7 +640,9 @@ class TestTradeParameterCalculation:
     def test_entry_uses_ob_mid_when_ob_is_present(self) -> None:
         ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800")
         analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[ob],
             open_fvgs=[make_fvg(FVGType.BULLISH, top="50000", bottom="49900")],
             relative_volume=2.5,
         )
@@ -653,15 +673,23 @@ class TestOrderBlockGradedScoring:
 
     def test_aged_ob_scores_lower_than_a_fresh_one(self) -> None:
         candles = make_candles(150)  # current_bar = 149
-        fresh_ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=140)  # age 9
-        aged_ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=59)     # age 90
+        fresh_ob = make_ob(
+            OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=140
+        )  # age 9
+        aged_ob = make_ob(
+            OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=59
+        )  # age 90
 
         fresh_analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[fresh_ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[fresh_ob],
             relative_volume=2.5,
         )
         aged_analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[aged_ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[aged_ob],
             relative_volume=2.5,
         )
 
@@ -683,19 +711,25 @@ class TestOrderBlockGradedScoring:
         near_ob = make_ob(OrderBlockType.BULLISH, top="49850", bottom="49700", bar_index=10)
 
         contains_analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[contains_ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[contains_ob],
         )
         # 49900 is not inside 49700-49850 but is within 1% of the OB top,
         # so it should still register as a weaker "near" match.
         near_analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[near_ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[near_ob],
         )
 
         contains_result = score_confluence(contains_analysis, candles, "test")
         near_result = score_confluence(near_analysis, candles, "test")
 
         assert contains_result is not None
-        contains_score = next(c for c in contains_result.components if c.name == "order_block").score
+        contains_score = next(
+            c for c in contains_result.components if c.name == "order_block"
+        ).score
         assert contains_score == 20.0
 
         assert near_result is not None
@@ -722,9 +756,13 @@ class TestLiquiditySweepDirectionalAlignment:
         # LONG direction wants sell-side liquidity swept; a swept buy-side
         # (equal highs) pool doesn't support a long entry.
         wrong_side_pool = LiquidityPool(
-            liq_type=LiquidityType.EQUAL_HIGHS, price=Decimal("50300"),
-            zone_top=Decimal("50320"), zone_bottom=Decimal("50280"),
-            bar_index=5, timestamp=datetime(2024, 1, 1, tzinfo=UTC), is_swept=True,
+            liq_type=LiquidityType.EQUAL_HIGHS,
+            price=Decimal("50300"),
+            zone_top=Decimal("50320"),
+            zone_bottom=Decimal("50280"),
+            bar_index=5,
+            timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+            is_swept=True,
         )
         analysis = make_analysis(
             structure=MarketStructure.BULLISH,
@@ -739,9 +777,13 @@ class TestLiquiditySweepDirectionalAlignment:
 
     def test_more_prior_touches_at_an_aligned_swept_pool_scores_higher(self) -> None:
         pool = LiquidityPool(
-            liq_type=LiquidityType.EQUAL_LOWS, price=Decimal("49700"),
-            zone_top=Decimal("49720"), zone_bottom=Decimal("49680"),
-            bar_index=5, timestamp=datetime(2024, 1, 1, tzinfo=UTC), is_swept=True,
+            liq_type=LiquidityType.EQUAL_LOWS,
+            price=Decimal("49700"),
+            zone_top=Decimal("49720"),
+            zone_bottom=Decimal("49680"),
+            bar_index=5,
+            timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+            is_swept=True,
             confluence_count=3,
         )
         analysis = make_analysis(
@@ -773,7 +815,9 @@ class TestOrderBlockMaxAgeConfigThreading:
         candles = make_candles(150)
         ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=10)
         analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[ob],
         )
 
         default_result = score_confluence(analysis, candles, "test")
@@ -798,7 +842,9 @@ class TestOrderBlockMaxAgeConfigThreading:
         # full-credit but still valid under both max-age settings.
         ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=79)  # age 70
         analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[ob],
             relative_volume=2.5,
         )
 
@@ -816,7 +862,9 @@ class TestOrderBlockMaxAgeConfigThreading:
         candles = make_candles(150)
         ob = make_ob(OrderBlockType.BULLISH, top="50000", bottom="49800", bar_index=79)
         analysis = make_analysis(
-            structure=MarketStructure.BULLISH, current_price="49900", active_obs=[ob],
+            structure=MarketStructure.BULLISH,
+            current_price="49900",
+            active_obs=[ob],
             relative_volume=2.5,
         )
         implicit = score_confluence(analysis, candles, "test")
@@ -866,8 +914,12 @@ class TestRsiMacdPeriodConfigThreading:
         analysis = make_analysis(structure=MarketStructure.BULLISH, current_price="49900")
         implicit = score_confluence(analysis, candles, "test")
         explicit = score_confluence(
-            analysis, candles, "test",
-            rsi_period=DEFAULT_RSI_PERIOD, ema_fast=DEFAULT_EMA_FAST, ema_slow=DEFAULT_EMA_SLOW,
+            analysis,
+            candles,
+            "test",
+            rsi_period=DEFAULT_RSI_PERIOD,
+            ema_fast=DEFAULT_EMA_FAST,
+            ema_slow=DEFAULT_EMA_SLOW,
         )
         assert implicit is not None and explicit is not None
         assert implicit.metadata.get("rsi") == explicit.metadata.get("rsi")
@@ -902,9 +954,14 @@ class TestConfluenceWeights:
         # so normalized() should land on exactly the same values as the
         # unscaled defaults.
         scaled = ConfluenceWeights(
-            market_structure=60.0, order_block=60.0, fair_value_gap=45.0,
-            liquidity_sweep=45.0, premium_discount=30.0, session=30.0,
-            volume=15.0, htf_alignment=15.0,
+            market_structure=60.0,
+            order_block=60.0,
+            fair_value_gap=45.0,
+            liquidity_sweep=45.0,
+            premium_discount=30.0,
+            session=30.0,
+            volume=15.0,
+            htf_alignment=15.0,
         )
         assert scaled.normalized().as_dict() == ConfluenceWeights().normalized().as_dict()
 
@@ -915,9 +972,14 @@ class TestConfluenceWeights:
     def test_all_zero_weights_raises(self) -> None:
         with pytest.raises(ValueError):
             ConfluenceWeights(
-                market_structure=0, order_block=0, fair_value_gap=0,
-                liquidity_sweep=0, premium_discount=0, session=0,
-                volume=0, htf_alignment=0,
+                market_structure=0,
+                order_block=0,
+                fair_value_gap=0,
+                liquidity_sweep=0,
+                premium_discount=0,
+                session=0,
+                volume=0,
+                htf_alignment=0,
             )
 
     def test_as_dict_round_trips_into_constructor(self) -> None:
@@ -972,9 +1034,14 @@ class TestScoreConfluenceWithCustomWeights:
         )
         candles = make_candles()
         weights = ConfluenceWeights(
-            market_structure=37.0, order_block=8.0, fair_value_gap=22.0,
-            liquidity_sweep=3.0, premium_discount=17.0, session=6.0,
-            volume=4.0, htf_alignment=1.0,
+            market_structure=37.0,
+            order_block=8.0,
+            fair_value_gap=22.0,
+            liquidity_sweep=3.0,
+            premium_discount=17.0,
+            session=6.0,
+            volume=4.0,
+            htf_alignment=1.0,
         )  # sums to 98, not 100
         result = score_confluence(analysis, candles, "test", weights=weights)
         assert result is not None

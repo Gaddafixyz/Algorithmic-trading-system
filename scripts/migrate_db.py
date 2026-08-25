@@ -21,12 +21,14 @@ from src.monitoring.telemetry import configure_logging
 
 async def run_create(database_url: str) -> None:
     from src.persistence.migrations import create_all_tables
+
     await create_all_tables(database_url)
     print("✓ All tables created from ORM models")
 
 
 def run_migrate(database_url: str) -> None:
     from src.persistence.migrations import run_migrations
+
     run_migrations(database_url)
     print("✓ Migrations applied")
 
@@ -34,8 +36,7 @@ def run_migrate(database_url: str) -> None:
 def main() -> None:
     configure_logging("INFO")
     parser = argparse.ArgumentParser(description="Database migration tool")
-    parser.add_argument("--create", action="store_true",
-                        help="Create tables from ORM (dev only)")
+    parser.add_argument("--create", action="store_true", help="Create tables from ORM (dev only)")
     args = parser.parse_args()
 
     settings = get_settings()

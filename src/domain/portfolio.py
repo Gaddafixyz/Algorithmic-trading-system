@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Iterator
 
 from pydantic import Field
 
@@ -80,13 +79,19 @@ class Portfolio(MutableModel):
     def net_exposure(self) -> Decimal:
         """Net long - short notional."""
         long_notional = sum(
-            (p.notional_value for p in self.positions.values()
-             if p.is_open and p.side == PositionSide.LONG),
+            (
+                p.notional_value
+                for p in self.positions.values()
+                if p.is_open and p.side == PositionSide.LONG
+            ),
             Decimal("0"),
         )
         short_notional = sum(
-            (p.notional_value for p in self.positions.values()
-             if p.is_open and p.side == PositionSide.SHORT),
+            (
+                p.notional_value
+                for p in self.positions.values()
+                if p.is_open and p.side == PositionSide.SHORT
+            ),
             Decimal("0"),
         )
         return long_notional - short_notional

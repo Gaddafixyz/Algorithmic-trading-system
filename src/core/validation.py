@@ -164,9 +164,7 @@ def validate_candle_limit(limit: int) -> int:
     if limit < 1:
         raise ValidationError(f"Candle limit must be >= 1, got {limit}")
     if limit > BINANCE_MAX_CANDLES:
-        raise ValidationError(
-            f"Candle limit {limit} exceeds maximum {BINANCE_MAX_CANDLES}"
-        )
+        raise ValidationError(f"Candle limit {limit} exceeds maximum {BINANCE_MAX_CANDLES}")
     return limit
 
 
@@ -363,13 +361,9 @@ def validate_risk_reward(
         reward = entry_price - take_profit
 
     if reward <= Decimal("0"):
-        raise ValidationError(
-            f"Take profit is on the wrong side: reward={reward}"
-        )
+        raise ValidationError(f"Take profit is on the wrong side: reward={reward}")
 
     rr = reward / stop_distance
     if rr < minimum_rr:
-        raise ValidationError(
-            f"Risk-reward {rr:.2f} is below minimum {minimum_rr}"
-        )
+        raise ValidationError(f"Risk-reward {rr:.2f} is below minimum {minimum_rr}")
     return rr

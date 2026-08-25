@@ -28,13 +28,19 @@ def app() -> Application:
 
 class TestLoadPartialTpLevels:
     def test_missing_file_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         assert app._load_partial_tp_levels() is None
 
     def test_missing_partial_take_profit_section_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -42,7 +48,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_enabled_key_absent_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -52,7 +61,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_explicit_disabled_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -62,7 +74,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_enabled_with_valid_levels_returns_decimal_tuples(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -80,7 +95,10 @@ class TestLoadPartialTpLevels:
         ]
 
     def test_enabled_with_no_levels_key_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -90,7 +108,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_enabled_with_empty_levels_list_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -100,7 +121,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_malformed_level_entry_skipped_valid_kept(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -119,7 +143,10 @@ class TestLoadPartialTpLevels:
         ]
 
     def test_all_levels_malformed_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -133,7 +160,10 @@ class TestLoadPartialTpLevels:
         assert app._load_partial_tp_levels() is None
 
     def test_malformed_yaml_returns_none(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()

@@ -75,7 +75,7 @@ class TestFloorToTimeframe:
 
     def test_preserves_naive_or_defaults_to_utc(self) -> None:
         # dt.tzinfo is None for a naive datetime; function falls back to UTC.
-        naive = datetime(2021, 1, 1, 12, 34, 59)
+        naive = datetime(2021, 1, 1, 12, 34, 59)  # noqa: DTZ001  # intentional naive
         result = floor_to_timeframe(naive, 60)
         assert result.tzinfo == UTC
 

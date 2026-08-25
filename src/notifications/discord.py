@@ -28,14 +28,18 @@ class DiscordNotifier:
     async def send(self, message: str, severity: str = "info") -> bool:
         color = SEVERITY_COLORS.get(severity.lower(), 0x95A5A6)
         payload = {
-            "embeds": [{
-                "description": message,
-                "color": color,
-            }]
+            "embeds": [
+                {
+                    "description": message,
+                    "color": color,
+                }
+            ]
         }
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(self._url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                async with session.post(
+                    self._url, json=payload, timeout=aiohttp.ClientTimeout(total=10)
+                ) as resp:
                     if resp.status in (200, 204):
                         self._sent += 1
                         return True

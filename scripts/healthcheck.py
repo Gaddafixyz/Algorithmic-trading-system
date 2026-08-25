@@ -12,10 +12,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
-import urllib.request
-import urllib.error
 import json
+import sys
+import urllib.error
+import urllib.request
 
 
 def check_dashboard(url: str, timeout: float = 5.0) -> bool:

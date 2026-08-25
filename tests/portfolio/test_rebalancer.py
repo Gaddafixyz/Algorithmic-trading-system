@@ -24,7 +24,11 @@ def make_position(symbol: str, qty: str, entry: str, mark: str) -> Position:
 
 
 def make_portfolio(*positions: Position) -> Portfolio:
-    pf = Portfolio(current_equity=Decimal("10000"), initial_equity=Decimal("10000"), peak_equity=Decimal("10000"))
+    pf = Portfolio(
+        current_equity=Decimal("10000"),
+        initial_equity=Decimal("10000"),
+        peak_equity=Decimal("10000"),
+    )
     for p in positions:
         pf.add_position(p)
     return pf

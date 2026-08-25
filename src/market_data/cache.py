@@ -25,7 +25,6 @@ from src.core.constants import (
 )
 from src.core.enums import Timeframe
 from src.core.models import OHLCV, Ticker, TimestampedValue
-from src.domain.candle import Candle
 
 logger = logging.getLogger(__name__)
 
@@ -212,8 +211,7 @@ class MarketDataCache:
         """Remove expired ticker entries. Returns count removed."""
         now = datetime.now(tz=UTC)
         stale = [
-            s for s, (_, t) in self._tickers.items()
-            if (now - t).total_seconds() > self._ticker_ttl
+            s for s, (_, t) in self._tickers.items() if (now - t).total_seconds() > self._ticker_ttl
         ]
         for s in stale:
             del self._tickers[s]

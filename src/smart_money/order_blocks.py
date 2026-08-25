@@ -38,13 +38,13 @@ class OrderBlock:
     """
 
     ob_type: OrderBlockType
-    top: Decimal        # Upper boundary of the OB zone
-    bottom: Decimal     # Lower boundary of the OB zone
-    origin_high: Decimal    # Full candle high (for reference)
-    origin_low: Decimal     # Full candle low
+    top: Decimal  # Upper boundary of the OB zone
+    bottom: Decimal  # Lower boundary of the OB zone
+    origin_high: Decimal  # Full candle high (for reference)
+    origin_low: Decimal  # Full candle low
     bar_index: int
     timestamp: datetime
-    bos_event: BOSEvent     # The BOS that validated this OB
+    bos_event: BOSEvent  # The BOS that validated this OB
     is_mitigated: bool = False
     mitigation_bar_index: int | None = None
     mitigation_price: Decimal | None = None
@@ -95,29 +95,28 @@ class OrderBlock:
                 self.mitigation_price = candle.low
                 logger.debug(
                     "Bullish OB mitigated at bar %d (price=%s, OB bottom=%s)",
-                    bar_index, candle.low, self.bottom,
+                    bar_index,
+                    candle.low,
+                    self.bottom,
                 )
                 return True
-        else:
-            # Bearish OB mitigated when price trades above 50% of body
-            if candle.high >= fifty_pct:
-                self.is_mitigated = True
-                self.mitigation_bar_index = bar_index
-                self.mitigation_price = candle.high
-                logger.debug(
-                    "Bearish OB mitigated at bar %d (price=%s, OB top=%s)",
-                    bar_index, candle.high, self.top,
-                )
-                return True
+        elif candle.high >= fifty_pct:
+            self.is_mitigated = True
+            self.mitigation_bar_index = bar_index
+            self.mitigation_price = candle.high
+            logger.debug(
+                "Bearish OB mitigated at bar %d (price=%s, OB top=%s)",
+                bar_index,
+                candle.high,
+                self.top,
+            )
+            return True
 
         return False
 
     def __str__(self) -> str:
         status = "MITIGATED" if self.is_mitigated else "ACTIVE"
-        return (
-            f"OB({self.ob_type} {self.bottom}-{self.top} "
-            f"bar={self.bar_index} [{status}])"
-        )
+        return f"OB({self.ob_type} {self.bottom}-{self.top} " f"bar={self.bar_index} [{status}])"
 
 
 def identify_order_blocks(
@@ -188,7 +187,9 @@ def identify_order_blocks(
             bos_event=bos,
         )
         order_blocks.append(ob)
-        logger.debug("Identified %s OB at bar %d: %s-%s", ob_type, ob_candle_idx, body_bottom, body_top)
+        logger.debug(
+            "Identified %s OB at bar %d: %s-%s", ob_type, ob_candle_idx, body_bottom, body_top
+        )
 
     return sorted(order_blocks, key=lambda o: o.bar_index, reverse=True)
 

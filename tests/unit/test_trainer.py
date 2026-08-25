@@ -179,9 +179,7 @@ class TestCrossValidate:
 
 
 class TestTune:
-    def test_tune_raises_import_error_without_optuna(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_tune_raises_import_error_without_optuna(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setitem(sys.modules, "optuna", None)
         X, y = make_dataset()
         trainer = make_trainer()

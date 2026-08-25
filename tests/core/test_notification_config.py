@@ -30,7 +30,9 @@ class TestTelegramEnabled:
         assert cfg.telegram_enabled is False
 
     def test_true_when_both_set(self) -> None:
-        cfg = NotificationConfig(_env_file=None, telegram_bot_token="tok", telegram_chat_id="chat-1")
+        cfg = NotificationConfig(
+            _env_file=None, telegram_bot_token="tok", telegram_chat_id="chat-1"
+        )
         assert cfg.telegram_enabled is True
 
 
@@ -39,7 +41,9 @@ class TestDiscordEnabled:
         assert NotificationConfig(_env_file=None).discord_enabled is False
 
     def test_true_when_webhook_set(self) -> None:
-        cfg = NotificationConfig(_env_file=None, discord_webhook_url="https://discord.example/webhook")
+        cfg = NotificationConfig(
+            _env_file=None, discord_webhook_url="https://discord.example/webhook"
+        )
         assert cfg.discord_enabled is True
 
 
@@ -48,5 +52,7 @@ class TestSlackEnabled:
         assert NotificationConfig(_env_file=None).slack_enabled is False
 
     def test_true_when_webhook_set(self) -> None:
-        cfg = NotificationConfig(_env_file=None, slack_webhook_url="https://hooks.slack.example/webhook")
+        cfg = NotificationConfig(
+            _env_file=None, slack_webhook_url="https://hooks.slack.example/webhook"
+        )
         assert cfg.slack_enabled is True

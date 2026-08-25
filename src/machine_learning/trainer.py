@@ -127,9 +127,15 @@ class SignalFilterTrainer:
             - ``f1``: F1 score for positive class
             - ``auc``: ROC-AUC score
         """
-        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score  # noqa: PLC0415
+        from sklearn.metrics import (
+            accuracy_score,
+            f1_score,
+            precision_score,
+            recall_score,
+            roc_auc_score,
+        )
 
-        model = signal_filter._model if isinstance(signal_filter, SignalFilter) else signal_filter  # noqa: SLF001
+        model = signal_filter._model if isinstance(signal_filter, SignalFilter) else signal_filter
         y_pred = model.predict(X_test)
         y_prob = model.predict_proba(X_test)[:, 1]
 
@@ -164,8 +170,8 @@ class SignalFilterTrainer:
 
         Returns mean ± std for accuracy, F1, and AUC.
         """
-        from sklearn.model_selection import TimeSeriesSplit, cross_validate  # noqa: PLC0415
-        from sklearn.metrics import make_scorer, f1_score, roc_auc_score     # noqa: PLC0415
+        from sklearn.metrics import f1_score, make_scorer, roc_auc_score
+        from sklearn.model_selection import TimeSeriesSplit, cross_validate
 
         tscv = TimeSeriesSplit(n_splits=n_splits)
         scoring = {
@@ -193,9 +199,12 @@ class SignalFilterTrainer:
         logger.info(
             "Cross-validation (%d splits) — acc=%.3f±%.3f f1=%.3f±%.3f auc=%.3f±%.3f",
             n_splits,
-            summary["accuracy_mean"], summary["accuracy_std"],
-            summary["f1_mean"], summary["f1_std"],
-            summary["auc_mean"], summary["auc_std"],
+            summary["accuracy_mean"],
+            summary["accuracy_std"],
+            summary["f1_mean"],
+            summary["f1_std"],
+            summary["auc_mean"],
+            summary["auc_std"],
         )
         return summary
 
@@ -241,12 +250,11 @@ class SignalFilterTrainer:
             ImportError: if optuna is not installed.
         """
         try:
-            import optuna  # noqa: PLC0415
+            import optuna
+
             optuna.logging.set_verbosity(optuna.logging.WARNING)
         except ImportError as e:
-            raise ImportError(
-                "optuna is required for tune() — pip install optuna"
-            ) from e
+            raise ImportError("optuna is required for tune() — pip install optuna") from e
 
         self._validate_X(X)
         if len(X) != len(y):
@@ -254,9 +262,9 @@ class SignalFilterTrainer:
         if metric not in ("auc", "f1"):
             raise ValueError(f"metric must be 'auc' or 'f1', got {metric!r}")
 
-        from sklearn.base import clone  # noqa: PLC0415
-        from sklearn.metrics import f1_score, roc_auc_score  # noqa: PLC0415
-        from sklearn.model_selection import TimeSeriesSplit  # noqa: PLC0415
+        from sklearn.base import clone
+        from sklearn.metrics import f1_score, roc_auc_score
+        from sklearn.model_selection import TimeSeriesSplit
 
         space = param_space or self._default_param_space()
         tscv = TimeSeriesSplit(n_splits=n_splits)
@@ -294,7 +302,7 @@ class SignalFilterTrainer:
                     else:
                         pred = est.predict(X[val_idx])
                         score = f1_score(y_val, pred, zero_division=0)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     logger.debug("Tuning trial fold failed: %s", exc)
                     continue
                 fold_scores.append(score)
@@ -315,7 +323,11 @@ class SignalFilterTrainer:
         logger.info(
             "Hyperparameter tuning complete (%d trials, %d-fold TS-CV) — "
             "best %s=%.4f, params=%s",
-            n_trials, n_splits, metric, study.best_value, study.best_params,
+            n_trials,
+            n_splits,
+            metric,
+            study.best_value,
+            study.best_params,
         )
 
         self._estimator = clone(self._estimator)
@@ -358,7 +370,7 @@ class SignalFilterTrainer:
         with out.open("wb") as fh:
             pickle.dump(
                 {
-                    "model": signal_filter._model,  # noqa: SLF001
+                    "model": signal_filter._model,
                     "min_probability": signal_filter.min_probability,
                     "feature_names": FEATURE_NAMES,
                     "n_features": N_FEATURES,
@@ -406,7 +418,9 @@ class SignalFilterTrainer:
             )
         if not np.isfinite(X).all():
             n_bad = (~np.isfinite(X)).sum()
-            raise ValueError(f"X contains {n_bad} non-finite values (NaN / inf). Impute before training.")
+            raise ValueError(
+                f"X contains {n_bad} non-finite values (NaN / inf). Impute before training."
+            )
 
     def _default_estimator(self) -> Any:
         """
@@ -416,7 +430,8 @@ class SignalFilterTrainer:
         is not installed, preserving the same interface.
         """
         try:
-            from xgboost import XGBClassifier  # noqa: PLC0415
+            from xgboost import XGBClassifier
+
             return XGBClassifier(
                 n_estimators=300,
                 max_depth=4,
@@ -440,7 +455,8 @@ class SignalFilterTrainer:
                 "xgboost not available; falling back to GradientBoostingClassifier. "
                 "Install xgboost for better performance."
             )
-            from sklearn.ensemble import GradientBoostingClassifier  # noqa: PLC0415
+            from sklearn.ensemble import GradientBoostingClassifier
+
             return GradientBoostingClassifier(
                 n_estimators=200,
                 max_depth=3,

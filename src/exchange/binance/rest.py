@@ -15,8 +15,6 @@ from decimal import Decimal
 from typing import Any
 
 from src.core.enums import (
-    ExchangeStatus,
-    MarginType,
     OrderSide,
     OrderType,
     Timeframe,
@@ -24,7 +22,6 @@ from src.core.enums import (
 from src.core.exceptions import (
     ExchangeAPIError,
     ExchangeAuthenticationError,
-    InsufficientBalanceError,
     OrderNotFoundError,
 )
 from src.core.models import OHLCV, FundingRate, OrderBook, Ticker
@@ -224,7 +221,11 @@ class BinanceFuturesRESTClient(BaseExchangeClient):
 
         logger.info(
             "Placing order: %s %s %s qty=%s price=%s",
-            symbol, side, order_type, quantity, price,
+            symbol,
+            side,
+            order_type,
+            quantity,
+            price,
         )
 
         response = await self._post("/fapi/v1/order", params=params, signed=True)

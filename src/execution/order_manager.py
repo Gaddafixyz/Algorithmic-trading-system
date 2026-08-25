@@ -26,8 +26,8 @@ from src.core.exceptions import (
     OrderNotFoundError,
     OrderSubmissionError,
 )
-from src.domain.order import Order, OrderStatus
 from src.core.interfaces import IExchangeClient
+from src.domain.order import Order, OrderStatus
 from src.utils.profiling import RollingTimer
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ class OrderManager:
 
     def __init__(self, exchange: IExchangeClient, db: Any | None = None) -> None:
         self._exchange = exchange
-        self._orders: dict[str, Order] = {}              # order_id → Order
-        self._client_id_map: dict[str, str] = {}         # client_order_id → order_id
+        self._orders: dict[str, Order] = {}  # order_id → Order
+        self._client_id_map: dict[str, str] = {}  # client_order_id → order_id
         self._submitted_ids: set[str] = set()
         self._submitted_count: int = 0
         self._cancelled_count: int = 0
@@ -70,9 +70,7 @@ class OrderManager:
         # every call site below is itself synchronous state mutation.
         self._bus = get_event_bus()
 
-    def _publish_status_change(
-        self, order: Order, previous_status: OrderStatus
-    ) -> None:
+    def _publish_status_change(self, order: Order, previous_status: OrderStatus) -> None:
         if previous_status == order.status:
             return
         self._bus.publish_sync(
@@ -157,7 +155,11 @@ class OrderManager:
             self._client_id_map[order.client_order_id] = order.order_id
             self._submitted_count += 1
             await self._persist(order)
-            logger.info("Order submitted: %s → exchange_id=%s", order.client_order_id, order.exchange_order_id)
+            logger.info(
+                "Order submitted: %s → exchange_id=%s",
+                order.client_order_id,
+                order.exchange_order_id,
+            )
             return order
 
         except (ExchangeTimeoutError, ExchangeConnectionError, MaxRetriesExceededError) as exc:
@@ -169,7 +171,8 @@ class OrderManager:
             # live orders on the exchange for one signal. Check first.
             logger.warning(
                 "Ambiguous failure submitting %s (%s) — checking exchange before giving up",
-                order.client_order_id, exc,
+                order.client_order_id,
+                exc,
             )
             existing = await self._check_order_landed(order)
             if existing is not None:
@@ -183,7 +186,8 @@ class OrderManager:
                 logger.info(
                     "Order %s actually landed on exchange despite ambiguous response "
                     "(exchange_id=%s) — treating as submitted",
-                    order.client_order_id, order.exchange_order_id,
+                    order.client_order_id,
+                    order.exchange_order_id,
                 )
                 return order
 
@@ -203,7 +207,8 @@ class OrderManager:
             )
             logger.error(
                 "Order submission failed for %s and exchange confirms it never landed: %s",
-                order.client_order_id, exc,
+                order.client_order_id,
+                exc,
             )
             raise OrderSubmissionError(str(exc)) from exc
 
@@ -245,7 +250,8 @@ class OrderManager:
             logger.error(
                 "Could not confirm order %s state with exchange after ambiguous "
                 "failure: %s — assuming it did not land",
-                order.client_order_id, exc,
+                order.client_order_id,
+                exc,
             )
             return None
 
@@ -307,8 +313,7 @@ class OrderManager:
 
     def get_open_orders(self, symbol: str | None = None) -> list[Order]:
         return [
-            o for o in self._orders.values()
-            if o.is_open and (symbol is None or o.symbol == symbol)
+            o for o in self._orders.values() if o.is_open and (symbol is None or o.symbol == symbol)
         ]
 
     @property

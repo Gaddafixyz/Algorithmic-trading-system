@@ -18,10 +18,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.backtesting.engine import BacktestConfig, BacktestEngine
 from src.backtesting.commission import PercentageCommission
-from src.backtesting.slippage import FixedSlippage
+from src.backtesting.engine import BacktestConfig, BacktestEngine
 from src.backtesting.reports import print_backtest_summary, save_backtest_report
+from src.backtesting.slippage import FixedSlippage
 from src.core.config import get_settings
 from src.core.enums import Timeframe
 from src.exchange.binance.rest import BinanceFuturesRESTClient
@@ -44,7 +44,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", type=Path, default=Path("./backtest_results"), help="Output dir")
     p.add_argument("--save", action="store_true", help="Save results to files")
     p.add_argument(
-        "--no-funding", dest="funding", action="store_false",
+        "--no-funding",
+        dest="funding",
+        action="store_false",
         help="Skip fetching/applying historical funding-rate accrual",
     )
     p.set_defaults(funding=True)
@@ -74,16 +76,16 @@ async def run_backtest(args: argparse.Namespace) -> None:
 
     logger.info(
         "Fetching %d days of %s %s history...",
-        args.days, args.symbol, args.timeframe,
+        args.days,
+        args.symbol,
+        args.timeframe,
     )
 
     async with client:
         # Fetch candles in chunks (max 1500 per request)
         all_candles = []
         start = datetime.now(tz=UTC) - timedelta(days=args.days)
-        candle_batch = await client.get_candles(
-            args.symbol, tf, limit=1500, start_time=start
-        )
+        candle_batch = await client.get_candles(args.symbol, tf, limit=1500, start_time=start)
         all_candles.extend(candle_batch)
 
         # Fetch HTF candles for bias
@@ -116,12 +118,14 @@ async def run_backtest(args: argparse.Namespace) -> None:
                 )
                 logger.info(
                     "Fetched %d funding-rate settlements for %s",
-                    len(funding_rates), args.symbol,
+                    len(funding_rates),
+                    args.symbol,
                 )
             except Exception:
                 logger.warning(
                     "Failed to fetch funding-rate history; backtest will "
-                    "run without funding accrual", exc_info=True,
+                    "run without funding accrual",
+                    exc_info=True,
                 )
                 funding_rates = None
 
@@ -129,8 +133,12 @@ async def run_backtest(args: argparse.Namespace) -> None:
         logger.error("Insufficient data: only %d candles fetched", len(all_candles))
         sys.exit(1)
 
-    logger.info("Fetched %d candles (%s → %s)", len(all_candles),
-                all_candles[0].timestamp.date(), all_candles[-1].timestamp.date())
+    logger.info(
+        "Fetched %d candles (%s → %s)",
+        len(all_candles),
+        all_candles[0].timestamp.date(),
+        all_candles[-1].timestamp.date(),
+    )
 
     # Build strategy
     strategy = SMCStrategy(
@@ -153,7 +161,9 @@ async def run_backtest(args: argparse.Namespace) -> None:
 
     # Run
     result = await engine.run(
-        all_candles, args.symbol, tf,
+        all_candles,
+        args.symbol,
+        tf,
         htf_candles=htf_candles,
         htf_timeframe=Timeframe(args.htf) if htf_candles else None,
         ltf_candles=ltf_candles,

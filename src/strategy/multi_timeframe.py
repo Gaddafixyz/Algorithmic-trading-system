@@ -10,8 +10,6 @@ Provides a structured way to combine analysis from multiple timeframes:
 from __future__ import annotations
 
 import logging
-from decimal import Decimal
-from typing import Any
 
 from src.core.enums import MarketStructure, Timeframe
 from src.core.models import OHLCV
@@ -146,7 +144,4 @@ class MTFContext:
 
     def context_summary(self) -> dict[str, str]:
         """Return human-readable structure summary for all timeframes."""
-        return {
-            tf: self.get_bias(Timeframe(tf))
-            for tf in self._structures
-        }
+        return {tf: self.get_bias(Timeframe(tf)) for tf in self._structures}

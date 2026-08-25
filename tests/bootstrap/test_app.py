@@ -93,9 +93,7 @@ class TestCorrelationTrackerGating:
         assert app.risk_manager._correlation_tracker is None  # noqa: SLF001
 
     def test_no_correlation_tracker_with_a_single_enabled_symbol(self, make_settings) -> None:  # type: ignore[no-untyped-def]
-        settings = make_settings(
-            symbols={"BTCUSDT": SymbolRiskConfig(leverage=5, enabled=True)}
-        )
+        settings = make_settings(symbols={"BTCUSDT": SymbolRiskConfig(leverage=5, enabled=True)})
         app = Application(settings)
         assert app.risk_manager._correlation_tracker is None  # noqa: SLF001
 
@@ -111,9 +109,7 @@ class TestCorrelationTrackerGating:
         app = Application(settings)
         assert app.risk_manager._correlation_tracker is not None  # noqa: SLF001
 
-    def test_disabled_symbols_do_not_count_toward_correlation_gating(
-        self, make_settings
-    ) -> None:  # type: ignore[no-untyped-def]
+    def test_disabled_symbols_do_not_count_toward_correlation_gating(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
             symbols={
                 "BTCUSDT": SymbolRiskConfig(leverage=5, enabled=True),
@@ -199,7 +195,9 @@ class TestSyncEquity:
         # for the paper-mode branch, which bypasses account_service/
         # rest_client entirely).
         settings = make_settings(
-            provider="binance", with_binance=True, trading_env=TradingEnvironment.TESTNET,
+            provider="binance",
+            with_binance=True,
+            trading_env=TradingEnvironment.TESTNET,
         )
         app = Application(settings)
 
@@ -213,7 +211,9 @@ class TestSyncEquity:
 
     async def test_bybit_uses_usdt_wallet_balance(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
-            provider="bybit", with_binance=False, with_bybit=True,
+            provider="bybit",
+            with_binance=False,
+            with_bybit=True,
             trading_env=TradingEnvironment.TESTNET,
         )
         app = Application(settings)
@@ -230,7 +230,9 @@ class TestSyncEquity:
 
     async def test_bybit_with_no_usdt_balance_defaults_to_zero(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
-            provider="bybit", with_binance=False, with_bybit=True,
+            provider="bybit",
+            with_binance=False,
+            with_bybit=True,
             trading_env=TradingEnvironment.TESTNET,
         )
         app = Application(settings)
@@ -254,8 +256,10 @@ class TestSyncEquityPaperMode:
 
     async def test_reads_paper_exchange_client_equity(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
-            provider="binance", with_binance=True,
-            trading_env=TradingEnvironment.PAPER, paper_initial_equity=12345.0,
+            provider="binance",
+            with_binance=True,
+            trading_env=TradingEnvironment.PAPER,
+            paper_initial_equity=12345.0,
         )
         app = Application(settings)
         assert app.paper_exchange_client is not None
@@ -266,7 +270,9 @@ class TestSyncEquityPaperMode:
 
     async def test_never_calls_account_service_in_paper_mode(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
-            provider="binance", with_binance=True, trading_env=TradingEnvironment.PAPER,
+            provider="binance",
+            with_binance=True,
+            trading_env=TradingEnvironment.PAPER,
         )
         app = Application(settings)
 
@@ -280,7 +286,9 @@ class TestSyncEquityPaperMode:
 
     async def test_reflects_simulated_pnl_after_a_fill(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         settings = make_settings(
-            provider="binance", with_binance=True, trading_env=TradingEnvironment.PAPER,
+            provider="binance",
+            with_binance=True,
+            trading_env=TradingEnvironment.PAPER,
         )
         app = Application(settings)
         starting_equity = app.paper_exchange_client.equity
@@ -342,7 +350,9 @@ class TestCreateApplication:
         app = create_application(settings)
         assert isinstance(app, Application)
 
-    def test_configures_logging_before_building(self, make_settings, monkeypatch: pytest.MonkeyPatch) -> None:  # type: ignore[no-untyped-def]
+    def test_configures_logging_before_building(
+        self, make_settings, monkeypatch: pytest.MonkeyPatch
+    ) -> None:  # type: ignore[no-untyped-def]
         calls: list[str] = []
         monkeypatch.setattr(
             "src.bootstrap.app.configure_logging",
@@ -352,9 +362,7 @@ class TestCreateApplication:
         create_application(settings)
         assert calls == ["logging_configured"]
 
-    def test_redis_event_bus_backend_swaps_the_global_event_bus(
-        self, make_settings
-    ) -> None:  # type: ignore[no-untyped-def]
+    def test_redis_event_bus_backend_swaps_the_global_event_bus(self, make_settings) -> None:  # type: ignore[no-untyped-def]
         from src.core.events import get_event_bus, reset_event_bus
         from src.core.events_redis import RedisEventBus
 

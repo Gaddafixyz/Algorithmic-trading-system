@@ -74,21 +74,28 @@ WEIGHT_PARAM_SPACE: dict[str, dict] = {
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Strategy Parameter Optimizer")
-    p.add_argument("--symbol", default="BTCUSDT",
-                    help="Single symbol (ignored if --symbols is given)")
-    p.add_argument("--symbols", default=None,
-                    help="Comma-separated symbols, e.g. BTCUSDT,ETHUSDT,SOLUSDT")
-    p.add_argument("--timeframe", default="1h",
-                    help="Single timeframe (ignored if --timeframes is given)")
-    p.add_argument("--timeframes", default=None,
-                    help="Comma-separated timeframes, e.g. 15m,1h,4h")
+    p.add_argument(
+        "--symbol", default="BTCUSDT", help="Single symbol (ignored if --symbols is given)"
+    )
+    p.add_argument(
+        "--symbols", default=None, help="Comma-separated symbols, e.g. BTCUSDT,ETHUSDT,SOLUSDT"
+    )
+    p.add_argument(
+        "--timeframe", default="1h", help="Single timeframe (ignored if --timeframes is given)"
+    )
+    p.add_argument("--timeframes", default=None, help="Comma-separated timeframes, e.g. 15m,1h,4h")
     p.add_argument("--days", type=int, default=365)
     p.add_argument("--trials", type=int, default=100)
-    p.add_argument("--objective", default="sharpe_ratio",
-                   choices=["sharpe_ratio", "profit_factor", "total_net_pnl"])
-    p.add_argument("--tune-weights", action="store_true",
-                    help="Also tune the 8 SMC confluence scoring weights, "
-                         "not just min_score.")
+    p.add_argument(
+        "--objective",
+        default="sharpe_ratio",
+        choices=["sharpe_ratio", "profit_factor", "total_net_pnl"],
+    )
+    p.add_argument(
+        "--tune-weights",
+        action="store_true",
+        help="Also tune the 8 SMC confluence scoring weights, " "not just min_score.",
+    )
     p.add_argument("--output", type=Path, default=Path("./optimization_results"))
     return p.parse_args()
 
@@ -151,6 +158,7 @@ def make_strategy_factory(symbol: str, timeframe: Timeframe, tune_weights: bool)
 
 async def fetch_candles(settings: object, symbol: str, tf: Timeframe, days: int) -> list[OHLCV]:
     from src.core.config import Settings
+
     assert isinstance(settings, Settings)
     assert settings.binance is not None
     client = BinanceFuturesRESTClient(
@@ -169,6 +177,7 @@ async def fetch_funding_rates(settings: object, symbol: str, days: int) -> list:
     (the honest final check, not the per-trial Optuna search — see
     ``_backtest_with_weights``)."""
     from src.core.config import Settings
+
     assert isinstance(settings, Settings)
     assert settings.binance is not None
     client = BinanceFuturesRESTClient(
@@ -196,8 +205,10 @@ async def _backtest_with_weights(
     """Run one backtest with a fixed (non-tuned) weight set — used by the
     global-weights validation pass, not by the Optuna search itself."""
     strategy = SMCStrategy(
-        symbols=[symbol], timeframes=[timeframe],
-        min_score=min_score, confluence_weights=weights,
+        symbols=[symbol],
+        timeframes=[timeframe],
+        min_score=min_score,
+        confluence_weights=weights,
     )
     engine = BacktestEngine(strategy, BacktestConfig(funding_rates=funding_rates))
     return await engine.run(candles, symbol, timeframe)
@@ -221,7 +232,8 @@ def _global_mean_weights(per_combo_best: list[dict]) -> ConfluenceWeights:
 
 
 async def _run_global_weights_validation(
-    combos: list[dict], objective: str,
+    combos: list[dict],
+    objective: str,
 ) -> dict:
     """
     The actual "empirically validate ... against multiple symbols/
@@ -248,7 +260,11 @@ async def _run_global_weights_validation(
             continue
         min_score = combo["best_params"].get("min_score", 60.0)
         global_result = await _backtest_with_weights(
-            combo["symbol"], combo["timeframe"], oos_candles, min_score, global_weights,
+            combo["symbol"],
+            combo["timeframe"],
+            oos_candles,
+            min_score,
+            global_weights,
             funding_rates=combo.get("funding_rates"),
         )
         global_score = 0.0
@@ -256,17 +272,24 @@ async def _run_global_weights_validation(
             global_score = float(getattr(global_result.performance, objective, 0.0) or 0.0)
 
         tuned_score = combo["oos_score"]
-        comparisons.append({
-            "symbol": combo["symbol"],
-            "timeframe": combo["timeframe"],
-            "individually_tuned_oos": tuned_score,
-            "global_weights_oos": global_score,
-            "gap": tuned_score - global_score,
-        })
+        comparisons.append(
+            {
+                "symbol": combo["symbol"],
+                "timeframe": combo["timeframe"],
+                "individually_tuned_oos": tuned_score,
+                "global_weights_oos": global_score,
+                "gap": tuned_score - global_score,
+            }
+        )
         logger.warning(
             "%s %s — individually tuned OOS %s=%.4f vs global-weights OOS %s=%.4f (gap=%.4f)",
-            combo["symbol"], combo["timeframe"], objective, tuned_score,
-            objective, global_score, tuned_score - global_score,
+            combo["symbol"],
+            combo["timeframe"],
+            objective,
+            tuned_score,
+            objective,
+            global_score,
+            tuned_score - global_score,
         )
 
     return {"global_weights": global_weights.as_dict(), "comparisons": comparisons}
@@ -311,12 +334,18 @@ async def async_main(args: argparse.Namespace) -> None:
                 except Exception as exc:
                     logger.warning(
                         "Failed to fetch funding rates for %s: %s (validation "
-                        "pass will run without funding accrual)", symbol, exc,
+                        "pass will run without funding accrual)",
+                        symbol,
+                        exc,
                     )
 
             logger.warning(
                 "Optimizing %s %s with %d trials, objective=%s, tune_weights=%s",
-                symbol, tf.value, args.trials, args.objective, args.tune_weights,
+                symbol,
+                tf.value,
+                args.trials,
+                args.objective,
+                args.tune_weights,
             )
 
             result = optimize(
@@ -344,25 +373,30 @@ async def async_main(args: argparse.Namespace) -> None:
                 print(f"  Deflated Sharpe (n_trials={args.trials}): {p.deflated_sharpe_ratio:.2f}")
                 print(f"  Net PnL: {p.total_net_pnl}")
 
-            write_json(args.output / f"{symbol}_{tf.value}_opt.json", {
-                "best_params": result.best_params,
-                "best_is_score": result.best_is_score,
-                "n_trials": result.n_trials,
-                "objective": args.objective,
-                "oos_summary": result.oos_result.summarize() if result.oos_result else None,
-            })
+            write_json(
+                args.output / f"{symbol}_{tf.value}_opt.json",
+                {
+                    "best_params": result.best_params,
+                    "best_is_score": result.best_is_score,
+                    "n_trials": result.n_trials,
+                    "objective": args.objective,
+                    "oos_summary": result.oos_result.summarize() if result.oos_result else None,
+                },
+            )
 
             # split_idx matches optimize()'s internal default is_fraction=0.7
             split_idx = int(len(candles) * 0.7)
             if args.tune_weights and all(k in result.best_params for k in WEIGHT_PARAM_SPACE):
-                combos_for_validation.append({
-                    "symbol": symbol,
-                    "timeframe": tf,
-                    "best_params": result.best_params,
-                    "oos_score": oos_score,
-                    "oos_candles": candles[split_idx:],
-                    "funding_rates": funding_rates,
-                })
+                combos_for_validation.append(
+                    {
+                        "symbol": symbol,
+                        "timeframe": tf,
+                        "best_params": result.best_params,
+                        "oos_score": oos_score,
+                        "oos_candles": candles[split_idx:],
+                        "funding_rates": funding_rates,
+                    }
+                )
 
     print(f"\nPer-combination results saved to {args.output}")
 

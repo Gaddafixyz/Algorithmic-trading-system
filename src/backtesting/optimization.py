@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Any
 
 from src.backtesting.engine import BacktestConfig, BacktestEngine, BacktestResult
 from src.core.enums import Timeframe
@@ -62,6 +63,7 @@ def optimize(
     """
     try:
         import optuna
+
         optuna.logging.set_verbosity(optuna.logging.WARNING)
     except ImportError as e:
         raise ImportError("optuna is required for optimization") from e
@@ -78,7 +80,9 @@ def optimize(
             if spec["type"] == "int":
                 params[name] = trial.suggest_int(name, spec["low"], spec["high"])
             elif spec["type"] == "float":
-                params[name] = trial.suggest_float(name, spec["low"], spec["high"], log=spec.get("log", False))
+                params[name] = trial.suggest_float(
+                    name, spec["low"], spec["high"], log=spec.get("log", False)
+                )
             elif spec["type"] == "categorical":
                 params[name] = trial.suggest_categorical(name, spec["choices"])
 
@@ -124,7 +128,10 @@ def optimize(
 
     logger.info(
         "Optimization complete: %d trials, best %s=%.4f params=%s",
-        n_trials, objective, best_score, best_params,
+        n_trials,
+        objective,
+        best_score,
+        best_params,
     )
 
     return OptimizationResult(

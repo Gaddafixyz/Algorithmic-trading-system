@@ -6,12 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Index, Numeric, String, Boolean
+from sqlalchemy import Boolean, DateTime, Index, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from src.domain.order import Order as DomainOrder
 from src.persistence.database import Base
 from src.persistence.repository import BaseRepository
-from src.domain.order import Order as DomainOrder
 
 
 class OrderORM(Base):

@@ -35,17 +35,27 @@ class _ConcreteStrategy(BaseStrategy):
 
 def make_signal(expires_at: datetime | None = None) -> Signal:
     return Signal(
-        strategy_id="test-strategy", symbol="BTCUSDT", timeframe=Timeframe.H1,
-        direction=SignalDirection.LONG, score=70.0, strength=SignalStrength.STRONG,
-        confidence=0.7, entry_price=Decimal("50000"), stop_loss=Decimal("49000"),
-        take_profit=Decimal("52000"), expires_at=expires_at,
+        strategy_id="test-strategy",
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        direction=SignalDirection.LONG,
+        score=70.0,
+        strength=SignalStrength.STRONG,
+        confidence=0.7,
+        entry_price=Decimal("50000"),
+        stop_loss=Decimal("49000"),
+        take_profit=Decimal("52000"),
+        expires_at=expires_at,
     )
 
 
 def make_position(symbol: str = "BTCUSDT") -> Position:
     return Position(
-        symbol=symbol, side=PositionSide.LONG, quantity=Decimal("0.1"),
-        entry_quantity=Decimal("0.1"), entry_price=Decimal("50000"),
+        symbol=symbol,
+        side=PositionSide.LONG,
+        quantity=Decimal("0.1"),
+        entry_quantity=Decimal("0.1"),
+        entry_price=Decimal("50000"),
         mark_price=Decimal("50000"),
     )
 

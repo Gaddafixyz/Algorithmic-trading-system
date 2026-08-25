@@ -25,9 +25,7 @@ class TestLogCall:
         assert my_function.__name__ == "my_function"
         assert my_function.__doc__ == "Docstring."
 
-    def test_logs_entry_and_exit_at_debug_level(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_logs_entry_and_exit_at_debug_level(self, caplog: pytest.LogCaptureFixture) -> None:
         @log_call
         def traced() -> str:
             return "ok"

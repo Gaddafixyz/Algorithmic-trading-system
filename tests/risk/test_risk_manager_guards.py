@@ -82,9 +82,7 @@ class TestDrawdownLimitTrip:
 
         assert risk_manager.circuit_breaker_state.value == "open"
 
-    async def test_drawdown_below_the_limit_does_not_trip(
-        self, risk_manager: RiskManager
-    ) -> None:
+    async def test_drawdown_below_the_limit_does_not_trip(self, risk_manager: RiskManager) -> None:
         risk_manager.update_equity(Decimal("10000"))
         risk_manager.update_equity(Decimal("9500"))  # -5% drawdown, under 15% limit
 
@@ -193,6 +191,7 @@ class TestTrivialPassthroughs:
         # Documented as "Handled by event bus" -- must not raise.
         result = await risk_manager.on_position_update(object())
         assert result is None
+
     def test_first_update_establishes_day_start_equity_and_date(
         self, risk_config: RiskConfig, portfolio: Portfolio
     ) -> None:

@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 class InducementEvent:
     """A detected inducement / manipulation event."""
 
-    direction: str          # "bullish_inducement" or "bearish_inducement"
-    swept_price: Decimal    # Level that was swept
-    sweep_high: Decimal     # Wick high of the sweep candle
-    sweep_low: Decimal      # Wick low of the sweep candle
+    direction: str  # "bullish_inducement" or "bearish_inducement"
+    swept_price: Decimal  # Level that was swept
+    sweep_high: Decimal  # Wick high of the sweep candle
+    sweep_low: Decimal  # Wick low of the sweep candle
     rejection_price: Decimal  # Close price showing rejection
     bar_index: int
     timestamp: datetime
@@ -93,19 +93,23 @@ def detect_inducement(
 
             if pool.is_buy_side:
                 # Bearish inducement: wick above buy-side liquidity, close below
-                if (candle.high > pool.price and
-                        candle.close < pool.price and
-                        upper_wick > body * Decimal(str(min_wick_body_ratio))):
-                    events.append(InducementEvent(
-                        direction="bearish_inducement",
-                        swept_price=pool.price,
-                        sweep_high=candle.high,
-                        sweep_low=candle.low,
-                        rejection_price=candle.close,
-                        bar_index=i,
-                        timestamp=candle.timestamp,
-                        liquidity_pool=pool,
-                    ))
+                if (
+                    candle.high > pool.price
+                    and candle.close < pool.price
+                    and upper_wick > body * Decimal(str(min_wick_body_ratio))
+                ):
+                    events.append(
+                        InducementEvent(
+                            direction="bearish_inducement",
+                            swept_price=pool.price,
+                            sweep_high=candle.high,
+                            sweep_low=candle.low,
+                            rejection_price=candle.close,
+                            bar_index=i,
+                            timestamp=candle.timestamp,
+                            liquidity_pool=pool,
+                        )
+                    )
                     pool.is_swept = True
                     pool.sweep_bar_index = i
                     pool.sweep_price = candle.high
@@ -113,19 +117,23 @@ def detect_inducement(
 
             elif pool.is_sell_side:
                 # Bullish inducement: wick below sell-side liquidity, close above
-                if (candle.low < pool.price and
-                        candle.close > pool.price and
-                        lower_wick > body * Decimal(str(min_wick_body_ratio))):
-                    events.append(InducementEvent(
-                        direction="bullish_inducement",
-                        swept_price=pool.price,
-                        sweep_high=candle.high,
-                        sweep_low=candle.low,
-                        rejection_price=candle.close,
-                        bar_index=i,
-                        timestamp=candle.timestamp,
-                        liquidity_pool=pool,
-                    ))
+                if (
+                    candle.low < pool.price
+                    and candle.close > pool.price
+                    and lower_wick > body * Decimal(str(min_wick_body_ratio))
+                ):
+                    events.append(
+                        InducementEvent(
+                            direction="bullish_inducement",
+                            swept_price=pool.price,
+                            sweep_high=candle.high,
+                            sweep_low=candle.low,
+                            rejection_price=candle.close,
+                            bar_index=i,
+                            timestamp=candle.timestamp,
+                            liquidity_pool=pool,
+                        )
+                    )
                     pool.is_swept = True
                     pool.sweep_bar_index = i
                     pool.sweep_price = candle.low

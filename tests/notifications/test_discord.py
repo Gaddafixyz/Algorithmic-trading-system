@@ -8,7 +8,6 @@ unreleased-fix incompatibility with aiohttp 3.14+.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pytest

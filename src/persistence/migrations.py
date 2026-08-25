@@ -39,6 +39,7 @@ async def create_all_tables(database_url: str) -> None:
     Use this for development/testing instead of Alembic migrations.
     """
     from src.persistence.database import get_database
+
     db = get_database()
     await db.connect()
     await db.create_tables()

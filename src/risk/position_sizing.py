@@ -12,7 +12,6 @@ All methods return quantity in base asset units.
 from __future__ import annotations
 
 import logging
-import math
 from decimal import Decimal
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,9 @@ def calculate_position_size(
         logger.warning("Cannot size position: equity <= 0")
         return Decimal("0")
     if entry_price <= Decimal("0") or stop_loss <= Decimal("0"):
-        logger.warning("Cannot size position: invalid prices entry=%s sl=%s", entry_price, stop_loss)
+        logger.warning(
+            "Cannot size position: invalid prices entry=%s sl=%s", entry_price, stop_loss
+        )
         return Decimal("0")
 
     risk_amount = equity * (risk_pct / Decimal("100"))
@@ -74,9 +75,12 @@ def calculate_position_size(
     # (position size is already denominated in base units)
 
     logger.debug(
-        "Position sizing: equity=%s risk_pct=%s%% risk_amount=%s "
-        "stop_dist=%s qty=%s",
-        equity, risk_pct, risk_amount, stop_distance, quantity,
+        "Position sizing: equity=%s risk_pct=%s%% risk_amount=%s " "stop_dist=%s qty=%s",
+        equity,
+        risk_pct,
+        risk_amount,
+        stop_distance,
+        quantity,
     )
     return quantity
 
@@ -112,7 +116,7 @@ def kelly_position_size(
     if avg_loss <= 0 or win_rate <= 0 or win_rate >= 1:
         return Decimal("0")
 
-    loss_rate = 1.0 - win_rate
+    1.0 - win_rate
     win_loss_ratio = avg_win / avg_loss
 
     # Kelly formula: f = W/L_ratio - (1 - W) / 1
@@ -130,9 +134,12 @@ def kelly_position_size(
 
     quantity = risk_amount / entry_price
     logger.debug(
-        "Kelly sizing: win_rate=%.2f win_loss_ratio=%.2f kelly_f=%.4f "
-        "effective_f=%.4f qty=%s",
-        win_rate, win_loss_ratio, kelly_f, effective_f, quantity,
+        "Kelly sizing: win_rate=%.2f win_loss_ratio=%.2f kelly_f=%.4f " "effective_f=%.4f qty=%s",
+        win_rate,
+        win_loss_ratio,
+        kelly_f,
+        effective_f,
+        quantity,
     )
     return quantity
 

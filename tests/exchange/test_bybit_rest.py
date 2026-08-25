@@ -41,21 +41,32 @@ class _BybitServerFixture:
         self.client: BybitFuturesClient | None = None
 
     def queue(
-        self, method: str, path: str, *, status: int = 200, json_body: Any = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        status: int = 200,
+        json_body: Any = None,
     ) -> None:
         key = (method.upper(), path)
         resp = web.Response(
-            status=status, text=json.dumps(json_body), content_type="application/json",
+            status=status,
+            text=json.dumps(json_body),
+            content_type="application/json",
         )
         self._routes.setdefault(key, []).append(resp)
 
     async def _handler(self, request: web.Request) -> web.Response:
         body = await request.text()
-        self.request_log.append({
-            "method": request.method, "path": request.path,
-            "query": dict(request.query), "body": body,
-            "headers": dict(request.headers),
-        })
+        self.request_log.append(
+            {
+                "method": request.method,
+                "path": request.path,
+                "query": dict(request.query),
+                "body": body,
+                "headers": dict(request.headers),
+            }
+        )
         key = (request.method, request.path)
         queue = self._routes.get(key, [])
         if not queue:
@@ -72,7 +83,9 @@ class _BybitServerFixture:
         await self.server.start_server()
         base_url = f"http://{self.server.host}:{self.server.port}"
         self.client = BybitFuturesClient(
-            api_key="test-key", api_secret="test-secret", base_url=base_url,
+            api_key="test-key",
+            api_secret="test-secret",
+            base_url=base_url,
             max_retries=max_retries,
         )
         return self.client
@@ -108,15 +121,20 @@ class TestRateLimiterConstruction:
 
     def test_custom_limits_reach_the_rate_limiter(self) -> None:
         client = BybitFuturesClient(
-            api_key="k", api_secret="s", base_url="http://example.invalid",
-            max_orders_per_second=3, max_orders_per_minute=45,
+            api_key="k",
+            api_secret="s",
+            base_url="http://example.invalid",
+            max_orders_per_second=3,
+            max_orders_per_minute=45,
         )
         assert client._rate_limiter.max_per_second == 3
         assert client._rate_limiter.max_per_minute == 45
 
     def test_default_limits_unchanged(self) -> None:
         client = BybitFuturesClient(
-            api_key="k", api_secret="s", base_url="http://example.invalid",
+            api_key="k",
+            api_secret="s",
+            base_url="http://example.invalid",
         )
         assert client._rate_limiter.max_per_second == 10
         assert client._rate_limiter.max_per_minute == 600
@@ -127,14 +145,22 @@ class TestGetAccountBalance:
         self, server: _BybitServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/account/wallet-balance", json_body=_ok({
-            "list": [{
-                "coin": [
-                    {"coin": "USDT", "walletBalance": "10000.5"},
-                    {"coin": "BNB", "walletBalance": "0"},
-                ]
-            }]
-        }))
+        server.queue(
+            "GET",
+            "/v5/account/wallet-balance",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "coin": [
+                                {"coin": "USDT", "walletBalance": "10000.5"},
+                                {"coin": "BNB", "walletBalance": "0"},
+                            ]
+                        }
+                    ]
+                }
+            ),
+        )
         result = await client.get_account_balance()
         assert result == {"USDT": Decimal("10000.5")}
 
@@ -142,13 +168,25 @@ class TestGetAccountBalance:
 class TestGetPositions:
     async def test_returns_only_non_flat_positions(self, server: _BybitServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/position/list", json_body=_ok({
-            "list": [
-                {"symbol": "BTCUSDT", "size": "0.5", "avgPrice": "50000",
-                 "markPrice": "51000", "side": "Buy", "leverage": "10"},
-                {"symbol": "ETHUSDT", "size": "0", "avgPrice": "0", "side": "Buy"},
-            ]
-        }))
+        server.queue(
+            "GET",
+            "/v5/position/list",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "symbol": "BTCUSDT",
+                            "size": "0.5",
+                            "avgPrice": "50000",
+                            "markPrice": "51000",
+                            "side": "Buy",
+                            "leverage": "10",
+                        },
+                        {"symbol": "ETHUSDT", "size": "0", "avgPrice": "0", "side": "Buy"},
+                    ]
+                }
+            ),
+        )
         result = await client.get_positions()
         assert len(result) == 1
         assert result[0].symbol == "BTCUSDT"
@@ -160,11 +198,26 @@ class TestPlaceOrder:
     ) -> None:
         client = await server.start()
         server.queue("POST", "/v5/order/create", json_body=_ok({"orderId": "1"}))
-        server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "c1", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Market", "orderStatus": "New",
-            "qty": "0.1", "cumExecQty": "0",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/realtime",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "c1",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Market",
+                            "orderStatus": "New",
+                            "qty": "0.1",
+                            "cumExecQty": "0",
+                        }
+                    ]
+                }
+            ),
+        )
         await client.place_order("BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"))
         sent_body = json.loads(server.request_log[0]["body"])
         assert "timeInForce" not in sent_body
@@ -175,11 +228,27 @@ class TestPlaceOrder:
     ) -> None:
         client = await server.start()
         server.queue("POST", "/v5/order/create", json_body=_ok({"orderId": "1"}))
-        server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "c1", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Limit", "orderStatus": "New",
-            "qty": "0.1", "cumExecQty": "0", "price": "50000",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/realtime",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "c1",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Limit",
+                            "orderStatus": "New",
+                            "qty": "0.1",
+                            "cumExecQty": "0",
+                            "price": "50000",
+                        }
+                    ]
+                }
+            ),
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.LIMIT, Decimal("0.1"), price=Decimal("50000")
         )
@@ -190,11 +259,26 @@ class TestPlaceOrder:
     async def test_zero_price_is_not_sent(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("POST", "/v5/order/create", json_body=_ok({"orderId": "1"}))
-        server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "c1", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Market", "orderStatus": "New",
-            "qty": "0.1", "cumExecQty": "0",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/realtime",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "c1",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Market",
+                            "orderStatus": "New",
+                            "qty": "0.1",
+                            "cumExecQty": "0",
+                        }
+                    ]
+                }
+            ),
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), price=Decimal("0")
         )
@@ -206,11 +290,26 @@ class TestPlaceOrder:
     ) -> None:
         client = await server.start()
         server.queue("POST", "/v5/order/create", json_body=_ok({"orderId": "1"}))
-        server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "my-id", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Market", "orderStatus": "New",
-            "qty": "0.1", "cumExecQty": "0",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/realtime",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "my-id",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Market",
+                            "orderStatus": "New",
+                            "qty": "0.1",
+                            "cumExecQty": "0",
+                        }
+                    ]
+                }
+            ),
+        )
         await client.place_order(
             "BTCUSDT", OrderSide.BUY, OrderType.MARKET, Decimal("0.1"), client_order_id="my-id"
         )
@@ -234,19 +333,27 @@ class TestCancelOrder:
         # successful cancel outcome (goal already satisfied), matching
         # the Binance adapter's -2011 "Unknown order" behavior.
         client = await server.start()
-        server.queue("POST", "/v5/order/cancel", json_body={
-            "retCode": 110001, "retMsg": "order not exists or too late to cancel",
-        })
+        server.queue(
+            "POST",
+            "/v5/order/cancel",
+            json_body={
+                "retCode": 110001,
+                "retMsg": "order not exists or too late to cancel",
+            },
+        )
         result = await client.cancel_order("BTCUSDT", "999")
         assert result is True
 
-    async def test_returns_false_on_a_genuine_api_error(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_returns_false_on_a_genuine_api_error(self, server: _BybitServerFixture) -> None:
         client = await server.start()
-        server.queue("POST", "/v5/order/cancel", json_body={
-            "retCode": 10001, "retMsg": "params error",
-        })
+        server.queue(
+            "POST",
+            "/v5/order/cancel",
+            json_body={
+                "retCode": 10001,
+                "retMsg": "params error",
+            },
+        )
         result = await client.cancel_order("BTCUSDT", "123")
         assert result is False
 
@@ -264,11 +371,26 @@ class TestCancelOrder:
 class TestGetOrder:
     async def test_fetches_from_open_orders_first(self, server: _BybitServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "c1", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Market", "orderStatus": "Filled",
-            "qty": "0.1", "cumExecQty": "0.1",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/realtime",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "c1",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Market",
+                            "orderStatus": "Filled",
+                            "qty": "0.1",
+                            "cumExecQty": "0.1",
+                        }
+                    ]
+                }
+            ),
+        )
         result = await client.get_order("BTCUSDT", "123")
         assert result.exchange_order_id == "1"
 
@@ -277,11 +399,26 @@ class TestGetOrder:
     ) -> None:
         client = await server.start()
         server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": []}))
-        server.queue("GET", "/v5/order/history", json_body=_ok({"list": [{
-            "orderId": "1", "orderLinkId": "c1", "symbol": "BTCUSDT",
-            "side": "Buy", "orderType": "Market", "orderStatus": "Filled",
-            "qty": "0.1", "cumExecQty": "0.1",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/order/history",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "orderId": "1",
+                            "orderLinkId": "c1",
+                            "symbol": "BTCUSDT",
+                            "side": "Buy",
+                            "orderType": "Market",
+                            "orderStatus": "Filled",
+                            "qty": "0.1",
+                            "cumExecQty": "0.1",
+                        }
+                    ]
+                }
+            ),
+        )
         result = await client.get_order("BTCUSDT", "123")
         assert result.exchange_order_id == "1"
 
@@ -306,9 +443,7 @@ class TestGetOpenOrders:
         assert "symbol" not in query
         assert query["settleCoin"] == "USDT"
 
-    async def test_includes_symbol_param_when_provided(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_includes_symbol_param_when_provided(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/v5/order/realtime", json_body=_ok({"list": []}))
         await client.get_open_orders(symbol="btcusdt")
@@ -331,21 +466,32 @@ class TestMarketData:
         await client.get_candles("BTCUSDT", Timeframe.H1, limit=5000)
         assert server.request_log[-1]["query"]["limit"] == "1000"
 
-    async def test_get_ticker_parses_symbol_and_price(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_get_ticker_parses_symbol_and_price(self, server: _BybitServerFixture) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/market/tickers", json_body=_ok({"list": [{
-            "symbol": "BTCUSDT", "lastPrice": "50123.45", "price24hPcnt": "0.01",
-            "prevPrice24h": "49000", "highPrice24h": "51000", "lowPrice24h": "48000",
-            "volume24h": "1000", "turnover24h": "50000000",
-        }]}))
+        server.queue(
+            "GET",
+            "/v5/market/tickers",
+            json_body=_ok(
+                {
+                    "list": [
+                        {
+                            "symbol": "BTCUSDT",
+                            "lastPrice": "50123.45",
+                            "price24hPcnt": "0.01",
+                            "prevPrice24h": "49000",
+                            "highPrice24h": "51000",
+                            "lowPrice24h": "48000",
+                            "volume24h": "1000",
+                            "turnover24h": "50000000",
+                        }
+                    ]
+                }
+            ),
+        )
         result = await client.get_ticker("BTCUSDT")
         assert result.price == Decimal("50123.45")
 
-    async def test_get_order_book_clamps_depth_to_200(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_get_order_book_clamps_depth_to_200(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/v5/market/orderbook", json_body=_ok({"b": [], "a": [], "u": 1}))
         await client.get_order_book("BTCUSDT", depth=500)
@@ -361,9 +507,7 @@ class TestMarketData:
 
 
 class TestAccountConfiguration:
-    async def test_set_leverage_sends_both_buy_and_sell(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_set_leverage_sends_both_buy_and_sell(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("POST", "/v5/position/set-leverage", json_body=_ok({}))
         await client.set_leverage("BTCUSDT", 20)
@@ -380,9 +524,7 @@ class TestAccountConfiguration:
         sent_body = json.loads(server.request_log[-1]["body"])
         assert sent_body["tradeMode"] == 1
 
-    async def test_set_margin_type_cross_maps_to_mode_0(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_set_margin_type_cross_maps_to_mode_0(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("POST", "/v5/position/switch-isolated", json_body=_ok({}))
         await client.set_margin_type("BTCUSDT", "CROSS")
@@ -398,9 +540,7 @@ class TestErrorMapping:
     errors as successful responses.
     """
 
-    async def test_ret_code_zero_on_200_does_not_raise(
-        self, server: _BybitServerFixture
-    ) -> None:
+    async def test_ret_code_zero_on_200_does_not_raise(self, server: _BybitServerFixture) -> None:
         client = await server.start()
         server.queue("GET", "/v5/account/wallet-balance", json_body=_ok({"list": []}))
         await client.get_account_balance()  # must not raise
@@ -409,9 +549,14 @@ class TestErrorMapping:
         self, server: _BybitServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/account/wallet-balance", json_body={
-            "retCode": 10003, "retMsg": "API key is invalid",
-        })
+        server.queue(
+            "GET",
+            "/v5/account/wallet-balance",
+            json_body={
+                "retCode": 10003,
+                "retMsg": "API key is invalid",
+            },
+        )
         with pytest.raises(ExchangeAuthenticationError):
             await client.get_account_balance()
 
@@ -419,9 +564,14 @@ class TestErrorMapping:
         self, server: _BybitServerFixture
     ) -> None:
         client = await server.start()
-        server.queue("GET", "/v5/account/wallet-balance", json_body={
-            "retCode": 10001, "retMsg": "params error",
-        })
+        server.queue(
+            "GET",
+            "/v5/account/wallet-balance",
+            json_body={
+                "retCode": 10001,
+                "retMsg": "params error",
+            },
+        )
         with pytest.raises(ExchangeAPIError):
             await client.get_account_balance()
 
@@ -432,7 +582,9 @@ class TestErrorMapping:
         # 401 body to the caller as if it were valid account data).
         client = await server.start()
         server.queue(
-            "GET", "/v5/account/wallet-balance", status=401,
+            "GET",
+            "/v5/account/wallet-balance",
+            status=401,
             json_body={"message": "Unauthorized"},
         )
         with pytest.raises(ExchangeAuthenticationError):
@@ -443,7 +595,9 @@ class TestErrorMapping:
     ) -> None:
         client = await server.start()
         server.queue(
-            "GET", "/v5/account/wallet-balance", status=403,
+            "GET",
+            "/v5/account/wallet-balance",
+            status=403,
             json_body={"message": "Forbidden"},
         )
         with pytest.raises(ExchangeAuthenticationError):
@@ -458,7 +612,9 @@ class TestErrorMapping:
         # generic HTTP-status fallback.
         client = await server.start()
         server.queue(
-            "GET", "/v5/account/wallet-balance", status=404,
+            "GET",
+            "/v5/account/wallet-balance",
+            status=404,
             json_body={"retCode": 10005, "retMsg": "permission denied"},
         )
         with pytest.raises(ExchangeAuthenticationError):
@@ -472,9 +628,15 @@ class TestErrorMapping:
         # be allowed to happen.
         client = await server.start(max_retries=2)
         server.queue("GET", "/v5/market/time", json_body=_ok({"timeNano": "1700000000000000000"}))
-        server.queue("GET", "/v5/account/wallet-balance", status=200, json_body={
-            "retCode": 10002, "retMsg": "invalid timestamp",
-        })
+        server.queue(
+            "GET",
+            "/v5/account/wallet-balance",
+            status=200,
+            json_body={
+                "retCode": 10002,
+                "retMsg": "invalid timestamp",
+            },
+        )
         server.queue("GET", "/v5/account/wallet-balance", json_body=_ok({"list": []}))
         await client.get_account_balance()  # must not raise; retried after resync
         assert len(server.request_log) == 3  # sync_clock + failed attempt + retry

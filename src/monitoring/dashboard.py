@@ -34,12 +34,12 @@ except ImportError:  # pragma: no cover - optional at import time
 class DashboardHandler(BaseHTTPRequestHandler):
     """Request handler for the status dashboard."""
 
-    data_provider: Any = None   # Injected after class definition
+    data_provider: Any = None  # Injected after class definition
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         pass  # Suppress default access logging
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path == "/health":
             self._respond(200, self.data_provider.health() if self.data_provider else {})
         elif self.path == "/status":
@@ -145,7 +145,9 @@ class Dashboard:
     async def _handle_ws_client(self, connection: Any) -> None:
         self._ws_clients.add(connection)
         client_addr = getattr(connection, "remote_address", "unknown")
-        logger.info("Dashboard WS client connected: %s (total=%d)", client_addr, len(self._ws_clients))
+        logger.info(
+            "Dashboard WS client connected: %s (total=%d)", client_addr, len(self._ws_clients)
+        )
         try:
             # Immediate snapshot on connect so the UI doesn't wait for the
             # next broadcast tick.
@@ -156,7 +158,11 @@ class Dashboard:
             logger.debug("Dashboard WS client %s disconnected: %s", client_addr, exc)
         finally:
             self._ws_clients.discard(connection)
-            logger.info("Dashboard WS client disconnected: %s (total=%d)", client_addr, len(self._ws_clients))
+            logger.info(
+                "Dashboard WS client disconnected: %s (total=%d)",
+                client_addr,
+                len(self._ws_clients),
+            )
 
     async def _broadcast_loop(self, interval: float) -> None:
         while True:
@@ -182,20 +188,17 @@ class Dashboard:
         optional ``websockets`` dependency isn't installed.
         """
         if websockets is None:
-            logger.warning(
-                "Dashboard WS server not started: 'websockets' package not installed."
-            )
+            logger.warning("Dashboard WS server not started: 'websockets' package not installed.")
             return
 
-        self._ws_server = await websockets.serve(
-            self._handle_ws_client, "0.0.0.0", self._ws_port
-        )
+        self._ws_server = await websockets.serve(self._handle_ws_client, "0.0.0.0", self._ws_port)
         self._ws_broadcast_task = asyncio.create_task(
             self._broadcast_loop(broadcast_interval), name="dashboard-ws-broadcast"
         )
         logger.info(
             "Dashboard WS started on port %d (broadcast every %.1fs)",
-            self._ws_port, broadcast_interval,
+            self._ws_port,
+            broadcast_interval,
         )
 
     async def stop_ws(self) -> None:

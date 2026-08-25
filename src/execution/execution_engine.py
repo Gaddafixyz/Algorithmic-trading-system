@@ -24,7 +24,7 @@ import logging
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from src.core.enums import AlertSeverity, OrderSide, OrderType, PositionSide, SignalDirection
+from src.core.enums import AlertSeverity, OrderSide, OrderType, PositionSide
 from src.core.events import (
     AlertFiredEvent,
     FundingRateEvent,
@@ -43,11 +43,10 @@ from src.core.events import (
 from src.core.exceptions import TakeProfitPlacementError
 from src.core.interfaces import IOrderManager, IRiskManager
 from src.domain.instrument import Instrument
-from src.domain.order import Fill, Order
-from src.domain.position import Position
+from src.domain.order import Order
 from src.domain.portfolio import Portfolio
+from src.domain.position import Position
 from src.domain.signal import Signal
-from src.domain.trade import Trade
 from src.execution.position_manager import PositionManager
 from src.risk.take_profit import partial_take_profit_levels
 from src.strategy.entry import get_entry_order_type, get_order_side, is_entry_valid
@@ -203,7 +202,9 @@ class ExecutionEngine:
             logger.warning(
                 "SignalGeneratedEvent for %s arrived expired (generated_at=%s, "
                 "max_age=%.0fs) — discarding without submission",
-                symbol, signal.generated_at.isoformat(), signal.max_age_seconds,
+                symbol,
+                signal.generated_at.isoformat(),
+                signal.max_age_seconds,
             )
             await self._bus.publish(
                 SignalExpiredEvent(
@@ -295,7 +296,9 @@ class ExecutionEngine:
                 logger.info(
                     "Cleared pending signal for %s after entry order cancellation "
                     "(order_id=%s, client_order_id=%s)",
-                    order.symbol, order.order_id, order.client_order_id,
+                    order.symbol,
+                    order.order_id,
+                    order.client_order_id,
                 )
 
     async def _on_order_rejected(self, event: Any) -> None:
@@ -319,7 +322,9 @@ class ExecutionEngine:
                 logger.info(
                     "Cleared pending signal for %s after entry order rejection "
                     "(order_id=%s, reason=%s)",
-                    order.symbol, order.order_id, event.reason,
+                    order.symbol,
+                    order.order_id,
+                    event.reason,
                 )
 
     async def _on_exit_filled(self, order: Order) -> None:
@@ -328,7 +333,8 @@ class ExecutionEngine:
         if not positions:
             logger.warning(
                 "Exit fill for %s but no open local position to close (order_id=%s)",
-                order.symbol, order.order_id,
+                order.symbol,
+                order.order_id,
             )
             return
 
@@ -361,13 +367,18 @@ class ExecutionEngine:
         if trade is not None:
             logger.info(
                 "Position closed via exit-order fill: %s order_id=%s exit_price=%s",
-                order.symbol, order.order_id, exit_price,
+                order.symbol,
+                order.order_id,
+                exit_price,
             )
             return
 
         logger.info(
             "Partial exit fill applied: %s order_id=%s qty=%s remaining=%s",
-            order.symbol, order.order_id, close_qty, position.quantity,
+            order.symbol,
+            order.order_id,
+            close_qty,
+            position.quantity,
         )
         await self._resize_protective_orders(position)
 
@@ -409,7 +420,8 @@ class ExecutionEngine:
                 if cancelled:
                     logger.info(
                         "Cancelled leftover exit order %s for %s after position close",
-                        order_id, event.symbol,
+                        order_id,
+                        event.symbol,
                     )
             except Exception as exc:
                 # The order may still be resting live on the exchange.
@@ -418,22 +430,26 @@ class ExecutionEngine:
                 logger.error(
                     "Failed to cancel leftover exit order %s for %s after position "
                     "close — it may still be resting on the exchange: %s",
-                    order_id, event.symbol, exc,
+                    order_id,
+                    event.symbol,
+                    exc,
                 )
-                await self._bus.publish(AlertFiredEvent(
-                    source="execution_engine",
-                    alert_name="stale_exit_order_cancel_failed",
-                    severity=AlertSeverity.WARNING,
-                    message=(
-                        f"Failed to cancel leftover exit order {order_id} for "
-                        f"{event.symbol} ({position_id}) after position close: {exc}"
-                    ),
-                    context={
-                        "symbol": event.symbol,
-                        "position_id": position_id,
-                        "order_id": order_id,
-                    },
-                ))
+                await self._bus.publish(
+                    AlertFiredEvent(
+                        source="execution_engine",
+                        alert_name="stale_exit_order_cancel_failed",
+                        severity=AlertSeverity.WARNING,
+                        message=(
+                            f"Failed to cancel leftover exit order {order_id} for "
+                            f"{event.symbol} ({position_id}) after position close: {exc}"
+                        ),
+                        context={
+                            "symbol": event.symbol,
+                            "position_id": position_id,
+                            "order_id": order_id,
+                        },
+                    )
+                )
 
         # Evict the closed position from Portfolio so it no longer contributes
         # to gross_exposure, open_position_count, or has_position_for_symbol()
@@ -484,7 +500,9 @@ class ExecutionEngine:
             except Exception as exc:
                 logger.exception(
                     "Exit management error for %s (position_id=%s): %s",
-                    position.symbol, position.position_id, exc,
+                    position.symbol,
+                    position.position_id,
+                    exc,
                 )
 
     async def _on_mark_price(self, event: Any) -> None:
@@ -550,7 +568,9 @@ class ExecutionEngine:
         self._positions.apply_funding(event.symbol, event.rate)
         logger.info(
             "Funding settled: %s rate=%s positions=%d",
-            event.symbol, event.rate, len(positions),
+            event.symbol,
+            event.rate,
+            len(positions),
         )
 
     async def _manage_position_exit(self, position: Position, current_price: Decimal) -> None:
@@ -578,7 +598,9 @@ class ExecutionEngine:
         fvg_target_taken = set(position.tags.get("fvg_target_taken", []))
 
         plan = evaluate_exit_actions(
-            position, current_price, atr,
+            position,
+            current_price,
+            atr,
             breakeven_activation_rr=self._breakeven_activation_rr,
             partial_tp_levels=untaken_levels or None,
             fvg_target_zones=fvg_target_zones or None,
@@ -594,7 +616,8 @@ class ExecutionEngine:
         for price, fraction in plan.triggered_partial_tps:
             idx = next(
                 (
-                    i for i, (p, f) in enumerate(position.partial_tp_plan)
+                    i
+                    for i, (p, f) in enumerate(position.partial_tp_plan)
                     if p == price and f == fraction and i not in position.partial_tp_taken
                 ),
                 None,
@@ -628,14 +651,14 @@ class ExecutionEngine:
             if position.entry_quantity > Decimal("0"):
                 fee_per_unit = position.total_fees / position.entry_quantity
                 new_stop = (
-                    position.entry_price + fee_per_unit if position.is_long
+                    position.entry_price + fee_per_unit
+                    if position.is_long
                     else position.entry_price - fee_per_unit
                 )
                 is_breakeven = True
         elif plan.new_stop_loss is not None and position.stop_loss is not None:
-            improves = (
-                (position.is_long and plan.new_stop_loss > position.stop_loss)
-                or (position.is_short and plan.new_stop_loss < position.stop_loss)
+            improves = (position.is_long and plan.new_stop_loss > position.stop_loss) or (
+                position.is_short and plan.new_stop_loss < position.stop_loss
             )
             if improves:
                 new_stop = plan.new_stop_loss
@@ -647,12 +670,17 @@ class ExecutionEngine:
         if plan.fvg_reversal_risk:
             logger.info(
                 "FVG reversal-risk zone entered for %s (position_id=%s) at price=%s",
-                position.symbol, position.position_id, current_price,
+                position.symbol,
+                position.position_id,
+                current_price,
             )
 
         if new_stop is not None:
             await self._replace_stop_loss_order(
-                position, new_stop, is_breakeven=is_breakeven, regime=regime,
+                position,
+                new_stop,
+                is_breakeven=is_breakeven,
+                regime=regime,
             )
 
     async def _submit_partial_tp(self, position: Position, fraction: Decimal) -> None:
@@ -665,9 +693,7 @@ class ExecutionEngine:
             )
             return
 
-        qty = instrument.round_quantity(
-            min(position.entry_quantity * fraction, position.quantity)
-        )
+        qty = instrument.round_quantity(min(position.entry_quantity * fraction, position.quantity))
         if qty <= Decimal("0"):
             return
 
@@ -685,7 +711,9 @@ class ExecutionEngine:
             await self._orders.submit_order(order)
             logger.info(
                 "Partial take-profit submitted for %s: qty=%s (fraction=%s of entry size)",
-                position.symbol, qty, fraction,
+                position.symbol,
+                qty,
+                fraction,
             )
         except Exception as exc:
             # Non-fatal: the position's full stop-loss/take-profit remain
@@ -693,7 +721,9 @@ class ExecutionEngine:
             # the partial gain. Log loudly rather than silently dropping it.
             logger.error(
                 "Partial take-profit order failed for %s (qty=%s): %s",
-                position.symbol, qty, exc,
+                position.symbol,
+                qty,
+                exc,
             )
 
     async def _resize_protective_orders(self, position: Position) -> None:
@@ -738,22 +768,26 @@ class ExecutionEngine:
                 logger.critical(
                     "UNPROTECTED POSITION: failed to resize stop-loss for %s after "
                     "partial take-profit fill (position_id=%s): %s",
-                    position.symbol, position.position_id, exc,
+                    position.symbol,
+                    position.position_id,
+                    exc,
                 )
-                await self._bus.publish(AlertFiredEvent(
-                    source="execution_engine",
-                    alert_name="unprotected_position",
-                    severity=AlertSeverity.CRITICAL,
-                    message=(
-                        f"Position {position.symbol} ({position.position_id}) stop-loss "
-                        f"resize failed after a partial take-profit fill: {exc}"
-                    ),
-                    context={
-                        "symbol": position.symbol,
-                        "position_id": position.position_id,
-                        "new_quantity": str(qty),
-                    },
-                ))
+                await self._bus.publish(
+                    AlertFiredEvent(
+                        source="execution_engine",
+                        alert_name="unprotected_position",
+                        severity=AlertSeverity.CRITICAL,
+                        message=(
+                            f"Position {position.symbol} ({position.position_id}) stop-loss "
+                            f"resize failed after a partial take-profit fill: {exc}"
+                        ),
+                        context={
+                            "symbol": position.symbol,
+                            "position_id": position.position_id,
+                            "new_quantity": str(qty),
+                        },
+                    )
+                )
 
         old_tp_id = self._active_tp_orders.get(position.position_id)
         if old_tp_id is not None and position.take_profit is not None:
@@ -778,18 +812,25 @@ class ExecutionEngine:
                 logger.error(
                     "Failed to resize take-profit for %s after partial take-profit "
                     "fill (position_id=%s): %s — stop-loss remains protective",
-                    position.symbol, position.position_id, exc,
+                    position.symbol,
+                    position.position_id,
+                    exc,
                 )
 
     async def _replace_stop_loss_order(
-        self, position: Position, new_stop: Decimal, *,
-        is_breakeven: bool = False, regime: str | None = None,
+        self,
+        position: Position,
+        new_stop: Decimal,
+        *,
+        is_breakeven: bool = False,
+        regime: str | None = None,
     ) -> None:
         """Cancel the live stop-loss order and submit a new one at new_stop."""
         instrument = self._instruments.get(position.symbol)
         if instrument is None:
             logger.warning(
-                "No instrument config for %s — cannot update stop-loss", position.symbol,
+                "No instrument config for %s — cannot update stop-loss",
+                position.symbol,
             )
             return
 
@@ -805,7 +846,9 @@ class ExecutionEngine:
                 logger.warning(
                     "Failed to cancel prior stop-loss order %s for %s: %s — "
                     "skipping stop update this tick",
-                    old_order_id, position.symbol, exc,
+                    old_order_id,
+                    position.symbol,
+                    exc,
                 )
                 return
 
@@ -826,22 +869,26 @@ class ExecutionEngine:
             logger.critical(
                 "UNPROTECTED POSITION: failed to replace stop-loss for %s "
                 "(position_id=%s) after cancelling old stop: %s",
-                position.symbol, position.position_id, exc,
+                position.symbol,
+                position.position_id,
+                exc,
             )
-            await self._bus.publish(AlertFiredEvent(
-                source="execution_engine",
-                alert_name="unprotected_position",
-                severity=AlertSeverity.CRITICAL,
-                message=(
-                    f"Position {position.symbol} ({position.position_id}) has no "
-                    f"stop-loss after a trailing/breakeven update failed: {exc}"
-                ),
-                context={
-                    "symbol": position.symbol,
-                    "position_id": position.position_id,
-                    "attempted_stop": str(new_stop),
-                },
-            ))
+            await self._bus.publish(
+                AlertFiredEvent(
+                    source="execution_engine",
+                    alert_name="unprotected_position",
+                    severity=AlertSeverity.CRITICAL,
+                    message=(
+                        f"Position {position.symbol} ({position.position_id}) has no "
+                        f"stop-loss after a trailing/breakeven update failed: {exc}"
+                    ),
+                    context={
+                        "symbol": position.symbol,
+                        "position_id": position.position_id,
+                        "attempted_stop": str(new_stop),
+                    },
+                )
+            )
             return
 
         self._active_stop_orders[position.position_id] = submitted.order_id
@@ -850,7 +897,9 @@ class ExecutionEngine:
             position.breakeven_triggered = True
         logger.info(
             "Stop-loss updated for %s: %s (position_id=%s%s%s)",
-            position.symbol, new_stop, position.position_id,
+            position.symbol,
+            new_stop,
+            position.position_id,
             ", breakeven" if is_breakeven else "",
             f", regime={regime}" if regime is not None else "",
         )
@@ -882,8 +931,11 @@ class ExecutionEngine:
             logger.warning(
                 "Entry no longer valid for %s: signal entry=%s zone=[%s,%s] "
                 "current=%s — discarding stale signal",
-                signal.symbol, signal.entry_price,
-                signal.entry_zone_low, signal.entry_zone_high, last_price,
+                signal.symbol,
+                signal.entry_price,
+                signal.entry_zone_low,
+                signal.entry_zone_high,
+                last_price,
             )
             self._orders_failed += 1
             return
@@ -908,7 +960,11 @@ class ExecutionEngine:
         self._orders_submitted += 1
         logger.info(
             "Entry submitted: %s %s qty=%s price=%s order_id=%s",
-            signal.symbol, side, quantity, price, submitted.client_order_id,
+            signal.symbol,
+            side,
+            quantity,
+            price,
+            submitted.client_order_id,
         )
 
     # ─── Post-fill ────────────────────────────────────────────────────────────
@@ -942,9 +998,8 @@ class ExecutionEngine:
             except (KeyError, TypeError, InvalidOperation):
                 continue
             zone = {"top": str(top), "bottom": str(bottom)}
-            same_direction = (
-                (pos_side == PositionSide.LONG and fvg_type == "bullish")
-                or (pos_side == PositionSide.SHORT and fvg_type == "bearish")
+            same_direction = (pos_side == PositionSide.LONG and fvg_type == "bullish") or (
+                pos_side == PositionSide.SHORT and fvg_type == "bearish"
             )
             (target_zones if same_direction else reversal_zones).append(zone)
         if target_zones:
@@ -992,15 +1047,17 @@ class ExecutionEngine:
                     levels=self._partial_tp_levels_rr,
                 )
 
-        await self._bus.publish(PositionOpenedEvent(
-            source="execution_engine",
-            position_id=position.position_id,
-            symbol=position.symbol,
-            side=pos_side,
-            quantity=position.quantity,
-            entry_price=position.entry_price,
-            strategy_id=position.strategy_id,
-        ))
+        await self._bus.publish(
+            PositionOpenedEvent(
+                source="execution_engine",
+                position_id=position.position_id,
+                symbol=position.symbol,
+                side=pos_side,
+                quantity=position.quantity,
+                entry_price=position.entry_price,
+                strategy_id=position.strategy_id,
+            )
+        )
 
         instrument = self._instruments.get(order.symbol)
         if instrument and self._use_oco_exits:
@@ -1020,44 +1077,54 @@ class ExecutionEngine:
                 # risk, gains simply won't auto-lock-in. Fire a distinct,
                 # lower-severity alert rather than the same CRITICAL
                 # unprotected_position alert used for a failed stop-loss.
-                await self._bus.publish(AlertFiredEvent(
-                    source="execution_engine",
-                    alert_name="take_profit_placement_failed",
-                    severity=AlertSeverity.WARNING,
-                    message=str(exc),
-                    context={
-                        "symbol": position.symbol,
-                        "position_id": position.position_id,
-                        "quantity": str(position.quantity),
-                        "entry_price": str(position.entry_price),
-                    },
-                ))
+                await self._bus.publish(
+                    AlertFiredEvent(
+                        source="execution_engine",
+                        alert_name="take_profit_placement_failed",
+                        severity=AlertSeverity.WARNING,
+                        message=str(exc),
+                        context={
+                            "symbol": position.symbol,
+                            "position_id": position.position_id,
+                            "quantity": str(position.quantity),
+                            "entry_price": str(position.entry_price),
+                        },
+                    )
+                )
             except Exception as exc:
                 logger.critical(
                     "UNPROTECTED POSITION: failed to place exit orders for %s "
                     "(position_id=%s) after entry fill: %s",
-                    position.symbol, position.position_id, exc,
+                    position.symbol,
+                    position.position_id,
+                    exc,
                 )
-                await self._bus.publish(AlertFiredEvent(
-                    source="execution_engine",
-                    alert_name="unprotected_position",
-                    severity=AlertSeverity.CRITICAL,
-                    message=(
-                        f"Position {position.symbol} ({position.position_id}) opened "
-                        f"without stop-loss/take-profit protection: {exc}"
-                    ),
-                    context={
-                        "symbol": position.symbol,
-                        "position_id": position.position_id,
-                        "quantity": str(position.quantity),
-                        "entry_price": str(position.entry_price),
-                    },
-                ))
+                await self._bus.publish(
+                    AlertFiredEvent(
+                        source="execution_engine",
+                        alert_name="unprotected_position",
+                        severity=AlertSeverity.CRITICAL,
+                        message=(
+                            f"Position {position.symbol} ({position.position_id}) opened "
+                            f"without stop-loss/take-profit protection: {exc}"
+                        ),
+                        context={
+                            "symbol": position.symbol,
+                            "position_id": position.position_id,
+                            "quantity": str(position.quantity),
+                            "entry_price": str(position.entry_price),
+                        },
+                    )
+                )
 
         logger.info(
             "Position opened: %s %s qty=%s entry=%s SL=%s TP=%s",
-            position.symbol, pos_side, position.quantity,
-            position.entry_price, signal.stop_loss, signal.take_profit,
+            position.symbol,
+            pos_side,
+            position.quantity,
+            position.entry_price,
+            signal.stop_loss,
+            signal.take_profit,
         )
 
     async def _place_exit_orders(
@@ -1109,11 +1176,14 @@ class ExecutionEngine:
                 self._active_stop_orders[position.position_id] = submitted_sl.order_id
                 last_exc = None
                 break
-            except Exception as exc:  # noqa: BLE001 - must not let SL placement die silently
+            except Exception as exc:  # - must not let SL placement die silently
                 last_exc = exc
                 logger.warning(
                     "Stop-loss placement attempt %d/%d failed for %s: %s",
-                    attempt, attempts, position.symbol, exc,
+                    attempt,
+                    attempts,
+                    position.symbol,
+                    exc,
                 )
         if last_exc is not None:
             raise last_exc
@@ -1144,13 +1214,16 @@ class ExecutionEngine:
             # identically.
             logger.error(
                 "Take-profit placement failed for %s (stop-loss is in place): %s",
-                position.symbol, exc,
+                position.symbol,
+                exc,
             )
             raise TakeProfitPlacementError(position.symbol, exc) from exc
 
         logger.debug(
             "Exit orders placed for %s: SL=%s TP=%s",
-            position.symbol, signal.stop_loss, signal.take_profit,
+            position.symbol,
+            signal.stop_loss,
+            signal.take_profit,
         )
 
     @property

@@ -22,12 +22,16 @@ from src.core.models import OHLCV
 def make_candles(count: int, base_price: float = 50000.0) -> list[OHLCV]:
     candles = []
     for i in range(count):
-        candles.append(OHLCV(
-            open=Decimal(str(base_price)), high=Decimal(str(base_price + 50)),
-            low=Decimal(str(base_price - 50)), close=Decimal(str(base_price)),
-            volume=Decimal("1000"),
-            timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
-        ))
+        candles.append(
+            OHLCV(
+                open=Decimal(str(base_price)),
+                high=Decimal(str(base_price + 50)),
+                low=Decimal(str(base_price - 50)),
+                close=Decimal(str(base_price)),
+                volume=Decimal("1000"),
+                timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
+            )
+        )
     return candles
 
 

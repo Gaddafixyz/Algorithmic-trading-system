@@ -5,8 +5,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import pytest
-
 from src.core.enums import Timeframe
 from src.core.models import OHLCV, Ticker
 from src.market_data.cache import CandleBuffer, MarketDataCache
@@ -137,6 +135,7 @@ class TestMarketDataCache:
         ticker = make_ticker()
         cache.put_ticker(ticker)
         import time
+
         time.sleep(0.01)
         assert cache.get_ticker("BTCUSDT") is None
 
@@ -168,6 +167,7 @@ class TestMarketDataCache:
         cache = MarketDataCache(ticker_ttl_seconds=0.001)
         cache.put_best_bid_ask("BTCUSDT", Decimal("100"), Decimal("101"))
         import time
+
         time.sleep(0.01)
         assert cache.get_best_bid_ask("BTCUSDT") is None
 

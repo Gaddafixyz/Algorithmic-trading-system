@@ -9,14 +9,14 @@ fees, and PnL into a single auditable record.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from pydantic import Field, model_validator
 
 from src.core.enums import PositionSide, Timeframe
-from src.core.models import StrictModel, utc_now
+from src.core.models import StrictModel
 
 
 class Trade(StrictModel):
@@ -38,11 +38,11 @@ class Trade(StrictModel):
 
     # Quantities
     quantity: Decimal
-    entry_quantity: Decimal   # May differ if partially scaled in
+    entry_quantity: Decimal  # May differ if partially scaled in
 
     # Prices
-    entry_price: Decimal      # Volume-weighted average entry
-    exit_price: Decimal       # Volume-weighted average exit
+    entry_price: Decimal  # Volume-weighted average entry
+    exit_price: Decimal  # Volume-weighted average exit
 
     # PnL
     gross_pnl: Decimal
@@ -75,8 +75,8 @@ class Trade(StrictModel):
         return self.net_pnl / self.initial_risk
 
     # Trade metadata
-    initial_risk: Decimal | None = None     # Capital at risk when opened
-    max_adverse_excursion: Decimal | None = None    # MAE
+    initial_risk: Decimal | None = None  # Capital at risk when opened
+    max_adverse_excursion: Decimal | None = None  # MAE
     max_favorable_excursion: Decimal | None = None  # MFE
 
     # Timing
@@ -89,7 +89,7 @@ class Trade(StrictModel):
     notes: str = ""
 
     @model_validator(mode="after")
-    def compute_duration(self) -> "Trade":
+    def compute_duration(self) -> Trade:
         if self.duration_seconds == 0.0:
             object.__setattr__(
                 self,
@@ -135,7 +135,7 @@ class Trade(StrictModel):
         leverage: int = 1,
         funding_pnl: Decimal = Decimal("0"),
         tags: dict[str, Any] | None = None,
-    ) -> "Trade":
+    ) -> Trade:
         return cls(
             position_id=position_id,
             signal_id=signal_id,

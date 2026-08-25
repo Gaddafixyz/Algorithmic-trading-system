@@ -45,12 +45,12 @@ def c(i: int, o: float, h: float, l: float, cl: float) -> OHLCV:
 # find_swing_highs/find_swing_lows's strict-left/>=-right rule.
 BULLISH_CANDLES = [
     c(0, 97, 100, 95, 98),
-    c(1, 105, 110, 105, 108),   # swing high (110)
-    c(2, 101, 105, 100, 103),   # swing low (100)
-    c(3, 111, 115, 110, 113),   # swing high (115)
-    c(4, 104, 108, 103, 106),   # swing low (103)
-    c(5, 116, 120, 115, 118),   # swing high (120)
-    c(6, 108, 112, 107, 110),   # swing low (107)
+    c(1, 105, 110, 105, 108),  # swing high (110)
+    c(2, 101, 105, 100, 103),  # swing low (100)
+    c(3, 111, 115, 110, 113),  # swing high (115)
+    c(4, 104, 108, 103, 106),  # swing low (103)
+    c(5, 116, 120, 115, 118),  # swing high (120)
+    c(6, 108, 112, 107, 110),  # swing low (107)
     c(7, 121, 125, 120, 123),
 ]
 
@@ -60,12 +60,12 @@ BULLISH_CANDLES = [
 # LH/LL -> BEARISH structure.
 BEARISH_CANDLES = [
     c(0, 121, 125, 120, 123),
-    c(1, 108, 112, 107, 110),   # swing low (107)
-    c(2, 116, 120, 115, 118),   # swing high (120)
-    c(3, 104, 108, 103, 106),   # swing low (103)
-    c(4, 111, 115, 110, 113),   # swing high (115)
-    c(5, 101, 105, 100, 103),   # swing low (100)
-    c(6, 105, 110, 105, 108),   # swing high (110)
+    c(1, 108, 112, 107, 110),  # swing low (107)
+    c(2, 116, 120, 115, 118),  # swing high (120)
+    c(3, 104, 108, 103, 106),  # swing low (103)
+    c(4, 111, 115, 110, 113),  # swing high (115)
+    c(5, 101, 105, 100, 103),  # swing low (100)
+    c(6, 105, 110, 105, 108),  # swing high (110)
     c(7, 97, 100, 95, 98),
 ]
 

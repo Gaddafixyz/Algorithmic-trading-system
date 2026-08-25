@@ -15,8 +15,8 @@ import hmac
 from typing import Any
 
 from src.exchange.adapters.bybit.websocket import (
-    BybitWebSocket,
     _AUTH_EXPIRE_WINDOW_MS,
+    BybitWebSocket,
     _sign_ws_auth,
     _snap_depth,
 )
@@ -91,8 +91,15 @@ class TestNormalizeKline:
         }
 
     def test_unconfirmed_candle_maps_x_false(self):
-        row = {"start": 1, "open": "1", "high": "1", "low": "1", "close": "1",
-               "volume": "1", "confirm": False}
+        row = {
+            "start": 1,
+            "open": "1",
+            "high": "1",
+            "low": "1",
+            "close": "1",
+            "volume": "1",
+            "confirm": False,
+        }
         assert BybitWebSocket._normalize_kline(row)["x"] is False
 
     def test_missing_fields_default_safely(self):
@@ -149,7 +156,11 @@ class TestNormalizeBookTicker:
         }
         out = BybitWebSocket._normalize_book_ticker(data)
         assert out == {
-            "s": "BTCUSDT", "b": "50000.10", "B": "1.5", "a": "50000.50", "A": "2.0",
+            "s": "BTCUSDT",
+            "b": "50000.10",
+            "B": "1.5",
+            "a": "50000.50",
+            "A": "2.0",
         }
 
     def test_missing_bid_side_is_omitted_not_zeroed(self):

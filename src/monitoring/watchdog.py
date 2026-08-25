@@ -81,9 +81,7 @@ class EventLoopWatchdog:
                     "the coroutine on_timeout callback will be dropped "
                     "(logged, not raised) if a stall is ever detected."
                 )
-        self._thread = threading.Thread(
-            target=self._watch, daemon=True, name="watchdog"
-        )
+        self._thread = threading.Thread(target=self._watch, daemon=True, name="watchdog")
         self._thread.start()
         logger.info("Watchdog started (timeout=%.0fs)", self._timeout)
 
@@ -103,9 +101,7 @@ class EventLoopWatchdog:
                 )
                 self._fire_timeout(age)
             elif not stalled and self._was_stalled:
-                logger.info(
-                    "WATCHDOG: Event loop recovered (was stalled for ~%.1fs)", age
-                )
+                logger.info("WATCHDOG: Event loop recovered (was stalled for ~%.1fs)", age)
 
             self._was_stalled = stalled
 

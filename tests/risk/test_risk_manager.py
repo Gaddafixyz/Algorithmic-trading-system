@@ -7,19 +7,18 @@ from decimal import Decimal
 import pytest
 
 from src.core.config import RiskConfig
-from src.core.enums import SignalDirection, Timeframe
+from src.core.enums import PositionSide, RiskLevel, SignalDirection, Timeframe
 from src.core.events import PositionClosedEvent
 from src.core.exceptions import (
     CircuitBreakerOpenError,
     DailyLossLimitError,
     MaxPositionsExceededError,
+    PositionSizingError,
     RiskLimitExceededError,
 )
 from src.domain.portfolio import Portfolio
 from src.domain.position import Position
 from src.domain.signal import Signal, SignalStrength
-from src.core.enums import PositionSide, RiskLevel
-from src.core.exceptions import PositionSizingError
 from src.risk.exposure import CorrelationTracker
 from src.risk.risk_manager import RiskManager, classify_risk_level
 
@@ -109,7 +108,9 @@ class TestRiskManagerValidation:
             await risk_manager.validate_signal(signal)
 
     @pytest.mark.asyncio
-    async def test_duplicate_position_rejects(self, risk_manager: RiskManager, portfolio: Portfolio):
+    async def test_duplicate_position_rejects(
+        self, risk_manager: RiskManager, portfolio: Portfolio
+    ):
         pos = make_position(symbol="BTCUSDT")
         portfolio.add_position(pos)
 
@@ -167,6 +168,7 @@ class TestRiskManagerPositionSizing:
         # Equity not set — defaults to 0
         signal = make_signal()
         from src.core.exceptions import PositionSizingError
+
         with pytest.raises(PositionSizingError):
             await rm.calculate_position_size(signal)
 
@@ -198,9 +200,12 @@ class TestRiskManagerVolatilityAdjustedSizing:
     @pytest.mark.asyncio
     async def test_wide_stop_relative_to_atr_reduces_size(self) -> None:
         base_cfg = dict(
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
         )
         fixed_cfg = RiskConfig(position_sizing_method="fixed_fractional", **base_cfg)
         vol_cfg = RiskConfig(position_sizing_method="volatility_adjusted", **base_cfg)
@@ -219,23 +224,27 @@ class TestRiskManagerVolatilityAdjustedSizing:
         assert size_vol < size_fixed
 
     @pytest.mark.asyncio
-    async def test_missing_atr_falls_back_to_fixed_fractional(
-        self, portfolio: Portfolio
-    ) -> None:
+    async def test_missing_atr_falls_back_to_fixed_fractional(self, portfolio: Portfolio) -> None:
         cfg = RiskConfig(
             position_sizing_method="volatility_adjusted",
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
         )
         rm = RiskManager(config=cfg, portfolio=portfolio)
         rm.update_equity(Decimal("10000"))
         rm_fixed = RiskManager(
             config=RiskConfig(
                 position_sizing_method="fixed_fractional",
-                max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-                max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-                max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+                max_portfolio_risk_pct=Decimal("1.0"),
+                max_daily_loss_pct=Decimal("5.0"),
+                max_drawdown_pct=Decimal("15.0"),
+                max_open_positions=3,
+                max_leverage=Decimal("10.0"),
+                risk_reward_minimum=Decimal("1.5"),
             ),
             portfolio=Portfolio(),
         )
@@ -264,18 +273,28 @@ class TestRiskManagerKellySizing:
         # fees=0 keeps net_pnl == realized_pnl - fees == realized_pnl,
         # simplest to reason about from a test's perspective.
         return PositionClosedEvent(
-            position_id="pos-1", symbol="BTCUSDT", side=PositionSide.LONG,
-            entry_price=Decimal("50000"), exit_price=Decimal("50000") + net_pnl,
-            quantity=Decimal("1"), realized_pnl=net_pnl, fees=Decimal("0"),
+            position_id="pos-1",
+            symbol="BTCUSDT",
+            side=PositionSide.LONG,
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("50000") + net_pnl,
+            quantity=Decimal("1"),
+            realized_pnl=net_pnl,
+            fees=Decimal("0"),
         )
 
     def _make_kelly_risk_manager(self, portfolio: Portfolio | None = None) -> RiskManager:
         cfg = RiskConfig(
             position_sizing_method="kelly",
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
-            kelly_lookback_trades=30, kelly_min_trades=5, kelly_fraction=0.25,
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
+            kelly_lookback_trades=30,
+            kelly_min_trades=5,
+            kelly_fraction=0.25,
         )
         rm = RiskManager(config=cfg, portfolio=portfolio or Portfolio())
         rm.update_equity(Decimal("10000"))
@@ -286,9 +305,12 @@ class TestRiskManagerKellySizing:
         rm_kelly = self._make_kelly_risk_manager()
         cfg_fixed = RiskConfig(
             position_sizing_method="fixed_fractional",
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
         )
         rm_fixed = RiskManager(config=cfg_fixed, portfolio=Portfolio())
         rm_fixed.update_equity(Decimal("10000"))
@@ -308,15 +330,24 @@ class TestRiskManagerKellySizing:
         rm_kelly = self._make_kelly_risk_manager()
         cfg_fixed = RiskConfig(
             position_sizing_method="fixed_fractional",
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
         )
         rm_fixed = RiskManager(config=cfg_fixed, portfolio=Portfolio())
         rm_fixed.update_equity(Decimal("10000"))
 
         # 4 wins, 1 loss -- a clear positive edge, kelly_min_trades=5 met.
-        for pnl in (Decimal("200"), Decimal("200"), Decimal("200"), Decimal("200"), Decimal("-100")):
+        for pnl in (
+            Decimal("200"),
+            Decimal("200"),
+            Decimal("200"),
+            Decimal("200"),
+            Decimal("-100"),
+        ):
             await rm_kelly._on_position_closed(self._make_position_closed_event(pnl))
 
         signal = make_signal(entry=50000.0, sl=49000.0)
@@ -333,16 +364,25 @@ class TestRiskManagerKellySizing:
         rm_kelly = self._make_kelly_risk_manager()
         cfg_fixed = RiskConfig(
             position_sizing_method="fixed_fractional",
-            max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-            max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-            max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+            max_portfolio_risk_pct=Decimal("1.0"),
+            max_daily_loss_pct=Decimal("5.0"),
+            max_drawdown_pct=Decimal("15.0"),
+            max_open_positions=3,
+            max_leverage=Decimal("10.0"),
+            risk_reward_minimum=Decimal("1.5"),
         )
         rm_fixed = RiskManager(config=cfg_fixed, portfolio=Portfolio())
         rm_fixed.update_equity(Decimal("10000"))
 
         # 1 win, 4 losses of equal magnitude -- clearly negative edge,
         # kelly_position_size() itself returns 0 for this.
-        for pnl in (Decimal("100"), Decimal("-100"), Decimal("-100"), Decimal("-100"), Decimal("-100")):
+        for pnl in (
+            Decimal("100"),
+            Decimal("-100"),
+            Decimal("-100"),
+            Decimal("-100"),
+            Decimal("-100"),
+        ):
             await rm_kelly._on_position_closed(self._make_position_closed_event(pnl))
 
         signal = make_signal(entry=50000.0, sl=49000.0)
@@ -354,10 +394,14 @@ class TestRiskManagerKellySizing:
         with pytest.raises(ValueError):
             RiskConfig(
                 position_sizing_method="kelly",
-                kelly_lookback_trades=10, kelly_min_trades=20,
-                max_portfolio_risk_pct=Decimal("1.0"), max_daily_loss_pct=Decimal("5.0"),
-                max_drawdown_pct=Decimal("15.0"), max_open_positions=3,
-                max_leverage=Decimal("10.0"), risk_reward_minimum=Decimal("1.5"),
+                kelly_lookback_trades=10,
+                kelly_min_trades=20,
+                max_portfolio_risk_pct=Decimal("1.0"),
+                max_daily_loss_pct=Decimal("5.0"),
+                max_drawdown_pct=Decimal("15.0"),
+                max_open_positions=3,
+                max_leverage=Decimal("10.0"),
+                risk_reward_minimum=Decimal("1.5"),
             )
 
 
@@ -386,7 +430,11 @@ class TestRiskManagerEquityTracking:
     def test_stats_contains_expected_keys(self, risk_manager: RiskManager):
         stats = risk_manager.stats
         expected = {
-            "equity", "daily_pnl", "drawdown_pct", "risk_level", "circuit_breaker",
+            "equity",
+            "daily_pnl",
+            "drawdown_pct",
+            "risk_level",
+            "circuit_breaker",
             "open_positions",
         }
         assert expected.issubset(stats.keys())
@@ -552,16 +600,22 @@ class TestRiskManagerExposureCaps:
         # even though correlated/net caps are wide open.
         portfolio.add_position(
             Position(
-                symbol="BTCUSDT", side=PositionSide.LONG,
-                quantity=Decimal("0.06"), entry_quantity=Decimal("0.06"),
-                entry_price=Decimal("50000"), mark_price=Decimal("50000"),
+                symbol="BTCUSDT",
+                side=PositionSide.LONG,
+                quantity=Decimal("0.06"),
+                entry_quantity=Decimal("0.06"),
+                entry_price=Decimal("50000"),
+                mark_price=Decimal("50000"),
             )
         )
         portfolio.add_position(
             Position(
-                symbol="ETHUSDT", side=PositionSide.SHORT,
-                quantity=Decimal("1"), entry_quantity=Decimal("1"),
-                entry_price=Decimal("3000"), mark_price=Decimal("3000"),
+                symbol="ETHUSDT",
+                side=PositionSide.SHORT,
+                quantity=Decimal("1"),
+                entry_quantity=Decimal("1"),
+                entry_price=Decimal("3000"),
+                mark_price=Decimal("3000"),
             )
         )
         config = self._exposed_config(
@@ -582,16 +636,22 @@ class TestRiskManagerExposureCaps:
         # only the net cap should catch the resulting directional skew.
         portfolio.add_position(
             Position(
-                symbol="BTCUSDT", side=PositionSide.LONG,
-                quantity=Decimal("0.06"), entry_quantity=Decimal("0.06"),
-                entry_price=Decimal("50000"), mark_price=Decimal("50000"),
+                symbol="BTCUSDT",
+                side=PositionSide.LONG,
+                quantity=Decimal("0.06"),
+                entry_quantity=Decimal("0.06"),
+                entry_price=Decimal("50000"),
+                mark_price=Decimal("50000"),
             )
         )
         portfolio.add_position(
             Position(
-                symbol="ETHUSDT", side=PositionSide.SHORT,
-                quantity=Decimal("1"), entry_quantity=Decimal("1"),
-                entry_price=Decimal("3000"), mark_price=Decimal("3000"),
+                symbol="ETHUSDT",
+                side=PositionSide.SHORT,
+                quantity=Decimal("1"),
+                entry_quantity=Decimal("1"),
+                entry_price=Decimal("3000"),
+                mark_price=Decimal("3000"),
             )
         )
         config = self._exposed_config(
@@ -615,17 +675,18 @@ class TestRiskManagerExposureCaps:
         assert size > Decimal("0")
 
     @pytest.mark.asyncio
-    async def test_check_portfolio_risk_trips_breaker_on_gross_breach(
-        self, portfolio: Portfolio
-    ):
+    async def test_check_portfolio_risk_trips_breaker_on_gross_breach(self, portfolio: Portfolio):
         # No new signal at all — an already-over-limit book (e.g. from
         # price moves on existing positions) must be caught by the
         # periodic check, not just the pre-trade path.
         portfolio.add_position(
             Position(
-                symbol="BTCUSDT", side=PositionSide.LONG,
-                quantity=Decimal("0.5"), entry_quantity=Decimal("0.5"),
-                entry_price=Decimal("50000"), mark_price=Decimal("50000"),
+                symbol="BTCUSDT",
+                side=PositionSide.LONG,
+                quantity=Decimal("0.5"),
+                entry_quantity=Decimal("0.5"),
+                entry_price=Decimal("50000"),
+                mark_price=Decimal("50000"),
             )
         )
         config = self._exposed_config(max_gross_exposure_pct=Decimal("100"))

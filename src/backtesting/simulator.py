@@ -15,13 +15,12 @@ Enhancements over the naive fill model:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from src.backtesting.commission import CommissionModel, PercentageCommission
-from src.backtesting.slippage import SlippageModel, FixedSlippage
+from src.backtesting.slippage import FixedSlippage, SlippageModel
 from src.core.enums import PositionSide, SignalDirection
 from src.core.models import OHLCV
 from src.domain.position import Position
@@ -39,9 +38,9 @@ _FUNDING_INTERVAL_HOURS: int = 8
 class FundingRate:
     """A single historical funding-rate record."""
 
-    timestamp: datetime   # settlement time (UTC)
+    timestamp: datetime  # settlement time (UTC)
     symbol: str
-    rate: Decimal         # e.g. Decimal("0.0001") = 0.01 %
+    rate: Decimal  # e.g. Decimal("0.0001") = 0.01 %
 
 
 @dataclass
@@ -67,9 +66,9 @@ class PendingOrder:
     """An order waiting to be filled at the next bar's open."""
 
     signal: Signal
-    quantity: Decimal        # remaining quantity to fill
+    quantity: Decimal  # remaining quantity to fill
     is_entry: bool = True
-    is_partial_remainder: bool = False   # True when re-queued after a partial fill
+    is_partial_remainder: bool = False  # True when re-queued after a partial fill
 
 
 class BacktestBroker:
@@ -111,7 +110,7 @@ class BacktestBroker:
         self._funding_rates: list[FundingRate] = sorted(
             funding_rates or [], key=lambda r: r.timestamp
         )
-        self._funding_index: int = 0   # pointer into _funding_rates
+        self._funding_index: int = 0  # pointer into _funding_rates
         self._last_bar_ts: datetime | None = None
 
         self._partial_fill = partial_fill or PartialFillModel()
@@ -215,7 +214,9 @@ class BacktestBroker:
                     )
                     logger.debug(
                         "Partial fill: %s filled=%s remaining=%s",
-                        signal.symbol, fill_qty, remaining,
+                        signal.symbol,
+                        fill_qty,
+                        remaining,
                     )
 
             if fill_qty <= Decimal("0"):
@@ -228,7 +229,9 @@ class BacktestBroker:
             if cost > self._equity:
                 logger.debug(
                     "Insufficient equity for %s: need %s have %s",
-                    signal.symbol, cost, self._equity,
+                    signal.symbol,
+                    cost,
+                    self._equity,
                 )
                 continue
 
@@ -250,7 +253,9 @@ class BacktestBroker:
                 object.__setattr__(pos, "mark_price", fill_price)
                 logger.debug(
                     "Partial fill added to %s pos: +qty=%s avg_entry=%s",
-                    signal.symbol, fill_qty, avg_entry,
+                    signal.symbol,
+                    fill_qty,
+                    avg_entry,
                 )
             else:
                 # New position
@@ -284,9 +289,7 @@ class BacktestBroker:
                 )
                 self._positions[signal.symbol] = pos
                 newly_filled_symbols.add(signal.symbol)
-                logger.debug(
-                    "Filled ENTRY: %s qty=%s @%s", signal.symbol, fill_qty, fill_price
-                )
+                logger.debug("Filled ENTRY: %s qty=%s @%s", signal.symbol, fill_qty, fill_price)
 
         # ── 3. Check stop/TP exits ────────────────────────────────────────────
         # Exclude symbols that just filled on this bar to avoid same-bar
@@ -331,9 +334,9 @@ class BacktestBroker:
                 notional = pos.quantity * pos.mark_price
                 payment = fr.rate * notional
                 if pos.is_long:
-                    funding_pnl_delta = -payment   # long pays
+                    funding_pnl_delta = -payment  # long pays
                 else:
-                    funding_pnl_delta = payment    # short receives
+                    funding_pnl_delta = payment  # short receives
 
                 # Mutate mutable model field directly
                 object.__setattr__(
@@ -344,7 +347,10 @@ class BacktestBroker:
                 self._equity += funding_pnl_delta
                 logger.debug(
                     "Funding: %s rate=%s notional=%s payment=%s",
-                    symbol, fr.rate, notional, funding_pnl_delta,
+                    symbol,
+                    fr.rate,
+                    notional,
+                    funding_pnl_delta,
                 )
 
             self._funding_index += 1
@@ -368,15 +374,22 @@ class BacktestBroker:
                     exited = True
                 # TP hit
                 elif pos.take_profit and candle.high >= pos.take_profit:
-                    exit_price = min(candle.open, pos.take_profit) if candle.open >= pos.take_profit else pos.take_profit
+                    exit_price = (
+                        min(candle.open, pos.take_profit)
+                        if candle.open >= pos.take_profit
+                        else pos.take_profit
+                    )
                     exited = True
-            else:
-                if pos.stop_loss and candle.high >= pos.stop_loss:
-                    exit_price = max(candle.open, pos.stop_loss)
-                    exited = True
-                elif pos.take_profit and candle.low <= pos.take_profit:
-                    exit_price = max(candle.open, pos.take_profit) if candle.open <= pos.take_profit else pos.take_profit
-                    exited = True
+            elif pos.stop_loss and candle.high >= pos.stop_loss:
+                exit_price = max(candle.open, pos.stop_loss)
+                exited = True
+            elif pos.take_profit and candle.low <= pos.take_profit:
+                exit_price = (
+                    max(candle.open, pos.take_profit)
+                    if candle.open <= pos.take_profit
+                    else pos.take_profit
+                )
+                exited = True
 
             if exited:
                 self._close_position(pos, exit_price, candle)
@@ -419,18 +432,23 @@ class BacktestBroker:
             entry_price=pos.entry_price,
             exit_price=fill_price,
             gross_pnl=gross_pnl,
-            fees=pos.total_fees + exit_commission,   # entry + exit
+            fees=pos.total_fees + exit_commission,  # entry + exit
             funding_pnl=pos.funding_pnl,
             opened_at=pos.opened_at,
-            closed_at=candle.timestamp,              # deterministic bar time
+            closed_at=candle.timestamp,  # deterministic bar time
             strategy_id=pos.strategy_id,
             signal_id=pos.signal_id,
         )
         self._closed_trades.append(trade)
         logger.debug(
             "Closed %s %s: entry=%s exit=%s gross=%s funding=%s net=%s",
-            pos.symbol, pos.side, pos.entry_price, fill_price,
-            gross_pnl, pos.funding_pnl, net_pnl,
+            pos.symbol,
+            pos.side,
+            pos.entry_price,
+            fill_price,
+            gross_pnl,
+            pos.funding_pnl,
+            net_pnl,
         )
 
     @property

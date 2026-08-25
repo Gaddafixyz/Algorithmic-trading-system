@@ -18,10 +18,9 @@ from src.core.enums import (
     OrderType,
     PositionSide,
     TimeInForce,
-    Timeframe,
 )
 from src.core.models import OHLCV, BookLevel, FundingRate, OrderBook, Ticker
-from src.domain.order import Fill, Order
+from src.domain.order import Order
 from src.domain.position import Position
 
 logger = logging.getLogger(__name__)
@@ -100,7 +99,9 @@ def parse_order(data: dict[str, Any]) -> Order:
     price = _d(price_raw) if price_raw and _d(price_raw) > Decimal("0") else None
 
     stop_price_raw = data.get("stopPrice", "0")
-    stop_price = _d(stop_price_raw) if stop_price_raw and _d(stop_price_raw) > Decimal("0") else None
+    stop_price = (
+        _d(stop_price_raw) if stop_price_raw and _d(stop_price_raw) > Decimal("0") else None
+    )
 
     avg_price_raw = data.get("avgPrice", "0")
     avg_price = _d(avg_price_raw) if avg_price_raw and _d(avg_price_raw) > Decimal("0") else None
@@ -191,7 +192,10 @@ def parse_position(data: dict[str, Any]) -> Position | None:
         if divergence > Decimal("0.005"):
             logger.warning(
                 "parse_position: unrealized PnL divergence for %s: computed=%s exchange=%s (%.2f%%)",
-                symbol, computed_upnl, exchange_upnl, float(divergence * 100),
+                symbol,
+                computed_upnl,
+                exchange_upnl,
+                float(divergence * 100),
             )
     return pos
 
@@ -231,14 +235,8 @@ def parse_ticker(data: dict[str, Any]) -> Ticker:
 
 def parse_order_book(data: dict[str, Any], symbol: str) -> OrderBook:
     """Parse Binance order book depth response."""
-    bids = [
-        BookLevel(price=_d(b[0]), quantity=_d(b[1]))
-        for b in data.get("bids", [])
-    ]
-    asks = [
-        BookLevel(price=_d(a[0]), quantity=_d(a[1]))
-        for a in data.get("asks", [])
-    ]
+    bids = [BookLevel(price=_d(b[0]), quantity=_d(b[1])) for b in data.get("bids", [])]
+    asks = [BookLevel(price=_d(a[0]), quantity=_d(a[1])) for a in data.get("asks", [])]
     return OrderBook(
         symbol=symbol,
         bids=sorted(bids, key=lambda b: b.price, reverse=True),

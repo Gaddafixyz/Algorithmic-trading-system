@@ -62,7 +62,10 @@ class PortfolioService:
     ) -> list[RebalanceAction]:
         """Actionable (non-HOLD) drift between current and target allocation."""
         target = self.target_allocation(
-            symbols, method=method, volatilities=volatilities, fixed_weights=fixed_weights,
+            symbols,
+            method=method,
+            volatilities=volatilities,
+            fixed_weights=fixed_weights,
         )
         return self.rebalancer.check_rebalance(self.portfolio, target)
 
@@ -82,7 +85,10 @@ class PortfolioService:
         objects left un-stringified.
         """
         target = self.target_allocation(
-            symbols, method=method, volatilities=volatilities, fixed_weights=fixed_weights,
+            symbols,
+            method=method,
+            volatilities=volatilities,
+            fixed_weights=fixed_weights,
         )
         actions = self.rebalancer.full_report(self.portfolio, target)
         return {

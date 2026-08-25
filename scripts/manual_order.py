@@ -72,11 +72,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--stop", required=True, type=Decimal, help="Stop-loss price")
     p.add_argument("--target", required=True, type=Decimal, help="Take-profit price")
     p.add_argument(
-        "--entry", type=Decimal, default=None,
+        "--entry",
+        type=Decimal,
+        default=None,
         help="Limit entry price. Omit for a market entry.",
     )
     p.add_argument(
-        "--confirm", action="store_true",
+        "--confirm",
+        action="store_true",
         help="Required. Without this flag the order plan is printed but nothing is sent.",
     )
     return p.parse_args()
@@ -124,15 +127,16 @@ async def main() -> None:
 
         manager = BinanceOrderManager(client)
         result = await manager.place_bracket_order(
-            args.symbol, side, args.quantity, instrument,
+            args.symbol,
+            side,
+            args.quantity,
+            instrument,
             stop_price=args.stop,
             take_profit_price=args.target,
             entry_price=args.entry,
         )
 
-    legs = ", ".join(
-        f"{leg}={order.exchange_order_id}" for leg, order in result.items()
-    )
+    legs = ", ".join(f"{leg}={order.exchange_order_id}" for leg, order in result.items())
     print(f"Placed: {legs}")
     missing = {"entry", "stop_loss", "take_profit"} - result.keys()
     if missing:

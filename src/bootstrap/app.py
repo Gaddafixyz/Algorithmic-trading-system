@@ -14,8 +14,7 @@ from typing import Any
 
 from src.bootstrap.exchange_factory import build_rest_client, build_ws_client
 from src.core.config import Settings
-from src.core.constants import EQUITY_SYNC_INTERVAL_SECONDS
-from src.core.enums import AlertSeverity, TradingEnvironment
+from src.core.enums import AlertSeverity
 from src.core.events import AlertFiredEvent, get_event_bus
 from src.core.scheduler import Scheduler
 from src.domain.portfolio import Portfolio
@@ -36,7 +35,6 @@ from src.monitoring.metrics import (
     account_daily_pnl,
     account_drawdown_pct,
     account_equity,
-    start_metrics_server,
 )
 from src.monitoring.metrics_collector import MetricsCollector
 from src.monitoring.telemetry import configure_logging
@@ -96,9 +94,7 @@ class Application:
 
             from src.paper_trading.paper_exchange_client import PaperExchangeClient
 
-            paper_symbols = [
-                symbol for symbol, cfg in settings.symbols.items() if cfg.enabled
-            ]
+            paper_symbols = [symbol for symbol, cfg in settings.symbols.items() if cfg.enabled]
             self.paper_exchange_client = PaperExchangeClient(
                 delegate=self.rest_client,
                 ws_client=self.ws_client,
@@ -156,9 +152,7 @@ class Application:
 
         # Risk
         symbol_leverage = {
-            symbol: cfg.leverage
-            for symbol, cfg in settings.symbols.items()
-            if cfg.enabled
+            symbol: cfg.leverage for symbol, cfg in settings.symbols.items() if cfg.enabled
         }
         # Validated per-symbol leverage/margin-type/max-notional config
         # (src/domain/leverage.py::LeverageConfig), derived from the same
@@ -356,31 +350,39 @@ class Application:
 
         if n.telegram_bot_token and n.telegram_chat_id:
             from src.notifications.telegram import TelegramNotifier
-            self.notifier.add_channel(TelegramNotifier(
-                bot_token=n.telegram_bot_token.get_secret_value(),
-                chat_id=n.telegram_chat_id,
-            ))
+
+            self.notifier.add_channel(
+                TelegramNotifier(
+                    bot_token=n.telegram_bot_token.get_secret_value(),
+                    chat_id=n.telegram_chat_id,
+                )
+            )
             logger.info("Telegram notifications enabled")
 
         if n.discord_webhook_url:
             from src.notifications.discord import DiscordNotifier
+
             self.notifier.add_channel(DiscordNotifier(n.discord_webhook_url.get_secret_value()))
             logger.info("Discord notifications enabled")
 
         if n.slack_webhook_url:
             from src.notifications.slack import SlackNotifier
+
             self.notifier.add_channel(SlackNotifier(n.slack_webhook_url.get_secret_value()))
             logger.info("Slack notifications enabled")
 
         if n.email_enabled:
             from src.notifications.email import EmailNotifier
-            self.notifier.add_channel(EmailNotifier(
-                smtp_host=n.smtp_host,  # type: ignore[arg-type]
-                smtp_port=n.smtp_port,
-                username=n.smtp_user,  # type: ignore[arg-type]
-                password=n.smtp_password.get_secret_value(),  # type: ignore[union-attr]
-                recipient=n.alert_email,  # type: ignore[arg-type]
-            ))
+
+            self.notifier.add_channel(
+                EmailNotifier(
+                    smtp_host=n.smtp_host,  # type: ignore[arg-type]
+                    smtp_port=n.smtp_port,
+                    username=n.smtp_user,  # type: ignore[arg-type]
+                    password=n.smtp_password.get_secret_value(),  # type: ignore[union-attr]
+                    recipient=n.alert_email,  # type: ignore[arg-type]
+                )
+            )
             logger.info("Email notifications enabled (%s)", n.alert_email)
 
     async def initialize_instruments(self) -> None:
@@ -420,7 +422,8 @@ class Application:
             await self.trading_client.set_margin_type(symbol, leverage_cfg.margin_type.value)
             logger.info(
                 "Set %s margin type to %s on exchange",
-                symbol, leverage_cfg.margin_type.value,
+                symbol,
+                leverage_cfg.margin_type.value,
             )
 
     async def sync_equity(self) -> None:
@@ -546,15 +549,16 @@ class Application:
             return
         try:
             target = self.portfolio_service.target_allocation(self._rebalance_symbols)
-            actions = self.portfolio_service.rebalancer.check_rebalance(
-                self.portfolio, target
-            )
+            actions = self.portfolio_service.rebalancer.check_rebalance(self.portfolio, target)
             self._last_rebalance_actions = actions
             for action in actions:
                 logger.warning(
                     "Portfolio drift: %s is %s target by %.2f%% (current=%s target=%s)",
-                    action.symbol, action.direction.value, action.drift_pct,
-                    action.current_notional, action.target_notional,
+                    action.symbol,
+                    action.direction.value,
+                    action.drift_pct,
+                    action.current_notional,
+                    action.target_notional,
                 )
         except Exception as exc:
             logger.warning("Failed to evaluate portfolio rebalance: %s", exc)
@@ -580,15 +584,17 @@ class Application:
         watchdog via run_coroutine_threadsafe), so it's safe to use the
         loop-bound event bus and notifier here.
         """
-        await get_event_bus().publish(AlertFiredEvent(
-            alert_name="event_loop_stalled",
-            severity=AlertSeverity.CRITICAL,
-            message=(
-                f"Event loop unresponsive for {self.watchdog.age_seconds:.1f}s "
-                f"(timeout={self.watchdog.timeout_seconds:.0f}s)"
-            ),
-            context={"age_seconds": self.watchdog.age_seconds},
-        ))
+        await get_event_bus().publish(
+            AlertFiredEvent(
+                alert_name="event_loop_stalled",
+                severity=AlertSeverity.CRITICAL,
+                message=(
+                    f"Event loop unresponsive for {self.watchdog.age_seconds:.1f}s "
+                    f"(timeout={self.watchdog.timeout_seconds:.0f}s)"
+                ),
+                context={"age_seconds": self.watchdog.age_seconds},
+            )
+        )
 
     # ─── Dashboard data providers ──────────────────────────────────────────────
     # Deliberately synchronous and cheap: these run on the dashboard's HTTP

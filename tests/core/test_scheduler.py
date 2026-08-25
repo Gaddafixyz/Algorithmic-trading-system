@@ -13,7 +13,7 @@ import asyncio
 
 import pytest
 
-from src.core.scheduler import Scheduler, ScheduledTask
+from src.core.scheduler import ScheduledTask, Scheduler
 
 # Small enough to keep the suite fast, large enough to be stable under
 # normal CI scheduling jitter.
@@ -146,6 +146,7 @@ class TestScheduler:
         def make_fn(key: str):
             async def fn() -> None:
                 calls[key] += 1
+
             return fn
 
         scheduler = Scheduler()

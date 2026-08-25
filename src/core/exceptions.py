@@ -28,6 +28,7 @@ class TradingSystemError(Exception):
 
 # ─── Configuration ──────────────────────────────────────────────────────────
 
+
 class ConfigurationError(TradingSystemError):
     """Invalid or missing configuration."""
 
@@ -59,6 +60,7 @@ class InvalidConfigurationError(ConfigurationError):
 
 
 # ─── Validation ─────────────────────────────────────────────────────────────
+
 
 class ValidationError(TradingSystemError):
     """Input validation failure."""
@@ -103,6 +105,7 @@ class InvalidTimeframeError(ValidationError):
 
 
 # ─── Exchange ────────────────────────────────────────────────────────────────
+
 
 class ExchangeError(TradingSystemError):
     """Base class for exchange-related errors."""
@@ -174,6 +177,7 @@ class ExchangeAPIError(ExchangeError):
 
 # ─── Market Data ─────────────────────────────────────────────────────────────
 
+
 class MarketDataError(TradingSystemError):
     """Base class for market data errors."""
 
@@ -205,6 +209,7 @@ class DataQualityError(MarketDataError):
 
 # ─── Strategy ────────────────────────────────────────────────────────────────
 
+
 class StrategyError(TradingSystemError):
     """Base class for strategy errors."""
 
@@ -224,6 +229,7 @@ class NoSignalError(StrategyError):
 
 
 # ─── Risk ────────────────────────────────────────────────────────────────────
+
 
 class RiskError(TradingSystemError):
     """Base class for risk management errors."""
@@ -275,6 +281,7 @@ class PositionSizingError(RiskError):
 
 # ─── Execution ───────────────────────────────────────────────────────────────
 
+
 class ExecutionError(TradingSystemError):
     """Base class for execution errors."""
 
@@ -317,8 +324,7 @@ class OrderStateError(ExecutionError):
 
     def __init__(self, order_id: str, current_state: str, target_state: str) -> None:
         super().__init__(
-            f"Invalid order state transition for {order_id}: "
-            f"{current_state} -> {target_state}",
+            f"Invalid order state transition for {order_id}: " f"{current_state} -> {target_state}",
             {"order_id": order_id, "current_state": current_state, "target_state": target_state},
         )
 
@@ -334,6 +340,7 @@ class MaxRetriesExceededError(ExecutionError):
 
 
 # ─── Persistence ─────────────────────────────────────────────────────────────
+
 
 class PersistenceError(TradingSystemError):
     """Base class for database/storage errors."""
@@ -355,6 +362,7 @@ class DuplicateRecordError(PersistenceError):
 
 # ─── Backtesting ─────────────────────────────────────────────────────────────
 
+
 class BacktestError(TradingSystemError):
     """Base class for backtesting errors."""
 
@@ -364,6 +372,7 @@ class LookAheadBiasError(BacktestError):
 
 
 # ─── System ──────────────────────────────────────────────────────────────────
+
 
 class SystemError(TradingSystemError):  # noqa: A001
     """General system-level error."""

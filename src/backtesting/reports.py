@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any
 
 from src.backtesting.engine import BacktestResult
-from src.utils.files import write_json, write_csv
+from src.utils.files import write_csv, write_json
 
 
 def save_backtest_report(result: BacktestResult, output_dir: Path) -> None:
@@ -81,7 +80,10 @@ def print_backtest_summary(result: BacktestResult) -> None:
         ("Ulcer Index", f"{p.ulcer_index:.2f}"),
         ("Prob. Sharpe Ratio", f"{p.probabilistic_sharpe_ratio:.2f}"),
         ("Deflated Sharpe Ratio", f"{p.deflated_sharpe_ratio:.2f}"),
-        ("Omega Ratio", f"{p.omega_ratio:.2f}" if math.isfinite(p.omega_ratio) else str(p.omega_ratio)),
+        (
+            "Omega Ratio",
+            f"{p.omega_ratio:.2f}" if math.isfinite(p.omega_ratio) else str(p.omega_ratio),
+        ),
         ("Tail Ratio", f"{p.tail_ratio:.2f}" if math.isfinite(p.tail_ratio) else str(p.tail_ratio)),
         ("Historical VaR (95%)", f"{p.historical_var_95 * 100:.2f}%"),
         ("Historical CVaR (95%)", f"{p.historical_cvar_95 * 100:.2f}%"),

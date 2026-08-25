@@ -24,7 +24,9 @@ class ComponentRegistry:
     def register(self, name: str, component: Any, *, overwrite: bool = False) -> None:
         """Register a component by name."""
         if name in self._components and not overwrite:
-            raise ValueError(f"Component '{name}' already registered. Use overwrite=True to replace.")
+            raise ValueError(
+                f"Component '{name}' already registered. Use overwrite=True to replace."
+            )
         self._components[name] = component
         logger.debug("Registered component: %s (%s)", name, type(component).__name__)
 

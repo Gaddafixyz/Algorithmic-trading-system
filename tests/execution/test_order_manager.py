@@ -387,9 +387,7 @@ class TestGetOpenOrders:
         result = manager.get_open_orders()
         assert result == [open_order]
 
-    async def test_filters_by_symbol(
-        self, manager: OrderManager, exchange: AsyncMock
-    ) -> None:
+    async def test_filters_by_symbol(self, manager: OrderManager, exchange: AsyncMock) -> None:
         btc_order = make_order(symbol="BTCUSDT")
         eth_order = make_order(symbol="ETHUSDT")
         exchange.place_order.side_effect = [
@@ -404,9 +402,7 @@ class TestGetOpenOrders:
 
 
 class TestGetOrderByClientId:
-    async def test_returns_none_for_an_unknown_client_order_id(
-        self, manager: OrderManager
-    ) -> None:
+    async def test_returns_none_for_an_unknown_client_order_id(self, manager: OrderManager) -> None:
         assert await manager.get_order_by_client_id("never-submitted") is None
 
 

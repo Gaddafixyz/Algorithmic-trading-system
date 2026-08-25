@@ -15,14 +15,11 @@ Design principles:
 
 from __future__ import annotations
 
-from decimal import Decimal
-from typing import Any
-
-import numpy as np
-
 # Avoid a hard import of SMCAnalysis / Signal at module level to keep
 # this module importable even when strategy layers are not initialised.
 from typing import TYPE_CHECKING
+
+import numpy as np
 
 if TYPE_CHECKING:
     from src.domain.signal import Signal
@@ -33,87 +30,74 @@ if TYPE_CHECKING:
 
 FEATURE_NAMES: list[str] = [
     # ── Confluence score ──────────────────────────────────────────────────────
-    "confluence_score",          # 0–100 raw score
-    "confidence",                # 0–1 model confidence at generation time
-
+    "confluence_score",  # 0–100 raw score
+    "confidence",  # 0–1 model confidence at generation time
     # ── Risk/reward ───────────────────────────────────────────────────────────
-    "risk_reward_ratio",         # TP dist / SL dist
-    "stop_distance_pct",         # SL distance as % of entry price
-    "target_distance_pct",       # TP distance as % of entry price
-
+    "risk_reward_ratio",  # TP dist / SL dist
+    "stop_distance_pct",  # SL distance as % of entry price
+    "target_distance_pct",  # TP distance as % of entry price
     # ── Market structure ─────────────────────────────────────────────────────
-    "structure_bullish",         # 1 if HTF structure == bullish
-    "structure_bearish",         # 1 if HTF structure == bearish
-    "htf_aligned",               # 1 if signal direction matches HTF bias
-    "has_bos",                   # 1 if a BOS is present
-    "has_choch",                 # 1 if a CHoCH is present
-
+    "structure_bullish",  # 1 if HTF structure == bullish
+    "structure_bearish",  # 1 if HTF structure == bearish
+    "htf_aligned",  # 1 if signal direction matches HTF bias
+    "has_bos",  # 1 if a BOS is present
+    "has_choch",  # 1 if a CHoCH is present
     # ── Order blocks ──────────────────────────────────────────────────────────
-    "has_ob",                    # 1 if an active, unmitigated OB is present
-    "ob_distance_atr",           # distance from price to nearest OB (in ATR)
-    "ob_size_atr",               # OB height in ATR units
-    "ob_age_bars",               # bars since OB was formed (normalised 0–1)
-
+    "has_ob",  # 1 if an active, unmitigated OB is present
+    "ob_distance_atr",  # distance from price to nearest OB (in ATR)
+    "ob_size_atr",  # OB height in ATR units
+    "ob_age_bars",  # bars since OB was formed (normalised 0–1)
     # ── Fair value gaps ───────────────────────────────────────────────────────
-    "has_fvg",                   # 1 if an open FVG aligns with direction
-    "fvg_distance_atr",          # distance to nearest aligned FVG (in ATR)
-    "fvg_size_atr",              # FVG height in ATR units
-
+    "has_fvg",  # 1 if an open FVG aligns with direction
+    "fvg_distance_atr",  # distance to nearest aligned FVG (in ATR)
+    "fvg_size_atr",  # FVG height in ATR units
     # ── Liquidity ─────────────────────────────────────────────────────────────
-    "has_liquidity_sweep",       # 1 if a liquidity pool was recently swept
+    "has_liquidity_sweep",  # 1 if a liquidity pool was recently swept
     "n_active_liquidity_pools",  # count of active pools (normalised 0–1 / 5)
-
     # ── Premium / discount zone ───────────────────────────────────────────────
-    "in_discount_zone",          # 1 if long setup is in discount zone
-    "in_premium_zone",           # 1 if short setup is in premium zone
-    "pd_zone_score",             # raw premium/discount zone score
-
+    "in_discount_zone",  # 1 if long setup is in discount zone
+    "in_premium_zone",  # 1 if short setup is in premium zone
+    "pd_zone_score",  # raw premium/discount zone score
     # ── Volume ────────────────────────────────────────────────────────────────
-    "relative_volume",           # current bar volume / rolling average
-
+    "relative_volume",  # current bar volume / rolling average
     # ── Volatility ────────────────────────────────────────────────────────────
-    "atr_normalised",            # ATR / price (dimensionless)
-
+    "atr_normalised",  # ATR / price (dimensionless)
     # ── Session ───────────────────────────────────────────────────────────────
-    "in_kill_zone",              # 1 if current time is inside a kill zone
-
+    "in_kill_zone",  # 1 if current time is inside a kill zone
     # ── Multi-timeframe ───────────────────────────────────────────────────────
-    "mtf_aligned",               # 1 if HTF and LTF structures agree
-
+    "mtf_aligned",  # 1 if HTF and LTF structures agree
     # ── Signal metadata ───────────────────────────────────────────────────────
-    "direction_long",            # 1 for LONG, 0 for SHORT
-    "n_components",              # number of contributing SMC components
-
+    "direction_long",  # 1 for LONG, 0 for SHORT
+    "n_components",  # number of contributing SMC components
     # ── Momentum / statistics (confluence.py metadata, dimensionless) ────────
     # All five default to 0.0 (neutral) when the underlying indicator had
     # insufficient candle history — extract_features() must never raise on
     # a short/degraded analysis, matching every other feature above.
-    "rsi_normalised",            # RSI / 100 → [0, 1], 0.5 = neutral
-    "macd_histogram_atr",        # MACD histogram / ATR, dimensionless
-    "stochastic_k_normalised",   # Stochastic %K / 100 → [0, 1]
-    "williams_r_normalised",     # (Williams %R + 100) / 100 → [0, 1]
-    "price_zscore",              # rolling z-score of close, already dimensionless
-    "trend_slope_atr",           # rolling regression slope / ATR, dimensionless
-
+    "rsi_normalised",  # RSI / 100 → [0, 1], 0.5 = neutral
+    "macd_histogram_atr",  # MACD histogram / ATR, dimensionless
+    "stochastic_k_normalised",  # Stochastic %K / 100 → [0, 1]
+    "williams_r_normalised",  # (Williams %R + 100) / 100 → [0, 1]
+    "price_zscore",  # rolling z-score of close, already dimensionless
+    "trend_slope_atr",  # rolling regression slope / ATR, dimensionless
     # ── Volume/volatility (confluence.py metadata, dimensionless) ────────────
     # vwap/obv_slope/bb_percent_b/bb_bandwidth/historical_volatility joined
     # signal.metadata in a later session than the block above, same
     # "computed but never called from the live strategy path, ML-feature
     # input only" treatment. All five default to a neutral value below on
     # insufficient candle history, matching every feature above.
-    "vwap_distance_pct",         # (price - VWAP) / VWAP, dimensionless
-    "obv_slope_normalised",      # OBV regression slope, scaled by volume SMA
-    "bb_percent_b",              # Bollinger %B, already dimensionless
-    "bb_bandwidth",              # Bollinger bandwidth / price, dimensionless
-    "historical_volatility",     # annualised, already dimensionless (fraction)
+    "vwap_distance_pct",  # (price - VWAP) / VWAP, dimensionless
+    "obv_slope_normalised",  # OBV regression slope, scaled by volume SMA
+    "bb_percent_b",  # Bollinger %B, already dimensionless
+    "bb_bandwidth",  # Bollinger bandwidth / price, dimensionless
+    "historical_volatility",  # annualised, already dimensionless (fraction)
 ]
 
 N_FEATURES: int = len(FEATURE_NAMES)
 
 
 def extract_features(
-    signal: "Signal",
-    analysis: "SMCAnalysis | None",
+    signal: Signal,
+    analysis: SMCAnalysis | None,
     max_ob_age_bars: int = 100,
 ) -> np.ndarray:
     """
@@ -153,7 +137,8 @@ def extract_features(
     htf_bias = (analysis.htf_bias if analysis else "neutral").lower()
     is_long = signal.direction == SignalDirection.LONG
     f["htf_aligned"] = (
-        1.0 if (is_long and htf_bias == "bullish") or (not is_long and htf_bias == "bearish")
+        1.0
+        if (is_long and htf_bias == "bullish") or (not is_long and htf_bias == "bearish")
         else 0.0
     )
     f["has_bos"] = 1.0 if (analysis and analysis.recent_bos) else 0.0
@@ -255,7 +240,8 @@ def extract_features(
     vwap_val = signal.metadata.get("vwap")
     f["vwap_distance_pct"] = (
         (entry - float(vwap_val)) / float(vwap_val) * 100.0
-        if (vwap_val is not None and float(vwap_val) != 0.0) else 0.0
+        if (vwap_val is not None and float(vwap_val) != 0.0)
+        else 0.0
     )
 
     obv_slope_val = signal.metadata.get("obv_slope")

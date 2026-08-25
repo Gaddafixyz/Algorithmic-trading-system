@@ -48,11 +48,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.backtesting.commission import PercentageCommission
 from src.backtesting.engine import BacktestConfig, BacktestEngine
 from src.backtesting.slippage import FixedSlippage
+from src.core.config import get_settings
 from src.core.enums import Timeframe
 from src.core.models import OHLCV
 from src.domain.signal import Signal
 from src.exchange.binance.rest import BinanceFuturesRESTClient
-from src.core.config import get_settings
 from src.machine_learning.features import extract_features
 from src.machine_learning.trainer import DEFAULT_MODEL_PATH, SignalFilterTrainer
 from src.main import SMCStrategy
@@ -96,30 +96,47 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--htf", default="4h", help="Higher timeframe for bias")
     p.add_argument("--ltf", default="15m", help="Lower timeframe for MTFContext LTF tier")
     p.add_argument("--days", type=int, default=365)
-    p.add_argument("--min-score", type=float, default=55.0,
-                    help="Min confluence score for the strategy to emit a "
-                         "signal in the first place — lower than the live "
-                         "default so the model sees enough borderline "
-                         "examples to actually learn a boundary")
+    p.add_argument(
+        "--min-score",
+        type=float,
+        default=55.0,
+        help="Min confluence score for the strategy to emit a "
+        "signal in the first place — lower than the live "
+        "default so the model sees enough borderline "
+        "examples to actually learn a boundary",
+    )
     p.add_argument("--equity", type=float, default=10_000.0)
     p.add_argument("--risk-pct", type=float, default=1.0)
     p.add_argument("--min-probability", type=float, default=0.55)
-    p.add_argument("--test-fraction", type=float, default=0.2,
-                    help="Fraction of labelled examples (chronologically "
-                         "last) held out for evaluation")
+    p.add_argument(
+        "--test-fraction",
+        type=float,
+        default=0.2,
+        help="Fraction of labelled examples (chronologically " "last) held out for evaluation",
+    )
     p.add_argument("--cv-splits", type=int, default=5)
-    p.add_argument("--tune", action="store_true",
-                    help="Run Optuna hyperparameter search (time-series CV) "
-                         "before the final fit, instead of using the "
-                         "trainer's fixed default hyperparameters. Requires "
-                         "`pip install optuna`.")
-    p.add_argument("--tune-trials", type=int, default=50,
-                    help="Number of Optuna trials when --tune is set")
-    p.add_argument("--tune-metric", choices=["auc", "f1"], default="auc",
-                    help="Metric to maximize during tuning")
+    p.add_argument(
+        "--tune",
+        action="store_true",
+        help="Run Optuna hyperparameter search (time-series CV) "
+        "before the final fit, instead of using the "
+        "trainer's fixed default hyperparameters. Requires "
+        "`pip install optuna`.",
+    )
+    p.add_argument(
+        "--tune-trials", type=int, default=50, help="Number of Optuna trials when --tune is set"
+    )
+    p.add_argument(
+        "--tune-metric",
+        choices=["auc", "f1"],
+        default="auc",
+        help="Metric to maximize during tuning",
+    )
     p.add_argument("--output", type=Path, default=DEFAULT_MODEL_PATH)
     p.add_argument(
-        "--no-funding", dest="funding", action="store_false",
+        "--no-funding",
+        dest="funding",
+        action="store_false",
         help="Skip fetching/applying historical funding-rate accrual",
     )
     p.set_defaults(funding=True)
@@ -168,7 +185,9 @@ async def train(args: argparse.Namespace) -> None:
     async with client:
         candles = await _fetch_candles(client, args.symbol, tf, args.days)
         htf_candles = await _fetch_candles(client, args.symbol, htf_tf, args.days)
-        ltf_candles = await _fetch_candles(client, args.symbol, ltf_tf, args.days) if ltf_tf else None
+        ltf_candles = (
+            await _fetch_candles(client, args.symbol, ltf_tf, args.days) if ltf_tf else None
+        )
 
         # Fetch funding-rate settlements so labelled trades reflect real
         # funding cost/credit, not just price action (see backtest.py /
@@ -176,7 +195,9 @@ async def train(args: argparse.Namespace) -> None:
         funding_rates = None
         if args.funding:
             try:
-                start_ms = int((datetime.now(tz=UTC) - timedelta(days=args.days)).timestamp() * 1000)
+                start_ms = int(
+                    (datetime.now(tz=UTC) - timedelta(days=args.days)).timestamp() * 1000
+                )
                 end_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
                 funding_rates = await client.fetch_funding_rate_history_parsed(
                     args.symbol, start_time=start_ms, end_time=end_ms
@@ -184,7 +205,8 @@ async def train(args: argparse.Namespace) -> None:
             except Exception:
                 logger.warning(
                     "Failed to fetch funding-rate history; training will "
-                    "run without funding accrual", exc_info=True,
+                    "run without funding accrual",
+                    exc_info=True,
                 )
                 funding_rates = None
 
@@ -192,12 +214,17 @@ async def train(args: argparse.Namespace) -> None:
         logger.error(
             "Insufficient data: only %d candles fetched (need enough history "
             "for a meaningful train/test split, not just the engine's 50-bar "
-            "warmup)", len(candles),
+            "warmup)",
+            len(candles),
         )
         sys.exit(1)
 
-    logger.info("Fetched %d candles (%s -> %s)", len(candles),
-                candles[0].timestamp.date(), candles[-1].timestamp.date())
+    logger.info(
+        "Fetched %d candles (%s -> %s)",
+        len(candles),
+        candles[0].timestamp.date(),
+        candles[-1].timestamp.date(),
+    )
 
     strategy = _CapturingSMCStrategy(
         symbols=[args.symbol],
@@ -221,13 +248,18 @@ async def train(args: argparse.Namespace) -> None:
 
     logger.info("Running backtest to generate labelled training data...")
     result = await engine.run(
-        candles, args.symbol, tf,
-        htf_candles=htf_candles, htf_timeframe=htf_tf,
-        ltf_candles=ltf_candles, ltf_timeframe=ltf_tf,
+        candles,
+        args.symbol,
+        tf,
+        htf_candles=htf_candles,
+        htf_timeframe=htf_tf,
+        ltf_candles=ltf_candles,
+        ltf_timeframe=ltf_tf,
     )
     logger.info(
         "Backtest complete: %d signals generated, %d trades closed",
-        result.signals_generated, len(result.trades),
+        result.signals_generated,
+        len(result.trades),
     )
 
     # ── Join closed trades back to the (Signal, SMCAnalysis) that produced
@@ -249,7 +281,8 @@ async def train(args: argparse.Namespace) -> None:
     if skipped_unmatched:
         logger.warning(
             "%d closed trades had no matching captured signal (signal_id "
-            "mismatch) and were excluded from training data", skipped_unmatched,
+            "mismatch) and were excluded from training data",
+            skipped_unmatched,
         )
 
     n = len(X_rows)
@@ -257,7 +290,8 @@ async def train(args: argparse.Namespace) -> None:
         logger.error(
             "Only %d labelled examples produced — too few to train a "
             "reliable classifier. Widen --days, lower --min-score, or "
-            "check that the strategy is generating signals at all.", n,
+            "check that the strategy is generating signals at all.",
+            n,
         )
         sys.exit(1)
 
@@ -265,7 +299,10 @@ async def train(args: argparse.Namespace) -> None:
     y = np.array(y_rows, dtype=int)
     logger.info(
         "Built training set: %d examples (%d/%d = %.1f%% profitable)",
-        n, int(y.sum()), n, 100.0 * y.mean(),
+        n,
+        int(y.sum()),
+        n,
+        100.0 * y.mean(),
     )
 
     # ── Chronological train/test split — never shuffle. A random split
@@ -278,7 +315,9 @@ async def train(args: argparse.Namespace) -> None:
         logger.warning(
             "Test split has %d examples with %d class(es) present — "
             "evaluation metrics below may be unreliable. Consider more "
-            "--days of history.", len(X_test), len(set(y_test.tolist())),
+            "--days of history.",
+            len(X_test),
+            len(set(y_test.tolist())),
         )
 
     trainer = SignalFilterTrainer(min_probability=args.min_probability)
@@ -294,17 +333,22 @@ async def train(args: argparse.Namespace) -> None:
             logger.info(
                 "Tuning hyperparameters (%d Optuna trials, %d-fold "
                 "time-series CV, maximizing %s)...",
-                args.tune_trials, cv_splits, args.tune_metric,
+                args.tune_trials,
+                cv_splits,
+                args.tune_metric,
             )
             tune_result = trainer.tune(
-                X_train, y_train,
+                X_train,
+                y_train,
                 n_trials=args.tune_trials,
                 n_splits=cv_splits,
                 metric=args.tune_metric,
             )
             logger.info(
                 "Best trial: %s=%.4f params=%s",
-                args.tune_metric, tune_result["best_score"], tune_result["best_params"],
+                args.tune_metric,
+                tune_result["best_score"],
+                tune_result["best_params"],
             )
 
     logger.info("Cross-validating (time-series, %d splits) on training set...", cv_splits)
@@ -326,7 +370,8 @@ async def train(args: argparse.Namespace) -> None:
     logger.info(
         "Saved signal filter to %s — set ml_filter.enabled=true and "
         "ml_filter.model_path=%s in configs/strategy.yaml to use it live",
-        args.output, args.output,
+        args.output,
+        args.output,
     )
     logger.info(
         "Reminder: this model was trained on %s %s only. Retrain per "
@@ -335,7 +380,8 @@ async def train(args: argparse.Namespace) -> None:
         "ROADMAP.md's scripts/optimize.py item) — the feature schema "
         "includes confluence_score directly, so a re-weighted scorer "
         "shifts the input distribution the model was fit to.",
-        args.symbol, args.timeframe,
+        args.symbol,
+        args.timeframe,
     )
 
 

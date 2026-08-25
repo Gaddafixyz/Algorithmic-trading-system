@@ -86,8 +86,12 @@ class TestOrder:
         order = self._make_order(quantity=Decimal("2.0"))
         order.transition_to(OrderStatus.SUBMITTED)
         order.transition_to(OrderStatus.OPEN)
-        order.add_fill(Fill(price=Decimal("100"), quantity=Decimal("1.0"), fee=Decimal("0"), fee_asset="USDT"))
-        order.add_fill(Fill(price=Decimal("200"), quantity=Decimal("1.0"), fee=Decimal("0"), fee_asset="USDT"))
+        order.add_fill(
+            Fill(price=Decimal("100"), quantity=Decimal("1.0"), fee=Decimal("0"), fee_asset="USDT")
+        )
+        order.add_fill(
+            Fill(price=Decimal("200"), quantity=Decimal("1.0"), fee=Decimal("0"), fee_asset="USDT")
+        )
         # Average: (100*1 + 200*1) / 2 = 150
         assert order.average_fill_price == Decimal("150")
 
@@ -220,9 +224,9 @@ class TestSignal:
             self._make_signal(take_profit=Decimal("49000"))  # TP below entry for long
 
     def test_expiry(self):
-        from datetime import timedelta
         sig = self._make_signal(max_age_seconds=0.001)
         import time
+
         time.sleep(0.01)
         assert sig.is_expired()
 
@@ -266,7 +270,6 @@ class TestBalance:
 
 class TestCandle:
     def _make_candle(self, **kwargs) -> Candle:
-        from datetime import timedelta
         defaults = dict(
             symbol="BTCUSDT",
             timeframe=Timeframe.H1,

@@ -11,7 +11,10 @@ from src.smart_money.imbalance import detect_imbalances
 
 def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
         volume=Decimal("100"),
         timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=index),
     )
@@ -19,7 +22,7 @@ def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
 
 class TestBullishImbalance:
     def test_detects_a_gap_where_c3_body_bottom_exceeds_c1_body_top(self) -> None:
-        c1 = candle("100", "102", "99", "101", 0)   # body top = 101
+        c1 = candle("100", "102", "99", "101", 0)  # body top = 101
         c2 = candle("101", "108", "100", "107", 1)  # the impulse candle
         c3 = candle("110", "112", "109", "111", 2)  # body bottom = 110 > 101
 
@@ -43,7 +46,7 @@ class TestBearishImbalance:
     def test_detects_a_gap_where_c3_body_top_is_below_c1_body_bottom(self) -> None:
         c1 = candle("110", "112", "109", "111", 0)  # body bottom = 110
         c2 = candle("109", "110", "102", "103", 1)  # the impulse candle
-        c3 = candle("100", "101", "98", "99", 2)    # body top = 100 < 110
+        c3 = candle("100", "101", "98", "99", 2)  # body top = 100 < 110
 
         result = detect_imbalances([c1, c2, c3])
         assert len(result) == 1

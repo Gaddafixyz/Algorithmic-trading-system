@@ -5,12 +5,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import pytest
-
-from src.core.enums import SignalDirection, Timeframe
+from src.core.enums import Timeframe
 from src.core.models import OHLCV
+from src.strategy.multi_timeframe import HTF_MAP, MTFContext
 from src.strategy.signal_engine import SMCSignalEngine
-from src.strategy.multi_timeframe import MTFContext, HTF_MAP
 
 
 def ts(i: int) -> datetime:
@@ -28,9 +26,12 @@ def make_candle(i: int, o: float, h: float, l: float, cl: float, vol: float = 10
     )
 
 
-def make_trending_candles(n: int, start_price: float = 100.0, trend: float = 0.5, volatility: float = 2.0) -> list[OHLCV]:
+def make_trending_candles(
+    n: int, start_price: float = 100.0, trend: float = 0.5, volatility: float = 2.0
+) -> list[OHLCV]:
     """Generate a trending candle series with realistic OHLC structure."""
     import random
+
     random.seed(42)
     candles = []
     price = start_price
@@ -70,7 +71,7 @@ class TestSMCSignalEngine:
         )
         candles = make_trending_candles(100, trend=0.8)
         # Should not raise
-        signal = engine.analyze(candles)
+        engine.analyze(candles)
         # Signal may or may not be generated, but analysis state should be recorded
         assert engine.last_analysis is not None
 
@@ -89,7 +90,7 @@ class TestSMCSignalEngine:
             price += 1.0
             candles.append(make_candle(i, price - 0.3, price + 1.0, price - 1.0, price + 0.3))
 
-        signal = engine.analyze(candles)
+        engine.analyze(candles)
         analysis = engine.last_analysis
         assert analysis is not None
         # Structure should lean bullish given the strong uptrend
@@ -135,7 +136,7 @@ class TestSMCSignalEngine:
         )
         ltf_candles = make_trending_candles(150, trend=0.5)
         htf_candles = make_trending_candles(50, trend=2.0)
-        signal = engine.analyze(ltf_candles, htf_candles=htf_candles)
+        engine.analyze(ltf_candles, htf_candles=htf_candles)
         assert engine.last_analysis is not None
 
     def test_ltf_candles_wired_into_mtf_context(self):
@@ -246,12 +247,14 @@ class TestConfluenceWeightsPassthrough:
         assert engine.confluence_weights is None
 
     def test_custom_weights_stored_and_forwarded(self, monkeypatch):
-        from src.smart_money.confluence import ConfluenceWeights
         import src.strategy.signal_engine as signal_engine_module
+        from src.smart_money.confluence import ConfluenceWeights
 
         custom = ConfluenceWeights(market_structure=40.0)
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
             confluence_weights=custom,
         )
         assert engine.confluence_weights is custom
@@ -295,7 +298,9 @@ class TestSmcIndicatorConfigPassthrough:
 
     def test_custom_values_stored(self):
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
             ob_max_age_bars=50,
             fvg_min_size_atr_mult=0.5,
             premium_zone=Decimal("0.70"),
@@ -316,8 +321,13 @@ class TestSmcIndicatorConfigPassthrough:
         import src.strategy.signal_engine as signal_engine_module
 
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
-            ob_max_age_bars=42, rsi_period=21, ema_fast=9, ema_slow=21,
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
+            ob_max_age_bars=42,
+            rsi_period=21,
+            ema_fast=9,
+            ema_slow=21,
         )
 
         captured: dict = {}
@@ -341,11 +351,12 @@ class TestSmcIndicatorConfigPassthrough:
         assert captured["ema_slow"] == 21
 
     def test_premium_discount_zone_reaches_analysis(self, monkeypatch):
-        import src.strategy.signal_engine as signal_engine_module
-
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
-            premium_zone=Decimal("0.90"), discount_zone=Decimal("0.10"),
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
+            premium_zone=Decimal("0.90"),
+            discount_zone=Decimal("0.10"),
         )
 
         candles = make_trending_candles(120)
@@ -363,7 +374,9 @@ class TestSmcIndicatorConfigPassthrough:
         import src.strategy.signal_engine as signal_engine_module
 
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
             fvg_min_size_atr_mult=0.5,
         )
 
@@ -407,7 +420,9 @@ class TestSmcIndicatorConfigPassthrough:
         import src.strategy.signal_engine as signal_engine_module
 
         engine = SMCSignalEngine(
-            symbol="BTCUSDT", timeframe=Timeframe.H1, strategy_id="test",
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            strategy_id="test",
             ob_max_age_bars=42,
         )
 
@@ -424,4 +439,3 @@ class TestSmcIndicatorConfigPassthrough:
         engine.analyze(candles)
 
         assert captured["max_age_bars"] == 42
-

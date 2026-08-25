@@ -11,7 +11,7 @@ All times are UTC.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, time, timezone
+from datetime import UTC, datetime, time
 
 from src.core.enums import KillZone, SessionType
 
@@ -26,7 +26,7 @@ class SessionWindow:
     name: str
 
     def is_active(self, dt: datetime) -> bool:
-        t = dt.astimezone(timezone.utc).time().replace(tzinfo=None)
+        t = dt.astimezone(UTC).time().replace(tzinfo=None)
         if self.start_utc <= self.end_utc:
             return self.start_utc <= t <= self.end_utc
         # Spans midnight
@@ -44,7 +44,7 @@ class KillZoneWindow:
     session: SessionType
 
     def is_active(self, dt: datetime) -> bool:
-        t = dt.astimezone(timezone.utc).time().replace(tzinfo=None)
+        t = dt.astimezone(UTC).time().replace(tzinfo=None)
         if self.start_utc <= self.end_utc:
             return self.start_utc <= t <= self.end_utc
         return t >= self.start_utc or t <= self.end_utc
@@ -61,10 +61,18 @@ SESSIONS: list[SessionWindow] = [
 # ICT Kill Zones (UTC)
 KILL_ZONES: list[KillZoneWindow] = [
     KillZoneWindow(KillZone.ASIAN_KZ, time(0, 0), time(4, 0), "Asian KZ", SessionType.ASIAN),
-    KillZoneWindow(KillZone.LONDON_OPEN_KZ, time(7, 0), time(9, 0), "London Open KZ", SessionType.LONDON),
-    KillZoneWindow(KillZone.NEW_YORK_OPEN_KZ, time(13, 0), time(15, 0), "NY Open KZ", SessionType.NEW_YORK),
-    KillZoneWindow(KillZone.NEW_YORK_LUNCH_KZ, time(17, 0), time(19, 0), "NY Lunch KZ", SessionType.NEW_YORK),
-    KillZoneWindow(KillZone.LONDON_CLOSE_KZ, time(15, 0), time(16, 0), "London Close KZ", SessionType.LONDON),
+    KillZoneWindow(
+        KillZone.LONDON_OPEN_KZ, time(7, 0), time(9, 0), "London Open KZ", SessionType.LONDON
+    ),
+    KillZoneWindow(
+        KillZone.NEW_YORK_OPEN_KZ, time(13, 0), time(15, 0), "NY Open KZ", SessionType.NEW_YORK
+    ),
+    KillZoneWindow(
+        KillZone.NEW_YORK_LUNCH_KZ, time(17, 0), time(19, 0), "NY Lunch KZ", SessionType.NEW_YORK
+    ),
+    KillZoneWindow(
+        KillZone.LONDON_CLOSE_KZ, time(15, 0), time(16, 0), "London Close KZ", SessionType.LONDON
+    ),
 ]
 
 

@@ -60,6 +60,7 @@ class TestSignParams:
 
     def test_applies_clock_offset_ms_to_the_timestamp(self) -> None:
         import time
+
         before = int(time.time() * 1000)
         params = {"symbol": "BTCUSDT"}
         result = sign_params("k", "s", params, clock_offset_ms=100_000)
@@ -76,12 +77,13 @@ class TestSignParams:
         # (timestamp + recvWindow included, signature excluded) and
         # verify the signature independently.
         expected_params = {
-            "symbol": "BTCUSDT", "side": "BUY", "quantity": "0.1",
-            "timestamp": result["timestamp"], "recvWindow": result["recvWindow"],
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "quantity": "0.1",
+            "timestamp": result["timestamp"],
+            "recvWindow": result["recvWindow"],
         }
-        expected_query = urllib.parse.urlencode(
-            {k: str(v) for k, v in expected_params.items()}
-        )
+        expected_query = urllib.parse.urlencode({k: str(v) for k, v in expected_params.items()})
         expected_sig = hmac.new(
             b"api-secret", expected_query.encode("utf-8"), hashlib.sha256
         ).hexdigest()
@@ -99,13 +101,10 @@ class TestSignParams:
         # Force identical timestamps so the only difference is the
         # None-valued key's presence/absence in the dict.
         result_without["timestamp"] = result_with["timestamp"]
-        query_without = urllib.parse.urlencode({
-            k: str(v) for k, v in result_without.items()
-            if k != "signature" and v is not None
-        })
-        expected_sig = hmac.new(
-            b"s", query_without.encode("utf-8"), hashlib.sha256
-        ).hexdigest()
+        query_without = urllib.parse.urlencode(
+            {k: str(v) for k, v in result_without.items() if k != "signature" and v is not None}
+        )
+        expected_sig = hmac.new(b"s", query_without.encode("utf-8"), hashlib.sha256).hexdigest()
         assert result_with["signature"] == expected_sig
 
 

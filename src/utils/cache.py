@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 V = TypeVar("V")
 

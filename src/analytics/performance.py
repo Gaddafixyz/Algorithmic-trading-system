@@ -137,8 +137,12 @@ class PerformanceReport:
             ),
             "probabilistic_sharpe_ratio": round(self.probabilistic_sharpe_ratio, 4),
             "deflated_sharpe_ratio": round(self.deflated_sharpe_ratio, 4),
-            "omega_ratio": round(self.omega_ratio, 4) if math.isfinite(self.omega_ratio) else str(self.omega_ratio),
-            "tail_ratio": round(self.tail_ratio, 4) if math.isfinite(self.tail_ratio) else str(self.tail_ratio),
+            "omega_ratio": round(self.omega_ratio, 4)
+            if math.isfinite(self.omega_ratio)
+            else str(self.omega_ratio),
+            "tail_ratio": round(self.tail_ratio, 4)
+            if math.isfinite(self.tail_ratio)
+            else str(self.tail_ratio),
             "ulcer_index": round(self.ulcer_index, 4),
             "historical_var_95": round(self.historical_var_95, 4),
             "historical_cvar_95": round(self.historical_cvar_95, 4),
@@ -346,7 +350,9 @@ def calculate_performance(
 
     report.max_drawdown_pct = float(np.max(drawdowns_pct))
     report.max_drawdown_abs = Decimal(str(float(np.max(drawdowns_abs))))
-    report.avg_drawdown_pct = float(np.mean(drawdowns_pct[drawdowns_pct > 0])) if any(drawdowns_pct > 0) else 0.0
+    report.avg_drawdown_pct = (
+        float(np.mean(drawdowns_pct[drawdowns_pct > 0])) if any(drawdowns_pct > 0) else 0.0
+    )
 
     # Ulcer index — RMS of drawdown-from-peak over the whole equity curve,
     # not just Sharpe/Sortino's period-to-period returns; penalizes deep,

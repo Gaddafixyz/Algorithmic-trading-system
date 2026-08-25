@@ -12,7 +12,10 @@ from src.persistence.migrations import create_all_tables, run_migrations
 
 class TestRunMigrations:
     def test_configures_alembic_with_the_given_database_url(self) -> None:
-        with patch("alembic.config.Config") as MockConfig, patch("alembic.command.upgrade") as mock_upgrade:
+        with (
+            patch("alembic.config.Config") as MockConfig,
+            patch("alembic.command.upgrade") as mock_upgrade,
+        ):
             mock_cfg_instance = MagicMock()
             MockConfig.return_value = mock_cfg_instance
 
@@ -49,8 +52,9 @@ class TestRunMigrations:
             assert script_location_calls[0].args[1] == str(tmp_path)
 
     def test_reraises_and_logs_on_migration_failure(self) -> None:
-        with patch("alembic.config.Config") as MockConfig, patch(
-            "alembic.command.upgrade", side_effect=RuntimeError("migration failed")
+        with (
+            patch("alembic.config.Config") as MockConfig,
+            patch("alembic.command.upgrade", side_effect=RuntimeError("migration failed")),
         ):
             mock_cfg_instance = MagicMock()
             MockConfig.return_value = mock_cfg_instance

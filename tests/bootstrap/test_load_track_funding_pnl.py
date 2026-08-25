@@ -23,13 +23,19 @@ def app() -> Application:
 
 class TestLoadTrackFundingPnl:
     def test_missing_file_returns_false(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         assert app._load_track_funding_pnl() is False
 
     def test_missing_execution_section_returns_false(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -37,7 +43,10 @@ class TestLoadTrackFundingPnl:
         assert app._load_track_funding_pnl() is False
 
     def test_explicit_false_returns_false(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -47,7 +56,10 @@ class TestLoadTrackFundingPnl:
         assert app._load_track_funding_pnl() is False
 
     def test_explicit_true_returns_true(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -57,7 +69,10 @@ class TestLoadTrackFundingPnl:
         assert app._load_track_funding_pnl() is True
 
     def test_non_bool_value_returns_false(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()
@@ -67,7 +82,10 @@ class TestLoadTrackFundingPnl:
         assert app._load_track_funding_pnl() is False
 
     def test_malformed_yaml_returns_false(
-        self, app: Application, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        app: Application,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "configs").mkdir()

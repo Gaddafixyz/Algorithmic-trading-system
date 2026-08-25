@@ -19,12 +19,11 @@ Raise this threshold to filter more aggressively; lower it to pass more.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import numpy as np
 
-from src.machine_learning.features import extract_features, N_FEATURES, FEATURE_NAMES
+from src.machine_learning.features import FEATURE_NAMES, extract_features
 
 if TYPE_CHECKING:
     from src.domain.signal import Signal
@@ -71,9 +70,7 @@ class SignalFilter:
         max_ob_age_bars: int = 100,
     ) -> None:
         if not isinstance(model, SklearnClassifier):
-            raise TypeError(
-                f"model must expose predict_proba and predict, got {type(model)}"
-            )
+            raise TypeError(f"model must expose predict_proba and predict, got {type(model)}")
         if not (0.0 < min_probability < 1.0):
             raise ValueError(f"min_probability must be in (0, 1), got {min_probability}")
         self._model = model
@@ -84,8 +81,8 @@ class SignalFilter:
 
     def should_trade(
         self,
-        signal: "Signal",
-        analysis: "SMCAnalysis | None" = None,
+        signal: Signal,
+        analysis: SMCAnalysis | None = None,
     ) -> bool:
         """
         Return True if the model believes this setup has positive expectancy.

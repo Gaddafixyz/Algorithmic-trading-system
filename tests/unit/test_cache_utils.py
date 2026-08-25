@@ -33,9 +33,7 @@ class TestGetAndSet:
 
 
 class TestExpiry:
-    def test_entry_expires_after_its_ttl_elapses(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_entry_expires_after_its_ttl_elapses(self, monkeypatch: pytest.MonkeyPatch) -> None:
         fake_clock = {"t": 1000.0}
         monkeypatch.setattr(time, "monotonic", lambda: fake_clock["t"])
 
@@ -105,7 +103,7 @@ class TestEvictionAtMaxSize:
         monkeypatch.setattr(time, "monotonic", lambda: fake_clock["t"])
 
         cache: TTLCache[str] = TTLCache(max_size=2)
-        cache.set("first", "v1", ttl=10.0)   # expires_at = 10.0
+        cache.set("first", "v1", ttl=10.0)  # expires_at = 10.0
         cache.set("second", "v2", ttl=100.0)  # expires_at = 100.0
 
         # Cache is full (size == max_size); inserting a third entry must

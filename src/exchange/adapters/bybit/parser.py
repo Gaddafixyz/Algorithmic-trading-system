@@ -21,9 +21,18 @@ from src.domain.position import Position
 # ─── Timeframe mapping (Bybit uses bare interval codes) ───────────────────────
 
 TIMEFRAME_TO_BYBIT: dict[str, str] = {
-    "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30",
-    "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720",
-    "1d": "D", "1w": "W",
+    "1m": "1",
+    "3m": "3",
+    "5m": "5",
+    "15m": "15",
+    "30m": "30",
+    "1h": "60",
+    "2h": "120",
+    "4h": "240",
+    "6h": "360",
+    "12h": "720",
+    "1d": "D",
+    "1w": "W",
 }
 
 _ORDER_STATUS_MAP: dict[str, OrderStatus] = {
@@ -214,9 +223,7 @@ def parse_ticker(data: dict[str, Any]) -> Ticker:
         timestamp=datetime.now(tz=UTC),
         open_interest=_d(data["openInterest"]) if "openInterest" in data else None,
         funding_rate=_d(data["fundingRate"]) if "fundingRate" in data else None,
-        next_funding_time=(
-            _ts(data["nextFundingTime"]) if data.get("nextFundingTime") else None
-        ),
+        next_funding_time=(_ts(data["nextFundingTime"]) if data.get("nextFundingTime") else None),
     )
 
 
@@ -240,32 +247,34 @@ def normalize_instruments_info(data: dict[str, Any]) -> dict[str, Any]:
 
             max_leverage = int(float(leverage_filter.get("maxLeverage", "20")))
 
-            symbols.append({
-                "symbol": row["symbol"],
-                "contractType": "PERPETUAL",
-                "status": status,
-                "baseAsset": row.get("baseCoin", ""),
-                "quoteAsset": row.get("quoteCoin", ""),
-                "leverageBracket": [{"initialLeverage": max_leverage}],
-                "filters": [
-                    {
-                        "filterType": "PRICE_FILTER",
-                        "tickSize": price_filter.get("tickSize", "0.01"),
-                        "minPrice": price_filter.get("minPrice", "0"),
-                        "maxPrice": price_filter.get("maxPrice", "1000000"),
-                    },
-                    {
-                        "filterType": "LOT_SIZE",
-                        "stepSize": lot_size_filter.get("qtyStep", "0.001"),
-                        "minQty": lot_size_filter.get("minOrderQty", "0.001"),
-                        "maxQty": lot_size_filter.get("maxOrderQty", "1000000"),
-                    },
-                    {
-                        "filterType": "MIN_NOTIONAL",
-                        "notional": lot_size_filter.get("minNotionalValue", "5"),
-                    },
-                ],
-            })
+            symbols.append(
+                {
+                    "symbol": row["symbol"],
+                    "contractType": "PERPETUAL",
+                    "status": status,
+                    "baseAsset": row.get("baseCoin", ""),
+                    "quoteAsset": row.get("quoteCoin", ""),
+                    "leverageBracket": [{"initialLeverage": max_leverage}],
+                    "filters": [
+                        {
+                            "filterType": "PRICE_FILTER",
+                            "tickSize": price_filter.get("tickSize", "0.01"),
+                            "minPrice": price_filter.get("minPrice", "0"),
+                            "maxPrice": price_filter.get("maxPrice", "1000000"),
+                        },
+                        {
+                            "filterType": "LOT_SIZE",
+                            "stepSize": lot_size_filter.get("qtyStep", "0.001"),
+                            "minQty": lot_size_filter.get("minOrderQty", "0.001"),
+                            "maxQty": lot_size_filter.get("maxOrderQty", "1000000"),
+                        },
+                        {
+                            "filterType": "MIN_NOTIONAL",
+                            "notional": lot_size_filter.get("minNotionalValue", "5"),
+                        },
+                    ],
+                }
+            )
         except (KeyError, ValueError, TypeError):
             # Malformed row — skip it here; parse_instruments logs+skips
             # per-symbol failures anyway, this just guards the normalizer

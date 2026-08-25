@@ -18,13 +18,18 @@ from src.core.enums import (
     Timeframe,
 )
 from src.domain.signal import Signal
-from src.machine_learning.features import N_FEATURES, FEATURE_NAMES, extract_features, features_to_dict
+from src.machine_learning.features import (
+    FEATURE_NAMES,
+    N_FEATURES,
+    extract_features,
+    features_to_dict,
+)
+from src.smart_money.bos import BOSEvent
 from src.smart_money.confluence import SMCAnalysis
 from src.smart_money.fair_value_gap import FairValueGap
 from src.smart_money.liquidity import LiquidityPool
-from src.smart_money.order_blocks import OrderBlock
-from src.smart_money.bos import BOSEvent
 from src.smart_money.market_structure import SwingPoint
+from src.smart_money.order_blocks import OrderBlock
 from src.smart_money.premium_discount import PremiumDiscountZones
 
 
@@ -47,7 +52,10 @@ def make_signal(**kwargs) -> Signal:
 
 def make_bos_event(direction: str = "bullish") -> BOSEvent:
     swing = SwingPoint(
-        price=Decimal("49500"), timestamp=datetime.now(tz=UTC), bar_index=10, is_high=False,
+        price=Decimal("49500"),
+        timestamp=datetime.now(tz=UTC),
+        bar_index=10,
+        is_high=False,
     )
     return BOSEvent(
         direction=direction,
@@ -212,7 +220,9 @@ class TestExtractFeaturesWithFullAnalysis:
 
     def test_premium_discount_zone_long_in_discount(self) -> None:
         pd = PremiumDiscountZones(
-            swing_high=Decimal("52000"), swing_low=Decimal("48000"), current_price=Decimal("48500"),
+            swing_high=Decimal("52000"),
+            swing_low=Decimal("48000"),
+            current_price=Decimal("48500"),
         )
         analysis = make_analysis(premium_discount=pd)
         sig = make_signal(direction=SignalDirection.LONG)
@@ -320,8 +330,12 @@ class TestSignalMetadataDerivedFeatures:
         assert d["n_components"] == pytest.approx(0.3)
 
     def test_direction_long_flag_for_both_directions(self) -> None:
-        long_d = features_to_dict(extract_features(make_signal(direction=SignalDirection.LONG), None))
-        short_d = features_to_dict(extract_features(make_signal(direction=SignalDirection.SHORT), None))
+        long_d = features_to_dict(
+            extract_features(make_signal(direction=SignalDirection.LONG), None)
+        )
+        short_d = features_to_dict(
+            extract_features(make_signal(direction=SignalDirection.SHORT), None)
+        )
         assert long_d["direction_long"] == 1.0
         assert short_d["direction_long"] == 0.0
 
@@ -381,7 +395,9 @@ class TestTargetDistanceZeroPriceGuard:
         # this is reachable in practice (e.g. malformed/backfilled
         # historical data) rather than a purely defensive-only branch.
         sig = make_signal(
-            entry_price=Decimal("0"), stop_loss=Decimal("-100"), take_profit=Decimal("100"),
+            entry_price=Decimal("0"),
+            stop_loss=Decimal("-100"),
+            take_profit=Decimal("100"),
         )
         d = features_to_dict(extract_features(sig, None))
         assert d["target_distance_pct"] == 0.0

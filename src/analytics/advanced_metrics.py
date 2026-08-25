@@ -98,7 +98,9 @@ def deflated_sharpe_ratio(
         z_term += euler_mascheroni * _inverse_normal_cdf(1 - 1.0 / (n_trials * math.e))
         expected_max_sr = math.sqrt(max(variance_of_trial_sharpes, 1e-12)) * z_term
 
-    return probabilistic_sharpe_ratio(returns, benchmark_sharpe=expected_max_sr, periods_per_year=periods_per_year)
+    return probabilistic_sharpe_ratio(
+        returns, benchmark_sharpe=expected_max_sr, periods_per_year=periods_per_year
+    )
 
 
 def omega_ratio(returns: list[float] | np.ndarray, threshold: float = 0.0) -> float:
@@ -148,9 +150,7 @@ def ulcer_index(equity_curve: list[float] | np.ndarray) -> float:
     return float(np.sqrt(np.mean(drawdown_pct**2)))
 
 
-def historical_var(
-    returns: list[float] | np.ndarray, confidence: float = 0.95
-) -> float:
+def historical_var(returns: list[float] | np.ndarray, confidence: float = 0.95) -> float:
     """
     Historical (empirical) Value-at-Risk: the loss threshold not expected
     to be exceeded with the given confidence, over one period. Returned
@@ -162,9 +162,7 @@ def historical_var(
     return float(-np.percentile(arr, (1 - confidence) * 100))
 
 
-def historical_cvar(
-    returns: list[float] | np.ndarray, confidence: float = 0.95
-) -> float:
+def historical_cvar(returns: list[float] | np.ndarray, confidence: float = 0.95) -> float:
     """
     Historical Conditional VaR (expected shortfall): the average loss
     *given that* the loss exceeds the VaR threshold. Always >= VaR;
@@ -180,9 +178,7 @@ def historical_cvar(
     return float(-np.mean(tail))
 
 
-def parametric_var(
-    mean_return: float, std_return: float, confidence: float = 0.95
-) -> float:
+def parametric_var(mean_return: float, std_return: float, confidence: float = 0.95) -> float:
     """Gaussian (delta-normal) VaR — fast approximation when you only have
     mean/std (e.g. from a covariance matrix) rather than a full return
     series. Less accurate than historical VaR for fat-tailed crypto
@@ -193,6 +189,7 @@ def parametric_var(
 
 
 # ─── Small self-contained stats helpers (avoid a scipy dependency here) ──────
+
 
 def _skewness(arr: np.ndarray) -> float:
     n = len(arr)
@@ -232,25 +229,46 @@ def _inverse_normal_cdf(p: float) -> float:
     if not (0.0 < p < 1.0):
         raise ValueError("p must be in (0, 1)")
 
-    a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
-         1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
-    b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
-         6.680131188771972e+01, -1.328068155288572e+01]
-    c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
-         -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
-    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
-         3.754408661907416e+00]
+    a = [
+        -3.969683028665376e01,
+        2.209460984245205e02,
+        -2.759285104469687e02,
+        1.383577518672690e02,
+        -3.066479806614716e01,
+        2.506628277459239e00,
+    ]
+    b = [
+        -5.447609879822406e01,
+        1.615858368580409e02,
+        -1.556989798598866e02,
+        6.680131188771972e01,
+        -1.328068155288572e01,
+    ]
+    c = [
+        -7.784894002430293e-03,
+        -3.223964580411365e-01,
+        -2.400758277161838e00,
+        -2.549732539343734e00,
+        4.374664141464968e00,
+        2.938163982698783e00,
+    ]
+    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e00, 3.754408661907416e00]
 
     p_low, p_high = 0.02425, 1 - 0.02425
     if p < p_low:
         q = math.sqrt(-2 * math.log(p))
-        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
-               ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
+            (((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1
+        )
     if p > p_high:
         q = math.sqrt(-2 * math.log(1 - p))
-        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
-                ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
+            (((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1
+        )
     q = p - 0.5
     r = q * q
-    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / \
-           (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+    return (
+        (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5])
+        * q
+        / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+    )

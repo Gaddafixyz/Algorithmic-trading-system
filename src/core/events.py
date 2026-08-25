@@ -16,9 +16,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Callable, Coroutine, TypeAlias
+from typing import Any, TypeAlias
 
 from pydantic import Field
 
@@ -52,6 +53,7 @@ class BaseEvent(StrictModel):
 
 
 # ─── Market Data Events ───────────────────────────────────────────────────────
+
 
 class CandleClosedEvent(BaseEvent):
     """Fired when a candlestick closes."""
@@ -114,6 +116,7 @@ class MarkPriceUpdatedEvent(BaseEvent):
 
 # ─── Signal Events ────────────────────────────────────────────────────────────
 
+
 class SignalGeneratedEvent(BaseEvent):
     """Fired when a trading signal is produced."""
 
@@ -162,6 +165,7 @@ class SignalExpiredEvent(BaseEvent):
 
 
 # ─── Order Events ─────────────────────────────────────────────────────────────
+
 
 class OrderSubmittedEvent(BaseEvent):
     """Fired when an order is sent to the exchange."""
@@ -220,6 +224,7 @@ class OrderRejectedEvent(BaseEvent):
 
 # ─── Position Events ──────────────────────────────────────────────────────────
 
+
 class PositionOpenedEvent(BaseEvent):
     """Fired when a new position is opened."""
 
@@ -256,6 +261,7 @@ class PositionUpdatedEvent(BaseEvent):
 
 # ─── Risk Events ─────────────────────────────────────────────────────────────
 
+
 class RiskLimitBreachedEvent(BaseEvent):
     """Fired when a risk limit is exceeded."""
 
@@ -281,6 +287,7 @@ class DailyLossLimitReachedEvent(BaseEvent):
 
 
 # ─── System Events ────────────────────────────────────────────────────────────
+
 
 class SystemStartedEvent(BaseEvent):
     """Fired after successful system startup."""
@@ -314,6 +321,7 @@ class AlertFiredEvent(BaseEvent):
 
 
 # ─── Event Bus ────────────────────────────────────────────────────────────────
+
 
 class EventBus:
     """
@@ -355,9 +363,7 @@ class EventBus:
     async def publish(self, event: BaseEvent) -> None:
         """Publish an event to all registered handlers concurrently."""
         self._published_count += 1
-        handlers = (
-            self._handlers.get(event.event_type, []) + self._global_handlers
-        )
+        handlers = self._handlers.get(event.event_type, []) + self._global_handlers
         if not handlers:
             return
 

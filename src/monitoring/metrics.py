@@ -7,8 +7,9 @@ Import and use them anywhere in the system.
 
 from __future__ import annotations
 
-from prometheus_client import Counter, Gauge, Histogram, Info, start_http_server
 import logging
+
+from prometheus_client import Counter, Gauge, Histogram, Info, start_http_server
 
 logger = logging.getLogger(__name__)
 

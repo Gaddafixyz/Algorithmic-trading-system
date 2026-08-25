@@ -8,7 +8,7 @@ Bridges exchange streams to the internal event bus.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -23,8 +23,8 @@ from src.core.events import (
 )
 from src.core.interfaces import IWebSocketStreamClient
 from src.core.models import OHLCV
-from src.market_data.candles import CandleService
 from src.market_data.cache import MarketDataCache
+from src.market_data.candles import CandleService
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +123,7 @@ class MarketDataFeed:
 
         # Subscribe to tick stream
         if subscribe_ticks:
+
             async def _on_tick(msg: dict[str, Any]) -> None:
                 price = Decimal(str(msg.get("p", "0")))
                 qty = Decimal(str(msg.get("q", "0")))
@@ -168,6 +169,7 @@ class MarketDataFeed:
         timeframe: Timeframe,
     ) -> Any:
         """Create a candle-close callback that publishes a CandleClosedEvent."""
+
         async def _on_close(candle: OHLCV) -> None:
             await self._bus.publish(
                 CandleClosedEvent(
@@ -196,6 +198,7 @@ class MarketDataFeed:
              "p":"<mark price>", "P":"<estimated settle price>",
              "i":"<index price>", "r":"<funding rate>", "T":<next funding ms>}
         """
+
         async def _on_mark_price(msg: dict[str, Any]) -> None:
             mark_price_raw = msg.get("p")
             if mark_price_raw is None:
@@ -215,11 +218,9 @@ class MarketDataFeed:
             # subscribe to the event bus) would silently always get None.
             self._cache.put_mark_price(symbol, mark_price)
 
-            funding_rate = (
-                Decimal(str(funding_rate_raw)) if funding_rate_raw is not None else None
-            )
+            funding_rate = Decimal(str(funding_rate_raw)) if funding_rate_raw is not None else None
             next_funding_time = (
-                datetime.fromtimestamp(int(next_funding_ms) / 1000, tz=timezone.utc)
+                datetime.fromtimestamp(int(next_funding_ms) / 1000, tz=UTC)
                 if next_funding_ms is not None
                 else None
             )
@@ -280,6 +281,7 @@ class MarketDataFeed:
         (see _normalize_book_ticker) — the update is skipped rather than
         publishing a one-sided or zero-filled spread.
         """
+
         async def _on_book_ticker(msg: dict[str, Any]) -> None:
             bid_raw = msg.get("b")
             ask_raw = msg.get("a")

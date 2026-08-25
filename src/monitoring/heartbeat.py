@@ -49,7 +49,9 @@ class HeartbeatService:
         while self._running:
             await asyncio.sleep(self._interval)
             self._beat_count += 1
-            uptime = (datetime.now(tz=UTC) - self._started_at).total_seconds() if self._started_at else 0
+            uptime = (
+                (datetime.now(tz=UTC) - self._started_at).total_seconds() if self._started_at else 0
+            )
 
             context: dict[str, Any] = {
                 "beat": self._beat_count,

@@ -5,16 +5,12 @@ from __future__ import annotations
 import logging
 from collections import deque
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from src.domain.portfolio import Portfolio
 from src.indicators.statistics import pearson_correlation
 from src.utils.cache import TTLCache
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -98,15 +94,11 @@ class CorrelationTracker:
         self._symbols = list(symbols)
         self._window = window
         # Store raw close prices; returns are derived on demand
-        self._prices: dict[str, deque[float]] = {
-            s: deque(maxlen=window + 1) for s in symbols
-        }
+        self._prices: dict[str, deque[float]] = {s: deque(maxlen=window + 1) for s in symbols}
         # TTL is a safety net only — update() invalidates this explicitly
         # on every new data point, so 5s of staleness would only ever be
         # observed if update() were somehow bypassed.
-        self._cache: TTLCache[dict[str, dict[str, float]]] = TTLCache(
-            default_ttl=5.0, max_size=1
-        )
+        self._cache: TTLCache[dict[str, dict[str, float]]] = TTLCache(default_ttl=5.0, max_size=1)
 
     def update(self, symbol: str, close_price: float) -> None:
         """
@@ -142,7 +134,8 @@ class CorrelationTracker:
             logger.warning(
                 "CorrelationTracker: dropping %d non-positive price(s) for %s "
                 "before log-return calculation (corrupted market data?)",
-                n_invalid, symbol,
+                n_invalid,
+                symbol,
             )
             prices = prices[valid_mask]
             if len(prices) < 2:
@@ -162,9 +155,7 @@ class CorrelationTracker:
             return cached
 
         # Collect aligned return series (trim to common length)
-        series: dict[str, np.ndarray] = {
-            sym: self.returns(sym) for sym in self._symbols
-        }
+        series: dict[str, np.ndarray] = {sym: self.returns(sym) for sym in self._symbols}
         min_len = min((len(s) for s in series.values()), default=0)
 
         result: dict[str, dict[str, float]] = {}

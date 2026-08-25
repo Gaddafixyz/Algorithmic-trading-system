@@ -28,26 +28,42 @@ class TestParseOrder:
         }
         for raw_status, expected in cases.items():
             data = {
-                "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-                "side": "BUY", "type": "MARKET", "status": raw_status,
-                "origQty": "0.1", "executedQty": "0",
+                "orderId": 1,
+                "clientOrderId": "c1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "type": "MARKET",
+                "status": raw_status,
+                "origQty": "0.1",
+                "executedQty": "0",
             }
             order = parse_order(data)
             assert order.status == expected
 
     def test_unknown_status_defaults_to_open(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "SOME_NEW_UNKNOWN_STATUS",
-            "origQty": "0.1", "executedQty": "0",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "MARKET",
+            "status": "SOME_NEW_UNKNOWN_STATUS",
+            "origQty": "0.1",
+            "executedQty": "0",
         }
         assert parse_order(data).status == OrderStatus.OPEN
 
     def test_maps_order_type_and_side(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "SELL", "type": "STOP_MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "stopPrice": "49000",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "type": "STOP_MARKET",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "stopPrice": "49000",
         }
         order = parse_order(data)
         assert order.side == OrderSide.SELL
@@ -55,49 +71,85 @@ class TestParseOrder:
 
     def test_maps_time_in_force(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "LIMIT", "status": "NEW", "timeInForce": "IOC",
-            "origQty": "0.1", "executedQty": "0", "price": "50000",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "LIMIT",
+            "status": "NEW",
+            "timeInForce": "IOC",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "price": "50000",
         }
         assert parse_order(data).time_in_force == TimeInForce.IOC
 
     def test_zero_price_is_treated_as_none(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "price": "0",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "MARKET",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "price": "0",
         }
         assert parse_order(data).price is None
 
     def test_positive_price_is_preserved(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "LIMIT", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "price": "50000.5",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "LIMIT",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "price": "50000.5",
         }
         assert parse_order(data).price == Decimal("50000.5")
 
     def test_zero_stop_price_is_treated_as_none(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "stopPrice": "0",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "MARKET",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "stopPrice": "0",
         }
         assert parse_order(data).stop_price is None
 
     def test_zero_avg_price_is_treated_as_none(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0", "avgPrice": "0",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "MARKET",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "avgPrice": "0",
         }
         assert parse_order(data).average_fill_price is None
 
     def test_quantities_are_parsed_as_decimal(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "BUY", "type": "MARKET", "status": "PARTIALLY_FILLED",
-            "origQty": "1.5", "executedQty": "0.75",
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "type": "MARKET",
+            "status": "PARTIALLY_FILLED",
+            "origQty": "1.5",
+            "executedQty": "0.75",
         }
         order = parse_order(data)
         assert order.quantity == Decimal("1.5")
@@ -105,10 +157,16 @@ class TestParseOrder:
 
     def test_reduce_only_and_close_position_flags(self) -> None:
         data = {
-            "orderId": 1, "clientOrderId": "c1", "symbol": "BTCUSDT",
-            "side": "SELL", "type": "MARKET", "status": "NEW",
-            "origQty": "0.1", "executedQty": "0",
-            "reduceOnly": True, "closePosition": True,
+            "orderId": 1,
+            "clientOrderId": "c1",
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "type": "MARKET",
+            "status": "NEW",
+            "origQty": "0.1",
+            "executedQty": "0",
+            "reduceOnly": True,
+            "closePosition": True,
         }
         order = parse_order(data)
         assert order.reduce_only is True
@@ -126,8 +184,12 @@ class TestParsePosition:
 
     def test_positive_quantity_is_a_long_position(self) -> None:
         data = {
-            "positionAmt": "0.5", "entryPrice": "50000", "symbol": "BTCUSDT",
-            "markPrice": "51000", "notional": "25500", "leverage": "10",
+            "positionAmt": "0.5",
+            "entryPrice": "50000",
+            "symbol": "BTCUSDT",
+            "markPrice": "51000",
+            "notional": "25500",
+            "leverage": "10",
             "unrealizedProfit": "500",
         }
         pos = parse_position(data)
@@ -137,8 +199,12 @@ class TestParsePosition:
 
     def test_negative_quantity_is_a_short_position_with_absolute_qty(self) -> None:
         data = {
-            "positionAmt": "-0.5", "entryPrice": "50000", "symbol": "BTCUSDT",
-            "markPrice": "49000", "notional": "24500", "leverage": "10",
+            "positionAmt": "-0.5",
+            "entryPrice": "50000",
+            "symbol": "BTCUSDT",
+            "markPrice": "49000",
+            "notional": "24500",
+            "leverage": "10",
         }
         pos = parse_position(data)
         assert pos is not None
@@ -147,23 +213,33 @@ class TestParsePosition:
 
     def test_initial_margin_is_notional_over_leverage(self) -> None:
         data = {
-            "positionAmt": "1", "entryPrice": "50000", "symbol": "BTCUSDT",
-            "markPrice": "50000", "notional": "50000", "leverage": "10",
+            "positionAmt": "1",
+            "entryPrice": "50000",
+            "symbol": "BTCUSDT",
+            "markPrice": "50000",
+            "notional": "50000",
+            "leverage": "10",
         }
         pos = parse_position(data)
         assert pos.initial_margin == Decimal("5000")
 
     def test_zero_leverage_yields_zero_initial_margin(self) -> None:
         data = {
-            "positionAmt": "1", "entryPrice": "50000", "symbol": "BTCUSDT",
-            "markPrice": "50000", "notional": "50000", "leverage": "0",
+            "positionAmt": "1",
+            "entryPrice": "50000",
+            "symbol": "BTCUSDT",
+            "markPrice": "50000",
+            "notional": "50000",
+            "leverage": "0",
         }
         pos = parse_position(data)
         assert pos.initial_margin == Decimal("0")
 
     def test_zero_liquidation_price_is_treated_as_none(self) -> None:
         data = {
-            "positionAmt": "1", "entryPrice": "50000", "symbol": "BTCUSDT",
+            "positionAmt": "1",
+            "entryPrice": "50000",
+            "symbol": "BTCUSDT",
             "liquidationPrice": "0",
         }
         pos = parse_position(data)
@@ -211,9 +287,14 @@ class TestParseCandles:
 class TestParseTicker:
     def test_parses_all_fields(self) -> None:
         data = {
-            "symbol": "BTCUSDT", "lastPrice": "50000", "priceChange": "500",
-            "priceChangePercent": "1.0", "highPrice": "50500", "lowPrice": "49500",
-            "volume": "10000", "quoteVolume": "500000000",
+            "symbol": "BTCUSDT",
+            "lastPrice": "50000",
+            "priceChange": "500",
+            "priceChangePercent": "1.0",
+            "highPrice": "50500",
+            "lowPrice": "49500",
+            "volume": "10000",
+            "quoteVolume": "500000000",
         }
         ticker = parse_ticker(data)
         assert ticker.symbol == "BTCUSDT"
@@ -222,17 +303,28 @@ class TestParseTicker:
 
     def test_open_interest_defaults_to_none_when_absent(self) -> None:
         data = {
-            "symbol": "BTCUSDT", "lastPrice": "50000", "priceChange": "0",
-            "priceChangePercent": "0", "highPrice": "50000", "lowPrice": "50000",
-            "volume": "0", "quoteVolume": "0",
+            "symbol": "BTCUSDT",
+            "lastPrice": "50000",
+            "priceChange": "0",
+            "priceChangePercent": "0",
+            "highPrice": "50000",
+            "lowPrice": "50000",
+            "volume": "0",
+            "quoteVolume": "0",
         }
         assert parse_ticker(data).open_interest is None
 
     def test_open_interest_is_parsed_when_present(self) -> None:
         data = {
-            "symbol": "BTCUSDT", "lastPrice": "50000", "priceChange": "0",
-            "priceChangePercent": "0", "highPrice": "50000", "lowPrice": "50000",
-            "volume": "0", "quoteVolume": "0", "openInterest": "1234.5",
+            "symbol": "BTCUSDT",
+            "lastPrice": "50000",
+            "priceChange": "0",
+            "priceChangePercent": "0",
+            "highPrice": "50000",
+            "lowPrice": "50000",
+            "volume": "0",
+            "quoteVolume": "0",
+            "openInterest": "1234.5",
         }
         assert parse_ticker(data).open_interest == Decimal("1234.5")
 
@@ -258,7 +350,8 @@ class TestParseOrderBook:
 class TestParseFundingRate:
     def test_parses_rate_and_next_funding_time(self) -> None:
         data = {
-            "symbol": "BTCUSDT", "lastFundingRate": "0.0001",
+            "symbol": "BTCUSDT",
+            "lastFundingRate": "0.0001",
             "nextFundingTime": 1609488000000,
         }
         rate = parse_funding_rate(data)

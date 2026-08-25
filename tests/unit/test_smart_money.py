@@ -5,19 +5,15 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import pytest
-
-from src.core.enums import MarketStructure, FVGType, OrderBlockType
+from src.core.enums import FVGType, MarketStructure
 from src.core.models import OHLCV
+from src.smart_money.fair_value_gap import detect_fvgs
 from src.smart_money.market_structure import (
+    SwingPoint,
     detect_market_structure,
     find_swing_highs,
     find_swing_lows,
 )
-from src.smart_money.bos import detect_bos
-from src.smart_money.choch import detect_choch
-from src.smart_money.fair_value_gap import detect_fvgs, get_open_fvgs
-from src.smart_money.order_blocks import identify_order_blocks
 from src.smart_money.premium_discount import (
     PremiumDiscountZones,
     calculate_premium_discount,
@@ -25,11 +21,8 @@ from src.smart_money.premium_discount import (
 )
 from src.smart_money.sessions import (
     get_active_kill_zone,
-    get_active_session,
-    is_in_kill_zone,
     session_score,
 )
-from src.smart_money.market_structure import SwingPoint
 
 
 def make_candle(
@@ -60,7 +53,7 @@ class TestMarketStructure:
         prices = [
             (100, 105, 98, 103),
             (103, 108, 101, 106),
-            (104, 107, 99, 102),   # HL
+            (104, 107, 99, 102),  # HL
             (102, 112, 101, 110),  # HH
             (108, 111, 106, 109),  # HL
             (109, 118, 108, 116),  # HH
@@ -108,7 +101,7 @@ class TestFairValueGap:
     def test_bullish_fvg_detected(self):
         """Bullish FVG: candle 3 low > candle 1 high."""
         candles = [
-            make_candle(make_ts(0), 100, 102, 99, 101),   # c1
+            make_candle(make_ts(0), 100, 102, 99, 101),  # c1
             make_candle(make_ts(1), 103, 108, 102, 107),  # c2 (big up)
             make_candle(make_ts(2), 106, 109, 104, 108),  # c3: low=104 > c1 high=102
         ]
@@ -131,10 +124,7 @@ class TestFairValueGap:
 
     def test_no_fvg_when_overlap(self):
         """No FVG when candles overlap."""
-        candles = [
-            make_candle(make_ts(i), 100, 102, 99, 101)
-            for i in range(3)
-        ]
+        candles = [make_candle(make_ts(i), 100, 102, 99, 101) for i in range(3)]
         fvgs = detect_fvgs(candles)
         assert len(fvgs) == 0
 
@@ -192,14 +182,10 @@ class TestPremiumDiscount:
         assert zones.is_in_ote
 
     def test_optimal_entry_bullish(self):
-        assert is_optimal_entry(
-            Decimal("102"), Decimal("110"), Decimal("100"), "bullish"
-        )
+        assert is_optimal_entry(Decimal("102"), Decimal("110"), Decimal("100"), "bullish")
 
     def test_optimal_entry_bearish(self):
-        assert is_optimal_entry(
-            Decimal("108"), Decimal("110"), Decimal("100"), "bearish"
-        )
+        assert is_optimal_entry(Decimal("108"), Decimal("110"), Decimal("100"), "bearish")
 
 
 class TestPremiumDiscountConfigurableZones:
@@ -215,7 +201,9 @@ class TestPremiumDiscountConfigurableZones:
 
     def test_default_field_values_match_module_constants(self):
         zones = PremiumDiscountZones(
-            swing_high=Decimal("110"), swing_low=Decimal("100"), current_price=Decimal("108"),
+            swing_high=Decimal("110"),
+            swing_low=Decimal("100"),
+            current_price=Decimal("108"),
         )
         assert zones.premium_zone == Decimal("0.618")
         assert zones.discount_zone == Decimal("0.382")
@@ -226,10 +214,14 @@ class TestPremiumDiscountConfigurableZones:
         # premium_zone of 0.90 puts the boundary at 109 -> same price is
         # no longer premium.
         default_zones = PremiumDiscountZones(
-            swing_high=Decimal("110"), swing_low=Decimal("100"), current_price=Decimal("107"),
+            swing_high=Decimal("110"),
+            swing_low=Decimal("100"),
+            current_price=Decimal("107"),
         )
         custom_zones = PremiumDiscountZones(
-            swing_high=Decimal("110"), swing_low=Decimal("100"), current_price=Decimal("107"),
+            swing_high=Decimal("110"),
+            swing_low=Decimal("100"),
+            current_price=Decimal("107"),
             premium_zone=Decimal("0.90"),
         )
         assert default_zones.is_premium
@@ -241,29 +233,44 @@ class TestPremiumDiscountConfigurableZones:
         # custom discount_zone of 0.10 puts the boundary at 101 -> same
         # price is no longer discount.
         default_zones = PremiumDiscountZones(
-            swing_high=Decimal("110"), swing_low=Decimal("100"), current_price=Decimal("103"),
+            swing_high=Decimal("110"),
+            swing_low=Decimal("100"),
+            current_price=Decimal("103"),
         )
         custom_zones = PremiumDiscountZones(
-            swing_high=Decimal("110"), swing_low=Decimal("100"), current_price=Decimal("103"),
+            swing_high=Decimal("110"),
+            swing_low=Decimal("100"),
+            current_price=Decimal("103"),
             discount_zone=Decimal("0.10"),
         )
         assert default_zones.is_discount
         assert not custom_zones.is_discount
 
     def test_calculate_premium_discount_passes_through_custom_zones(self):
-        swing_high = SwingPoint(price=Decimal("110"), timestamp=make_ts(0), bar_index=0, is_high=True)
-        swing_low = SwingPoint(price=Decimal("100"), timestamp=make_ts(1), bar_index=1, is_high=False)
+        swing_high = SwingPoint(
+            price=Decimal("110"), timestamp=make_ts(0), bar_index=0, is_high=True
+        )
+        swing_low = SwingPoint(
+            price=Decimal("100"), timestamp=make_ts(1), bar_index=1, is_high=False
+        )
         zones = calculate_premium_discount(
-            swing_high, swing_low, Decimal("107"),
-            premium_zone=Decimal("0.90"), discount_zone=Decimal("0.10"),
+            swing_high,
+            swing_low,
+            Decimal("107"),
+            premium_zone=Decimal("0.90"),
+            discount_zone=Decimal("0.10"),
         )
         assert zones.premium_zone == Decimal("0.90")
         assert zones.discount_zone == Decimal("0.10")
         assert not zones.is_premium  # 107 is below the custom 0.90 boundary (109)
 
     def test_calculate_premium_discount_omitted_kwargs_match_defaults(self):
-        swing_high = SwingPoint(price=Decimal("110"), timestamp=make_ts(0), bar_index=0, is_high=True)
-        swing_low = SwingPoint(price=Decimal("100"), timestamp=make_ts(1), bar_index=1, is_high=False)
+        swing_high = SwingPoint(
+            price=Decimal("110"), timestamp=make_ts(0), bar_index=0, is_high=True
+        )
+        swing_low = SwingPoint(
+            price=Decimal("100"), timestamp=make_ts(1), bar_index=1, is_high=False
+        )
         zones = calculate_premium_discount(swing_high, swing_low, Decimal("108"))
         assert zones.premium_zone == Decimal("0.618")
         assert zones.discount_zone == Decimal("0.382")
@@ -274,7 +281,10 @@ class TestPremiumDiscountConfigurableZones:
         # -> no longer optimal (0.2 > 0.10).
         assert is_optimal_entry(Decimal("102"), Decimal("110"), Decimal("100"), "bullish")
         assert not is_optimal_entry(
-            Decimal("102"), Decimal("110"), Decimal("100"), "bullish",
+            Decimal("102"),
+            Decimal("110"),
+            Decimal("100"),
+            "bullish",
             discount_zone=Decimal("0.10"),
         )
 
@@ -283,6 +293,7 @@ class TestSessions:
     def test_london_open_kill_zone(self):
         # London Open KZ is 07:00–09:00 UTC
         from src.core.enums import KillZone
+
         dt = datetime(2024, 1, 15, 8, 0, tzinfo=UTC)  # Monday 08:00 UTC
         kz = get_active_kill_zone(dt)
         assert kz == KillZone.LONDON_OPEN_KZ
@@ -290,9 +301,9 @@ class TestSessions:
     def test_no_kill_zone_off_hours(self):
         # 03:00 UTC on a weekday — off hours / not in any KZ
         dt = datetime(2024, 1, 15, 3, 30, tzinfo=UTC)
-        kz = get_active_kill_zone(dt)
+        get_active_kill_zone(dt)
         # 03:30 is outside all defined kill zones
-        assert kz is None or True  # Dependent on Asian KZ definition
+        assert True  # Dependent on Asian KZ definition
 
     def test_session_score_range(self):
         for hour in range(24):

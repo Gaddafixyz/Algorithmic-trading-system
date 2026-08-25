@@ -18,7 +18,7 @@ import pytest
 from src.core.enums import SignalDirection, SignalStrength, Timeframe
 from src.domain.signal import Signal
 from src.machine_learning.features import FEATURE_NAMES, N_FEATURES
-from src.machine_learning.signal_filter import SignalFilter, SklearnClassifier
+from src.machine_learning.signal_filter import SignalFilter
 
 
 def make_signal(**kwargs) -> Signal:

@@ -16,10 +16,15 @@ from src.domain.trade import Trade
 
 def make_trade(gross_pnl: str = "100") -> Trade:
     return Trade(
-        position_id="pos-1", symbol="BTCUSDT", side=PositionSide.LONG,
-        quantity=Decimal("0.1"), entry_quantity=Decimal("0.1"),
-        entry_price=Decimal("50000"), exit_price=Decimal("51000"),
-        gross_pnl=Decimal(gross_pnl), fees=Decimal("2"),
+        position_id="pos-1",
+        symbol="BTCUSDT",
+        side=PositionSide.LONG,
+        quantity=Decimal("0.1"),
+        entry_quantity=Decimal("0.1"),
+        entry_price=Decimal("50000"),
+        exit_price=Decimal("51000"),
+        gross_pnl=Decimal(gross_pnl),
+        fees=Decimal("2"),
         opened_at=datetime(2024, 1, 1, tzinfo=UTC),
         closed_at=datetime(2024, 1, 1, 2, tzinfo=UTC),
     )
@@ -28,9 +33,14 @@ def make_trade(gross_pnl: str = "100") -> Trade:
 def make_result(trades: list[Trade] | None = None) -> BacktestResult:
     trades = trades or []
     result = BacktestResult(
-        config=BacktestConfig(), symbol="BTCUSDT", timeframe=Timeframe.H1,
-        start_date=datetime(2024, 1, 1, tzinfo=UTC), end_date=datetime(2024, 1, 2, tzinfo=UTC),
-        candles_processed=100, signals_generated=5, trades=trades,
+        config=BacktestConfig(),
+        symbol="BTCUSDT",
+        timeframe=Timeframe.H1,
+        start_date=datetime(2024, 1, 1, tzinfo=UTC),
+        end_date=datetime(2024, 1, 2, tzinfo=UTC),
+        candles_processed=100,
+        signals_generated=5,
+        trades=trades,
         equity_curve=[Decimal("10000"), Decimal("10100"), Decimal("10050")],
     )
     result.performance = calculate_performance(trades, initial_equity=10000.0)
@@ -58,9 +68,7 @@ class TestSaveBacktestReport:
         content = trades_file.read_text()
         assert "trade_id" in content.splitlines()[0]
 
-    def test_does_not_write_a_trades_csv_when_there_are_no_trades(
-        self, tmp_path: Path
-    ) -> None:
+    def test_does_not_write_a_trades_csv_when_there_are_no_trades(self, tmp_path: Path) -> None:
         save_backtest_report(make_result(trades=[]), tmp_path)
         trades_file = tmp_path / "BTCUSDT_1h_trades.csv"
         assert not trades_file.exists()
@@ -76,8 +84,11 @@ class TestSaveBacktestReport:
 class TestPrintBacktestSummary:
     def test_does_not_raise_when_performance_is_none(self, capsys) -> None:
         result = BacktestResult(
-            config=BacktestConfig(), symbol="BTCUSDT", timeframe=Timeframe.H1,
-            start_date=datetime(2024, 1, 1, tzinfo=UTC), end_date=datetime(2024, 1, 2, tzinfo=UTC),
+            config=BacktestConfig(),
+            symbol="BTCUSDT",
+            timeframe=Timeframe.H1,
+            start_date=datetime(2024, 1, 1, tzinfo=UTC),
+            end_date=datetime(2024, 1, 2, tzinfo=UTC),
         )
         print_backtest_summary(result)  # must not raise
 

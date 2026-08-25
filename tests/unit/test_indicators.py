@@ -6,18 +6,17 @@ import math
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import numpy as np
 import pytest
 
+from src.core.exceptions import InsufficientDataError
 from src.core.models import OHLCV
 from src.indicators.atr import calculate_atr, current_atr
 from src.indicators.ema import calculate_ema, ema_from_candles
+from src.indicators.macd import macd_from_candles
 from src.indicators.rsi import calculate_rsi, current_rsi, is_overbought, is_oversold
 from src.indicators.sma import calculate_sma, current_sma
-from src.indicators.macd import calculate_macd, macd_from_candles
-from src.indicators.volume import relative_volume, obv, vwap
 from src.indicators.volatility import bollinger_bands, historical_volatility
-from src.core.exceptions import InsufficientDataError
+from src.indicators.volume import obv, relative_volume, vwap
 
 
 def make_candles(n: int, base_price: float = 100.0, trend: float = 0.1) -> list[OHLCV]:
@@ -31,14 +30,16 @@ def make_candles(n: int, base_price: float = 100.0, trend: float = 0.1) -> list[
         low = Decimal(str(price - 1.0))
         open_ = Decimal(str(price - 0.3))
         close = Decimal(str(price + 0.3))
-        candles.append(OHLCV(
-            timestamp=now + timedelta(hours=i),
-            open=open_,
-            high=high,
-            low=low,
-            close=close,
-            volume=Decimal("100.0"),
-        ))
+        candles.append(
+            OHLCV(
+                timestamp=now + timedelta(hours=i),
+                open=open_,
+                high=high,
+                low=low,
+                close=close,
+                volume=Decimal("100.0"),
+            )
+        )
     return candles
 
 
@@ -210,8 +211,10 @@ class TestBollingerBands:
         candles = [
             OHLCV(
                 timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=i),
-                open=Decimal("100"), high=Decimal("100"),
-                low=Decimal("100"), close=Decimal("100"),
+                open=Decimal("100"),
+                high=Decimal("100"),
+                low=Decimal("100"),
+                close=Decimal("100"),
                 volume=Decimal("100"),
             )
             for i in range(30)

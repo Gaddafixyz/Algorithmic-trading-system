@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
@@ -34,7 +35,11 @@ def async_retry(
                         break
                     logger.warning(
                         "Retry %d/%d for %s: %s. Waiting %.1fs",
-                        attempt, max_attempts, fn.__qualname__, exc, delay,
+                        attempt,
+                        max_attempts,
+                        fn.__qualname__,
+                        exc,
+                        delay,
                     )
                     await asyncio.sleep(delay)
                     delay = min(delay * backoff, max_delay)

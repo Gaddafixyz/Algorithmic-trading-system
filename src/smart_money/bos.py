@@ -28,11 +28,11 @@ logger = logging.getLogger(__name__)
 class BOSEvent:
     """A confirmed Break of Structure."""
 
-    direction: str              # "bullish" or "bearish"
-    broken_price: Decimal       # The swing level that was broken
-    break_candle_index: int     # Index of the candle that broke the level
-    break_price: Decimal        # Close price of the breaking candle
-    swing_point: SwingPoint     # The swing that was breached
+    direction: str  # "bullish" or "bearish"
+    broken_price: Decimal  # The swing level that was broken
+    break_candle_index: int  # Index of the candle that broke the level
+    break_price: Decimal  # Close price of the breaking candle
+    swing_point: SwingPoint  # The swing that was breached
     timestamp: datetime
 
     @property
@@ -91,14 +91,16 @@ def detect_bos(
             if sh.bar_index >= i:
                 continue  # Swing must precede the break candle
             if price > sh.price:
-                events.append(BOSEvent(
-                    direction="bullish",
-                    broken_price=sh.price,
-                    break_candle_index=i,
-                    break_price=price,
-                    swing_point=sh,
-                    timestamp=candle.timestamp,
-                ))
+                events.append(
+                    BOSEvent(
+                        direction="bullish",
+                        broken_price=sh.price,
+                        break_candle_index=i,
+                        break_price=price,
+                        swing_point=sh,
+                        timestamp=candle.timestamp,
+                    )
+                )
                 broken_high_indices.add(sh.bar_index)
                 logger.debug("Bullish BOS: %s broken at bar %d", sh.price, i)
 
@@ -110,14 +112,16 @@ def detect_bos(
             if sl.bar_index >= i:
                 continue
             if low_price < sl.price:
-                events.append(BOSEvent(
-                    direction="bearish",
-                    broken_price=sl.price,
-                    break_candle_index=i,
-                    break_price=low_price,
-                    swing_point=sl,
-                    timestamp=candle.timestamp,
-                ))
+                events.append(
+                    BOSEvent(
+                        direction="bearish",
+                        broken_price=sl.price,
+                        break_candle_index=i,
+                        break_price=low_price,
+                        swing_point=sl,
+                        timestamp=candle.timestamp,
+                    )
+                )
                 broken_low_indices.add(sl.bar_index)
                 logger.debug("Bearish BOS: %s broken at bar %d", sl.price, i)
 

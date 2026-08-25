@@ -60,11 +60,13 @@ def extract_mitigation_blocks(
             remaining_top = min(ob.top, ob.mitigation_price)
 
         if remaining_top > remaining_bottom:
-            mitigation_blocks.append(MitigationBlock(
-                original_ob=ob,
-                mitigation_price=ob.mitigation_price,
-                remaining_zone_top=remaining_top,
-                remaining_zone_bottom=remaining_bottom,
-            ))
+            mitigation_blocks.append(
+                MitigationBlock(
+                    original_ob=ob,
+                    mitigation_price=ob.mitigation_price,
+                    remaining_zone_top=remaining_top,
+                    remaining_zone_bottom=remaining_bottom,
+                )
+            )
 
     return mitigation_blocks

@@ -17,13 +17,14 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import src.persistence.metrics
+import src.persistence.orders
+import src.persistence.signals
+import src.persistence.trades  # noqa: F401
+
 # Import all ORM models so Alembic can detect schema changes.
 # The explicit imports populate Base.metadata before autogenerate runs.
 from src.persistence.database import Base
-import src.persistence.orders    # noqa: F401
-import src.persistence.trades    # noqa: F401
-import src.persistence.signals   # noqa: F401
-import src.persistence.metrics   # noqa: F401
 
 logger = logging.getLogger("alembic.env")
 
@@ -51,6 +52,7 @@ def _get_url() -> str:
         return url
     # Fall back to application settings
     from src.core.config import get_settings
+
     return get_settings().database.url
 
 

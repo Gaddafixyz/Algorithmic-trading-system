@@ -21,7 +21,12 @@ import pytest
 
 import src.risk.circuit_breaker as circuit_breaker_module
 from src.core.enums import CircuitBreakerState
-from src.core.events import CircuitBreakerStateChangedEvent, EventBus, reset_event_bus, set_event_bus
+from src.core.events import (
+    CircuitBreakerStateChangedEvent,
+    EventBus,
+    reset_event_bus,
+    set_event_bus,
+)
 from src.risk.circuit_breaker import CircuitBreaker
 
 
@@ -112,7 +117,8 @@ class TestProbationTimeout:
     """
 
     def test_abandoned_probation_trade_is_released_after_timeout(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         start = datetime(2026, 1, 1, tzinfo=UTC)
         clock = {"now": start}
@@ -190,9 +196,7 @@ class TestCircuitBreakerStateChangedEventIsPublished:
     with no producer — trip()/reset()/half_open() now publish it via
     the synchronous publish_sync path."""
 
-    def test_trip_publishes_closed_to_open_transition(
-        self, isolated_event_bus: EventBus
-    ) -> None:
+    def test_trip_publishes_closed_to_open_transition(self, isolated_event_bus: EventBus) -> None:
         received = _recorder(isolated_event_bus)
         cb = CircuitBreaker()
 
@@ -203,9 +207,7 @@ class TestCircuitBreakerStateChangedEventIsPublished:
         assert received[0].new_state == CircuitBreakerState.OPEN
         assert received[0].reason == "daily loss limit breached"
 
-    def test_trip_when_already_open_publishes_nothing(
-        self, isolated_event_bus: EventBus
-    ) -> None:
+    def test_trip_when_already_open_publishes_nothing(self, isolated_event_bus: EventBus) -> None:
         cb = CircuitBreaker()
         cb.trip("first trip")
         received = _recorder(isolated_event_bus)
@@ -214,9 +216,7 @@ class TestCircuitBreakerStateChangedEventIsPublished:
 
         assert received == []
 
-    def test_reset_publishes_open_to_closed_transition(
-        self, isolated_event_bus: EventBus
-    ) -> None:
+    def test_reset_publishes_open_to_closed_transition(self, isolated_event_bus: EventBus) -> None:
         cb = CircuitBreaker()
         cb.trip("test")
         received = _recorder(isolated_event_bus)
@@ -250,9 +250,7 @@ class TestCircuitBreakerStateChangedEventIsPublished:
         assert received[0].previous_state == CircuitBreakerState.OPEN
         assert received[0].new_state == CircuitBreakerState.HALF_OPEN
 
-    def test_half_open_when_closed_publishes_nothing(
-        self, isolated_event_bus: EventBus
-    ) -> None:
+    def test_half_open_when_closed_publishes_nothing(self, isolated_event_bus: EventBus) -> None:
         received = _recorder(isolated_event_bus)
         cb = CircuitBreaker()
 

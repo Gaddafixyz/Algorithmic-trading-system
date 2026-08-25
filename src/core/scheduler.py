@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,9 @@ class ScheduledTask:
             except Exception as exc:
                 self._error_count += 1
                 self._last_error = exc
-                logger.exception("Task '%s' failed (error #%d): %s", self.name, self._error_count, exc)
+                logger.exception(
+                    "Task '%s' failed (error #%d): %s", self.name, self._error_count, exc
+                )
 
             await asyncio.sleep(self.interval_seconds)
 
@@ -126,10 +128,7 @@ class Scheduler:
         for task in self._tasks.values():
             task.cancel()
 
-        running_tasks = [
-            t._task for t in self._tasks.values()
-            if t._task and not t._task.done()
-        ]
+        running_tasks = [t._task for t in self._tasks.values() if t._task and not t._task.done()]
         if running_tasks:
             await asyncio.wait(running_tasks, timeout=timeout_seconds)
         logger.info("Scheduler stopped")

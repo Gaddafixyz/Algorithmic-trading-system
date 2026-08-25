@@ -22,7 +22,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from src.core.enums import OrderSide, OrderType, PositionSide, Timeframe
+    from src.core.enums import OrderSide, OrderType, Timeframe
     from src.core.models import OHLCV, OrderBook, Tick, Ticker
     from src.domain.order import Order
     from src.domain.position import Position
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 
 # ─── Exchange ────────────────────────────────────────────────────────────────
+
 
 @runtime_checkable
 class IExchangeClient(Protocol):
@@ -39,13 +40,13 @@ class IExchangeClient(Protocol):
     async def disconnect(self) -> None: ...
 
     async def get_account_balance(self) -> dict[str, Decimal]: ...
-    async def get_positions(self) -> list["Position"]: ...
+    async def get_positions(self) -> list[Position]: ...
 
     async def place_order(
         self,
         symbol: str,
-        side: "OrderSide",
-        order_type: "OrderType",
+        side: OrderSide,
+        order_type: OrderType,
         quantity: Decimal,
         price: Decimal | None,
         *,
@@ -53,22 +54,22 @@ class IExchangeClient(Protocol):
         time_in_force: str = "GTC",
         reduce_only: bool = False,
         client_order_id: str | None = None,
-    ) -> "Order": ...
+    ) -> Order: ...
 
     async def cancel_order(self, symbol: str, order_id: str) -> bool: ...
-    async def get_order(self, symbol: str, order_id: str) -> "Order": ...
-    async def get_open_orders(self, symbol: str | None = None) -> list["Order"]: ...
+    async def get_order(self, symbol: str, order_id: str) -> Order: ...
+    async def get_open_orders(self, symbol: str | None = None) -> list[Order]: ...
 
     async def get_candles(
         self,
         symbol: str,
-        timeframe: "Timeframe",
+        timeframe: Timeframe,
         limit: int,
         start_time: datetime | None = None,
-    ) -> list["OHLCV"]: ...
+    ) -> list[OHLCV]: ...
 
-    async def get_ticker(self, symbol: str) -> "Ticker": ...
-    async def get_order_book(self, symbol: str, depth: int) -> "OrderBook": ...
+    async def get_ticker(self, symbol: str) -> Ticker: ...
+    async def get_order_book(self, symbol: str, depth: int) -> OrderBook: ...
 
     async def set_leverage(self, symbol: str, leverage: int) -> None: ...
     async def set_margin_type(self, symbol: str, margin_type: str) -> None: ...
@@ -96,7 +97,7 @@ class IWebSocketStreamClient(Protocol):
     #: events/logs correctly without importing a concrete client class.
     provider: str
 
-    def subscribe_kline(self, symbol: str, timeframe: "Timeframe", handler: Any) -> str: ...
+    def subscribe_kline(self, symbol: str, timeframe: Timeframe, handler: Any) -> str: ...
     def subscribe_agg_trade(self, symbol: str, handler: Any) -> str: ...
     def subscribe_book_ticker(self, symbol: str, handler: Any) -> str: ...
     def subscribe_depth(self, symbol: str, depth: int, speed_ms: int, handler: Any) -> str: ...
@@ -113,6 +114,7 @@ class IWebSocketStreamClient(Protocol):
 
 # ─── Market Data ─────────────────────────────────────────────────────────────
 
+
 @runtime_checkable
 class IMarketDataFeed(Protocol):
     """Contract for live market data subscriptions."""
@@ -120,7 +122,7 @@ class IMarketDataFeed(Protocol):
     async def subscribe_candles(
         self,
         symbol: str,
-        timeframe: "Timeframe",
+        timeframe: Timeframe,
         callback: Any,
     ) -> None: ...
 
@@ -136,13 +138,14 @@ class ICandleProvider(Protocol):
     async def get_candles(
         self,
         symbol: str,
-        timeframe: "Timeframe",
+        timeframe: Timeframe,
         limit: int,
         end_time: datetime | None = None,
-    ) -> list["OHLCV"]: ...
+    ) -> list[OHLCV]: ...
 
 
 # ─── Strategy ─────────────────────────────────────────────────────────────────
+
 
 class IStrategy(ABC):
     """Abstract base for trading strategies."""
@@ -159,20 +162,20 @@ class IStrategy(ABC):
 
     @property
     @abstractmethod
-    def timeframes(self) -> list["Timeframe"]:
+    def timeframes(self) -> list[Timeframe]:
         """Timeframes this strategy uses."""
 
     @abstractmethod
     async def on_candle(
         self,
         symbol: str,
-        timeframe: "Timeframe",
-        candles: list["OHLCV"],
-    ) -> "Signal | None":
+        timeframe: Timeframe,
+        candles: list[OHLCV],
+    ) -> Signal | None:
         """Process new candle data and optionally return a signal."""
 
     @abstractmethod
-    async def on_tick(self, tick: "Tick") -> None:
+    async def on_tick(self, tick: Tick) -> None:
         """Handle real-time tick update."""
 
     @abstractmethod
@@ -180,42 +183,45 @@ class IStrategy(ABC):
         """Load required data and warm up indicators."""
 
     @abstractmethod
-    async def on_position_closed(self, position: "Position") -> None:
+    async def on_position_closed(self, position: Position) -> None:
         """Callback when a managed position closes."""
 
 
 # ─── Risk ────────────────────────────────────────────────────────────────────
 
+
 @runtime_checkable
 class IRiskManager(Protocol):
     """Contract for pre-trade risk validation."""
 
-    async def validate_signal(self, signal: "Signal") -> bool: ...
-    async def calculate_position_size(self, signal: "Signal") -> Decimal: ...
+    async def validate_signal(self, signal: Signal) -> bool: ...
+    async def calculate_position_size(self, signal: Signal) -> Decimal: ...
     async def check_portfolio_risk(self) -> bool: ...
-    async def on_position_update(self, position: "Position") -> None: ...
+    async def on_position_update(self, position: Position) -> None: ...
 
 
 # ─── Execution ───────────────────────────────────────────────────────────────
+
 
 @runtime_checkable
 class IOrderManager(Protocol):
     """Contract for order lifecycle management."""
 
-    async def submit_order(self, order: "Order") -> "Order": ...
+    async def submit_order(self, order: Order) -> Order: ...
     async def cancel_order(self, order_id: str, symbol: str) -> bool: ...
-    async def get_order(self, order_id: str) -> "Order | None": ...
+    async def get_order(self, order_id: str) -> Order | None: ...
     async def cancel_all_orders(self, symbol: str | None = None) -> int: ...
     # get_open_orders/persist_order were missing from this contract despite
     # being the two other OrderManager methods real consumers actually call
     # (ExecutionEngine.get_open_orders, ReconciliationService.get_open_orders
     # + persist_order) — added here rather than left silently uncovered when
     # this Protocol was finally wired as a type hint in [1.3.22].
-    def get_open_orders(self, symbol: str | None = None) -> list["Order"]: ...
-    async def persist_order(self, order: "Order") -> None: ...
+    def get_open_orders(self, symbol: str | None = None) -> list[Order]: ...
+    async def persist_order(self, order: Order) -> None: ...
 
 
 # ─── Persistence ─────────────────────────────────────────────────────────────
+
 
 @runtime_checkable
 class IRepository(Protocol):
@@ -229,6 +235,7 @@ class IRepository(Protocol):
 
 # ─── Notifications ───────────────────────────────────────────────────────────
 
+
 @runtime_checkable
 class INotifier(Protocol):
     """Contract for notification channels."""
@@ -238,6 +245,7 @@ class INotifier(Protocol):
 
 
 # ─── Indicators ──────────────────────────────────────────────────────────────
+
 
 class IIndicator(ABC):
     """Abstract base for technical indicators."""
@@ -256,11 +264,12 @@ class IIndicator(ABC):
         """Calculate indicator values from OHLCV data."""
 
     @abstractmethod
-    def update(self, candle: "OHLCV") -> Any:
+    def update(self, candle: OHLCV) -> Any:
         """Incrementally update with a new candle (streaming mode)."""
 
 
 # ─── Lifecycle ───────────────────────────────────────────────────────────────
+
 
 class ILifecycle(ABC):
     """Component with async startup/shutdown."""
@@ -280,6 +289,7 @@ class ILifecycle(ABC):
 
 
 # ─── Health ──────────────────────────────────────────────────────────────────
+
 
 @runtime_checkable
 class IHealthCheck(Protocol):

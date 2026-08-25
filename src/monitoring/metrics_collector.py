@@ -74,9 +74,7 @@ class MetricsCollector:
         self._bus.subscribe(PositionOpenedEvent, self._on_position_opened)
         self._bus.subscribe(PositionClosedEvent, self._on_position_closed)
         self._bus.subscribe(PositionUpdatedEvent, self._on_position_updated)
-        self._bus.subscribe(
-            CircuitBreakerStateChangedEvent, self._on_circuit_breaker_state_changed
-        )
+        self._bus.subscribe(CircuitBreakerStateChangedEvent, self._on_circuit_breaker_state_changed)
         self._bus.subscribe(OrderBookUpdatedEvent, self._on_order_book_updated)
         logger.info("MetricsCollector subscribed to event bus")
 
@@ -195,9 +193,7 @@ class MetricsCollector:
             # it still permits a single probation trade through (see
             # RiskManager.validate_signal), which is a materially different
             # state from a hard block, so it maps to 0 rather than 1.
-            circuit_breaker_state.set(
-                1 if event.new_state == CircuitBreakerState.OPEN else 0
-            )
+            circuit_breaker_state.set(1 if event.new_state == CircuitBreakerState.OPEN else 0)
         except Exception:
             logger.exception("Failed to record circuit_breaker_state metric")
 

@@ -22,13 +22,17 @@ class TestMetricDefinitions:
     def test_signals_generated_is_a_counter_with_expected_labels(self) -> None:
         assert isinstance(metrics.signals_generated, Counter)
         assert set(metrics.signals_generated._labelnames) == {
-            "strategy", "symbol", "direction",
+            "strategy",
+            "symbol",
+            "direction",
         }
 
     def test_orders_submitted_is_a_counter_with_expected_labels(self) -> None:
         assert isinstance(metrics.orders_submitted, Counter)
         assert set(metrics.orders_submitted._labelnames) == {
-            "symbol", "side", "order_type",
+            "symbol",
+            "side",
+            "order_type",
         }
 
     def test_orders_filled_is_a_counter(self) -> None:
@@ -38,7 +42,9 @@ class TestMetricDefinitions:
     def test_trades_closed_is_a_counter(self) -> None:
         assert isinstance(metrics.trades_closed, Counter)
         assert set(metrics.trades_closed._labelnames) == {
-            "symbol", "strategy", "outcome",
+            "symbol",
+            "strategy",
+            "outcome",
         }
 
     def test_open_positions_count_is_a_gauge_with_no_labels(self) -> None:
@@ -74,7 +80,9 @@ class TestMetricDefinitions:
     def test_api_requests_is_a_counter_with_expected_labels(self) -> None:
         assert isinstance(metrics.api_requests, Counter)
         assert set(metrics.api_requests._labelnames) == {
-            "method", "endpoint", "status",
+            "method",
+            "endpoint",
+            "status",
         }
 
     def test_api_latency_is_a_histogram_with_expected_buckets(self) -> None:
@@ -82,13 +90,22 @@ class TestMetricDefinitions:
         assert metrics.api_latency._labelnames == ("endpoint",)
         # +Inf bucket is appended automatically by prometheus_client.
         assert metrics.api_latency._upper_bounds[:-1] == (
-            0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+            0.01,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
         )
 
     def test_candle_processing_latency_is_a_histogram(self) -> None:
         assert isinstance(metrics.candle_processing_latency, Histogram)
         assert set(metrics.candle_processing_latency._labelnames) == {
-            "symbol", "timeframe",
+            "symbol",
+            "timeframe",
         }
 
     def test_system_info_is_an_info_metric(self) -> None:
@@ -104,9 +121,7 @@ class TestMetricUsage:
         before = metrics.signals_generated.labels(
             strategy="smc", symbol="BTCUSDT", direction="long"
         )._value.get()
-        metrics.signals_generated.labels(
-            strategy="smc", symbol="BTCUSDT", direction="long"
-        ).inc()
+        metrics.signals_generated.labels(strategy="smc", symbol="BTCUSDT", direction="long").inc()
         after = metrics.signals_generated.labels(
             strategy="smc", symbol="BTCUSDT", direction="long"
         )._value.get()

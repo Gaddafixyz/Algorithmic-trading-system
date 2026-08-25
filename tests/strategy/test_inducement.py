@@ -13,19 +13,29 @@ from src.smart_money.liquidity import LiquidityPool
 
 def candle(o: str, h: str, low: str, c: str, index: int = 0) -> OHLCV:
     return OHLCV(
-        open=Decimal(o), high=Decimal(h), low=Decimal(low), close=Decimal(c),
+        open=Decimal(o),
+        high=Decimal(h),
+        low=Decimal(low),
+        close=Decimal(c),
         volume=Decimal("100"),
         timestamp=datetime(2024, 1, 1, tzinfo=UTC) + timedelta(hours=index),
     )
 
 
 def make_pool(
-    liq_type: LiquidityType, price: str, bar_index: int = 0, is_swept: bool = False,
+    liq_type: LiquidityType,
+    price: str,
+    bar_index: int = 0,
+    is_swept: bool = False,
 ) -> LiquidityPool:
     return LiquidityPool(
-        liq_type=liq_type, price=Decimal(price),
-        zone_top=Decimal(price) + Decimal("10"), zone_bottom=Decimal(price) - Decimal("10"),
-        bar_index=bar_index, timestamp=datetime(2024, 1, 1, tzinfo=UTC), is_swept=is_swept,
+        liq_type=liq_type,
+        price=Decimal(price),
+        zone_top=Decimal(price) + Decimal("10"),
+        zone_bottom=Decimal(price) - Decimal("10"),
+        bar_index=bar_index,
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
+        is_swept=is_swept,
     )
 
 
@@ -142,8 +152,8 @@ class TestMultiplePoolsAndCandles:
         sell_pool = make_pool(LiquidityType.EQUAL_LOWS, price="90", bar_index=0)
         candles = [
             candle("95", "96", "94", "95.5", 0),
-            candle("98", "105", "97.5", "99", 1),   # bearish inducement vs buy_pool
-            candle("92", "93", "85", "91", 2),      # bullish inducement vs sell_pool
+            candle("98", "105", "97.5", "99", 1),  # bearish inducement vs buy_pool
+            candle("92", "93", "85", "91", 2),  # bullish inducement vs sell_pool
         ]
         events = detect_inducement(candles, [buy_pool, sell_pool])
         directions = {e.direction for e in events}

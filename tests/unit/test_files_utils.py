@@ -19,9 +19,7 @@ class TestWriteAndReadJson:
         assert path.exists()
         assert read_json(path) == {"x": 1}
 
-    def test_non_serializable_values_are_stringified_via_default_str(
-        self, tmp_path: Path
-    ) -> None:
+    def test_non_serializable_values_are_stringified_via_default_str(self, tmp_path: Path) -> None:
         path = tmp_path / "data.json"
 
         class Thing:
@@ -52,9 +50,7 @@ class TestWriteAndReadCsv:
         result = read_csv(path)
         assert result == rows
 
-    def test_empty_rows_list_writes_nothing_and_does_not_raise(
-        self, tmp_path: Path
-    ) -> None:
+    def test_empty_rows_list_writes_nothing_and_does_not_raise(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.csv"
         write_csv(path, [])
         assert not path.exists()

@@ -39,11 +39,17 @@ def make_trade(
     closed_at: datetime,
 ) -> Trade:
     return Trade(
-        position_id="pos-1", symbol="BTCUSDT", side=PositionSide.LONG,
-        quantity=Decimal("1"), entry_quantity=Decimal("1"),
-        entry_price=Decimal("50000"), exit_price=Decimal("50100"),
-        gross_pnl=Decimal(gross_pnl), fees=Decimal(fees),
-        opened_at=closed_at - timedelta(hours=1), closed_at=closed_at,
+        position_id="pos-1",
+        symbol="BTCUSDT",
+        side=PositionSide.LONG,
+        quantity=Decimal("1"),
+        entry_quantity=Decimal("1"),
+        entry_price=Decimal("50000"),
+        exit_price=Decimal("50100"),
+        gross_pnl=Decimal(gross_pnl),
+        fees=Decimal(fees),
+        opened_at=closed_at - timedelta(hours=1),
+        closed_at=closed_at,
     )
 
 
@@ -71,18 +77,24 @@ def orders() -> AsyncMock:
 
 @pytest.fixture
 def service(exchange: AsyncMock, positions: AsyncMock, orders: AsyncMock) -> ReconciliationService:
-    return ReconciliationService(exchange=exchange, position_manager=positions, order_manager=orders)
+    return ReconciliationService(
+        exchange=exchange, position_manager=positions, order_manager=orders
+    )
 
 
 class TestUnsupportedExchange:
     async def test_skips_without_error_when_exchange_lacks_income_history(
-        self, positions: AsyncMock, orders: AsyncMock,
+        self,
+        positions: AsyncMock,
+        orders: AsyncMock,
     ) -> None:
         # spec=IExchangeClient excludes get_income_history (not part of
         # the interface — Binance-only extra), so hasattr() is False.
         bare_exchange = AsyncMock(spec=IExchangeClient)
         service = ReconciliationService(
-            exchange=bare_exchange, position_manager=positions, order_manager=orders,
+            exchange=bare_exchange,
+            position_manager=positions,
+            order_manager=orders,
         )
 
         report = await service.reconcile_pnl()
@@ -93,8 +105,11 @@ class TestUnsupportedExchange:
 
 class TestReconcilePnlWithinTolerance:
     async def test_no_alert_when_amounts_match(
-        self, service: ReconciliationService, exchange: AsyncMock,
-        positions: AsyncMock, isolated_event_bus: EventBus,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         now = datetime.now(tz=UTC)
         positions.closed_trades = [make_trade(gross_pnl="100", fees="1", closed_at=now)]
@@ -110,8 +125,11 @@ class TestReconcilePnlWithinTolerance:
         assert service.stats["pnl_discrepancies_total"] == 0
 
     async def test_small_diff_within_default_tolerance_no_alert(
-        self, service: ReconciliationService, exchange: AsyncMock,
-        positions: AsyncMock, isolated_event_bus: EventBus,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         now = datetime.now(tz=UTC)
         positions.closed_trades = [make_trade(gross_pnl="100", fees="1", closed_at=now)]
@@ -128,8 +146,11 @@ class TestReconcilePnlWithinTolerance:
 
 class TestReconcilePnlMismatch:
     async def test_publishes_alert_on_significant_mismatch(
-        self, service: ReconciliationService, exchange: AsyncMock,
-        positions: AsyncMock, isolated_event_bus: EventBus,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
+        isolated_event_bus: EventBus,
     ) -> None:
         now = datetime.now(tz=UTC)
         positions.closed_trades = [make_trade(gross_pnl="100", fees="1", closed_at=now)]
@@ -148,7 +169,10 @@ class TestReconcilePnlMismatch:
         assert service.stats["pnl_discrepancies_total"] == 1
 
     async def test_excludes_trades_outside_the_window(
-        self, service: ReconciliationService, exchange: AsyncMock, positions: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
+        positions: AsyncMock,
     ) -> None:
         now = datetime.now(tz=UTC)
         old_trade = make_trade(gross_pnl="500", fees="0", closed_at=now - timedelta(hours=48))
@@ -164,7 +188,9 @@ class TestReconcilePnlMismatch:
 
 class TestReconcilePnlFetchFailure:
     async def test_does_not_raise_and_does_not_advance_watermark(
-        self, service: ReconciliationService, exchange: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
     ) -> None:
         exchange.get_income_history.side_effect = ConnectionError("network blip")
 
@@ -177,7 +203,9 @@ class TestReconcilePnlFetchFailure:
 
 class TestReconcilePnlWatermark:
     async def test_second_call_queries_from_first_calls_end_time(
-        self, service: ReconciliationService, exchange: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         t0 = 1_700_000_000.0
@@ -193,7 +221,9 @@ class TestReconcilePnlWatermark:
         assert second_call_start_ms == first_call_end_ms
 
     async def test_first_call_looks_back_default_window(
-        self, service: ReconciliationService, exchange: AsyncMock,
+        self,
+        service: ReconciliationService,
+        exchange: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from src.core.constants import PNL_RECONCILE_LOOKBACK_SECONDS

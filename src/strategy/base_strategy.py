@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
-from datetime import datetime
-from decimal import Decimal
 from typing import Any
 
 from src.core.enums import Timeframe
@@ -70,7 +68,9 @@ class BaseStrategy(IStrategy, ILifecycle):
         self.clear_signal(position.symbol)
         logger.info(
             "Strategy '%s': position closed for %s PnL=%s",
-            self.strategy_id, position.symbol, position.net_realized_pnl,
+            self.strategy_id,
+            position.symbol,
+            position.net_realized_pnl,
         )
 
     # ─── Warm-up helpers ──────────────────────────────────────────────────────

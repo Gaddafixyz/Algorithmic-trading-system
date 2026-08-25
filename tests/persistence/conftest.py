@@ -10,18 +10,17 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.persistence.database import Base
+import src.persistence.metrics  # noqa: F401
 
 # Import every ORM model module so its table is registered on
 # Base.metadata before create_all() runs below.
 import src.persistence.orders  # noqa: F401
-import src.persistence.trades  # noqa: F401
 import src.persistence.signals  # noqa: F401
-import src.persistence.metrics  # noqa: F401
+import src.persistence.trades  # noqa: F401
+from src.persistence.database import Base
 
 
 @pytest_asyncio.fixture
