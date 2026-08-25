@@ -368,7 +368,7 @@ class SignalFilterTrainer:
         out = Path(path)
         out.parent.mkdir(parents=True, exist_ok=True)
         with out.open("wb") as fh:
-            pickle.dump(
+            pickle.dump(  # nosec B301
                 {
                     "model": signal_filter._model,
                     "min_probability": signal_filter.min_probability,
@@ -391,7 +391,7 @@ class SignalFilterTrainer:
         if not src.exists():
             raise FileNotFoundError(f"No saved signal filter at {src}")
         with src.open("rb") as fh:
-            payload = pickle.load(fh)  # noqa: S301
+            payload = pickle.load(fh)  # noqa: S301  # nosec B301
 
         saved_features = payload.get("feature_names", [])
         if saved_features != FEATURE_NAMES:

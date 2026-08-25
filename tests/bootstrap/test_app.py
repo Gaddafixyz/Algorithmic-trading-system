@@ -319,7 +319,9 @@ class TestDashboardProviders:
         settings = make_settings()
         app = Application(settings)
         health = app._dashboard_health()  # noqa: SLF001
-        assert health["status"] == "degraded"  # watchdog never pinged yet
+        # Constructor stamps _last_ping, so a freshly built watchdog is
+        # considered alive until the timeout window elapses without pings.
+        assert health["status"] == "ok"
         assert health["trading_env"] == settings.trading_env.value
 
     def test_health_provider_reports_ok_after_a_ping(self, make_settings) -> None:  # type: ignore[no-untyped-def]

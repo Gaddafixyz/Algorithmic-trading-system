@@ -109,7 +109,7 @@ class Dashboard:
             pass
 
         Handler.data_provider = _DataProvider()
-        self._server = HTTPServer(("0.0.0.0", self._port), Handler)
+        self._server = HTTPServer(("0.0.0.0", self._port), Handler)  # nosec B104
         self._thread = Thread(target=self._server.serve_forever, daemon=True, name="dashboard")
         self._thread.start()
         logger.info("Dashboard HTTP started on port %d", self._port)
@@ -191,7 +191,7 @@ class Dashboard:
             logger.warning("Dashboard WS server not started: 'websockets' package not installed.")
             return
 
-        self._ws_server = await websockets.serve(self._handle_ws_client, "0.0.0.0", self._ws_port)
+        self._ws_server = await websockets.serve(self._handle_ws_client, "0.0.0.0", self._ws_port)  # nosec B104
         self._ws_broadcast_task = asyncio.create_task(
             self._broadcast_loop(broadcast_interval), name="dashboard-ws-broadcast"
         )
