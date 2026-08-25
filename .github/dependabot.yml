@@ -1,0 +1,69 @@
+# Dependabot configuration for Algorithmic-trading-system
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+#
+# Project policy (see CHANGELOG.md / pyproject.toml): dependencies are
+# deliberately unpinned by default, with targeted lower bounds only for
+# packages that currently have open Dependabot security alerts. Version
+# update PRs are still useful for awareness and for the pinned security
+# floors in requirements*.txt.
+
+version: 2
+
+updates:
+  # ---------------------------------------------------------------------------
+  # Python (pip) — production + dev lockfiles at repo root
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Africa/Nairobi"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Prefer security updates; version bumps are informational given unpinned policy
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    groups:
+      # Bundle non-major bumps to reduce noise
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Keep major bumps as individual PRs for review
+      # (no group for major — default is one PR per dependency)
+    ignore:
+      # Optional: ignore noisy packages if needed later
+      # - dependency-name: "numpy"
+      #   update-types: ["version-update:semver-major"]
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions used by CI
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Africa/Nairobi"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions:
+        patterns:
+          - "*"
