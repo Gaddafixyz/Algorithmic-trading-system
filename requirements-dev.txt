@@ -1,0 +1,29 @@
+# Security note: pytest and black bumped to resolve Dependabot alerts
+# GHSA-6w46-j5rx-g56g and GHSA-3936-cmfr-pm3m respectively. Versions
+# match what's already installed and verified (359/359 tests passing)
+# in this environment.
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.4.0
+pytest-cov==7.1.0
+pytest-mock==3.15.1
+pytest-timeout==2.4.0
+pytest-xdist==3.8.0
+hypothesis==6.100.0
+factory-boy==3.3.0
+freezegun==1.4.0
+respx==0.21.1
+mypy==1.9.0
+ruff==0.4.2
+black==26.5.1
+isort==5.13.2
+pre-commit==3.7.0
+bandit==1.7.8
+safety==3.2.0
+types-PyYAML==6.0.12
+types-pytz==2024.1.0.20240203
+types-redis==4.6.0
+# Enables real (in-memory) async SQLite testing for src/persistence/
+# tests, rather than mocking SQLAlchemy — repository/upsert/constraint
+# logic is only meaningfully verified against a real database engine.
+aiosqlite==0.22.1

@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: production
+    application: trading-system
+
+scrape_configs:
+  # The trading-system container itself, on its Docker-compose service
+  # name (resolvable on the shared `trading-net` bridge network) and the
+  # metrics port it actually serves on (src/monitoring/metrics.py's
+  # start_http_server(port), configured via PROMETHEUS_PORT — default
+  # 9090, see src/core/config.py).
+  - job_name: "trading-system"
+    static_configs:
+      - targets: ["trading-system:9090"]
+    scrape_interval: 15s
+
+  # Prometheus scraping its own /metrics endpoint.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

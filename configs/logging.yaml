@@ -1,0 +1,26 @@
+# File-rotation parameters only. Console/JSON rendering, log level, and
+# noisy-third-party suppression are all configured in code via structlog
+# (see src/monitoring/telemetry.py:configure_logging). This file previously
+# defined a full logging.config.dictConfig() tree (formatters/handlers/
+# loggers), but nothing ever called dictConfig() on it — structlog's own
+# configure_logging() was the only logging path actually wired into
+# bootstrap/app.py. Kept as parameters here instead of deleting outright
+# so file-rotation behavior is still operator-tunable without a code change.
+
+rotation:
+  enabled: true
+  filename: trading.log     # written under Settings.paths.log_dir
+  max_bytes: 52428800       # 50MB
+  backup_count: 10
+
+# Per-logger level overrides, applied on top of the runtime log_level after
+# structlog is configured (see monitoring/telemetry.py:configure_logging).
+# Merged over — not replacing — the hardcoded default below, so listing a
+# logger here only changes that one; the other three stay suppressed even
+# if this section (or the whole file) is absent.
+#   asyncio / websockets / aiohttp / sqlalchemy.engine: WARNING
+loggers: {}
+#   asyncio:
+#     level: WARNING
+#   websockets:
+#     level: DEBUG

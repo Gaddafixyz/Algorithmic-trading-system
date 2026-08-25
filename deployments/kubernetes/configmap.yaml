@@ -1,0 +1,28 @@
+---
+# Runtime configuration (non-secret values).
+# Secrets (API keys, DB passwords) live in a Kubernetes Secret — never here.
+# The database URL template below uses the variable substitution syntax
+# supported by the ECS/Fargate environment; for raw Kubernetes envFrom use
+# a Secret-backed env entry for the password (see deployment.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trading-config
+  namespace: trading
+data:
+  trading_env: "paper"
+  log_level: "INFO"
+  # NOTE: DATABASE_URL is NOT set here because it requires the DB password.
+  # Set it via a Secret-backed env var in deployment.yaml instead:
+  #   env:
+  #     - name: DATABASE_URL
+  #       valueFrom:
+  #         secretKeyRef:
+  #           name: trading-secrets
+  #           key: database-url
+  redis_url: "redis://redis-svc:6379/0"
+  max_open_positions: "5"
+  max_portfolio_risk_pct: "2.0"
+  max_daily_loss_pct: "5.0"
+  prometheus_port: "9090"
+  dashboard_port: "8080"

@@ -1,0 +1,35 @@
+[Unit]
+Description=Trading System (Smart Money Concepts algorithmic trading)
+Documentation=https://github.com/your-org/trading-system
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+Requires=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=trading
+Group=trading
+WorkingDirectory=/opt/trading-system
+EnvironmentFile=/opt/trading-system/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/trading-system/venv/bin/python -m src.main
+ExecStop=/bin/kill -TERM $MAINPID
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Health check hook (optional, for external watchdogs):
+#   /opt/trading-system/venv/bin/python scripts/healthcheck.py
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/trading-system/data /opt/trading-system/logs /opt/trading-system/backups /opt/trading-system/models
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

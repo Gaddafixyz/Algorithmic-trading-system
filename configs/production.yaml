@@ -1,0 +1,30 @@
+# Production configuration — LIVE TRADING
+environment: production
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+timeframe: 1h
+htf_timeframe: 4h
+
+risk:
+  max_portfolio_risk_pct: 0.5      # Conservative for live capital
+  max_daily_loss_pct: 3.0
+  max_drawdown_pct: 10.0
+  max_open_positions: 3
+  max_leverage: 3.0
+  risk_reward_minimum: 2.0          # Higher bar for live trades
+
+strategy:
+  min_confluence_score: 70.0        # Higher bar for live trades
+  swing_lookback: 5
+  atr_period: 14
+
+logging:
+  level: INFO
+  json: true
+
+monitoring:
+  enable_prometheus: true
+  enable_dashboard: true

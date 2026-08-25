@@ -1,0 +1,30 @@
+# NOTE: the `monitoring:` block below (enable_prometheus/prometheus_port/
+# enable_dashboard/dashboard_port) is NOT read from this file — those are
+# env-only settings (ENABLE_PROMETHEUS, PROMETHEUS_PORT, ENABLE_DASHBOARD,
+# DASHBOARD_PORT). It's kept here only to document the defaults; edit via
+# environment variables / .env instead.
+#
+# Everything else in this file (health_check, heartbeat, watchdog, alerts)
+# IS live: merged into Settings.monitoring by
+# Settings._load_monitoring_yaml() at startup, with env vars still taking
+# precedence over these values if both are set.
+monitoring:
+  enable_prometheus: true
+  prometheus_port: 9090
+  enable_dashboard: true
+  dashboard_port: 8080
+
+health_check:
+  interval_seconds: 30
+
+heartbeat:
+  interval_seconds: 60
+
+watchdog:
+  timeout_seconds: 30
+  check_interval_seconds: 5
+
+alerts:
+  daily_loss_warning_pct: 3.0
+  drawdown_warning_pct: 10.0
+  cooldown_minutes: 30

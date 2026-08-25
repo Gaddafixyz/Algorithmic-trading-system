@@ -1,0 +1,18 @@
+binance:
+  rest_mainnet: https://fapi.binance.com
+  rest_testnet: https://testnet.binancefuture.com
+  ws_mainnet: wss://fstream.binance.com
+  ws_testnet: wss://stream.binancefuture.com
+  recv_window: 5000
+  max_orders_per_second: 10
+  max_orders_per_minute: 1200
+
+# Bybit V5 linear-perpetual (USDT-margined). REST/data-layer only today —
+# see bootstrap/exchange_factory.py and ROADMAP.md for the live user-data
+# WebSocket wiring that's still Binance-specific.
+bybit:
+  rest_mainnet: https://api.bybit.com
+  rest_testnet: https://api-testnet.bybit.com
+  recv_window: 5000
+  max_orders_per_second: 10
+  max_orders_per_minute: 600

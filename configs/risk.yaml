@@ -1,0 +1,35 @@
+risk:
+  # 0.75% x max_open_positions (5) = 3.75% max simultaneous risk, leaving
+  # ~1.25pt of headroom under max_daily_loss_pct for slippage/fees beyond
+  # where stops should trigger, if every open position stopped out same day.
+  max_portfolio_risk_pct: 0.75
+  max_daily_loss_pct: 5.0
+  max_drawdown_pct: 15.0
+  max_open_positions: 5
+  max_leverage: 10.0
+  max_position_pct_of_equity: 20.0
+  max_correlated_exposure_pct: 40.0
+  atr_stop_multiplier: 1.5
+  risk_reward_minimum: 1.5
+  max_stop_loss_pct: 5.0
+  min_stop_loss_pct: 0.05
+  # position_sizing_method: base sizing model before the correlation/
+  # notional/circuit-breaker adjustments that always apply on top (see
+  # RiskManager.calculate_position_size()). "fixed_fractional" (default)
+  # risks a flat % of equity per trade — unchanged from before this key
+  # existed. "volatility_adjusted" scales that size by how the signal's
+  # stop distance compares to volatility_target_atr_multiple × ATR.
+  position_sizing_method: fixed_fractional
+  volatility_target_atr_multiple: 1.5
+  # kelly_*: only read when position_sizing_method=kelly. See
+  # RiskConfig's field descriptions (src/core/config.py) for the full
+  # rationale of each; kelly_min_trades must be <= kelly_lookback_trades.
+  kelly_lookback_trades: 30
+  kelly_min_trades: 20
+  kelly_fraction: 0.25
+  kelly_max_risk_pct: 5.0
+
+circuit_breaker:
+  cooldown_minutes: 60
+  daily_loss_limit_pct: 5.0
+  drawdown_limit_pct: 15.0

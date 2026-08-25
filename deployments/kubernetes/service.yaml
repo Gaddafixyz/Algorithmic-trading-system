@@ -1,0 +1,40 @@
+---
+# Dashboard (HTTP status endpoint)
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-dashboard
+  namespace: trading
+  labels:
+    app: trading-system
+    component: dashboard
+spec:
+  type: ClusterIP
+  selector:
+    app: trading-system
+    component: bot
+  ports:
+    - name: http
+      port: 8080
+      targetPort: dashboard
+      protocol: TCP
+---
+# Prometheus metrics endpoint (scraped by Prometheus operator or PodMonitor)
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-metrics
+  namespace: trading
+  labels:
+    app: trading-system
+    component: metrics
+spec:
+  type: ClusterIP
+  selector:
+    app: trading-system
+    component: bot
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP

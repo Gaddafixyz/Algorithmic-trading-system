@@ -1,0 +1,16 @@
+# Symbol-specific overrides
+symbols:
+  BTCUSDT:
+    leverage: 5
+    margin_type: ISOLATED
+    enabled: true
+
+  ETHUSDT:
+    leverage: 5
+    margin_type: ISOLATED
+    enabled: true
+
+  SOLUSDT:
+    leverage: 3
+    margin_type: ISOLATED
+    enabled: false

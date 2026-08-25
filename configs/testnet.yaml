@@ -1,0 +1,26 @@
+# Testnet configuration
+environment: testnet
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+timeframe: 1h
+htf_timeframe: 4h
+
+risk:
+  max_portfolio_risk_pct: 1.0
+  max_daily_loss_pct: 5.0
+  max_drawdown_pct: 15.0
+  max_open_positions: 3
+  max_leverage: 5.0
+  risk_reward_minimum: 1.5
+
+strategy:
+  min_confluence_score: 60.0
+  swing_lookback: 5
+  atr_period: 14
+
+logging:
+  level: DEBUG
+  json: false

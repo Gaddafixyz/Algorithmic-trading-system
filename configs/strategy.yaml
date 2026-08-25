@@ -1,0 +1,144 @@
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+timeframe: 1h
+htf_timeframe: 4h
+# Lower-timeframe tier for MTFContext (src/strategy/multi_timeframe.py).
+# Purely additive to the alignment_score() confluence factor — leave
+# blank/absent to disable the LTF tier entirely (no extra candle fetch),
+# same as before this field existed.
+ltf_timeframe: 15m
+min_confluence_score: 60.0
+
+smc:
+  swing_lookback: 5
+  ob_max_age_bars: 100
+  fvg_min_size_atr_mult: 0.3
+  premium_zone: 0.70
+  discount_zone: 0.30
+  # stop_loss_method: only affects the no-OB fallback stop in
+  # confluence.py's _calculate_trade_params (the OB-anchored branch is
+  # unaffected either way). "atr" (default, unchanged behavior) uses
+  # risk/stop_loss.py's atr_stop_loss(). "structure" anchors just beyond
+  # the nearest opposing swing point instead (structure_stop_loss()),
+  # falling back to "atr" when no swing point is available yet or the
+  # structure stop would land on the wrong side of entry.
+  stop_loss_method: atr
+  # use_mitigation_blocks: order-block scoring factor falls back to a
+  # mitigated OB's unfilled remainder (smart_money/mitigation.py) when no
+  # active OB scores. False (default, unchanged behavior) means a
+  # mitigated OB never contributes to the score, same as before this key
+  # existed.
+  use_mitigation_blocks: false
+
+execution:
+  # track_funding_pnl: subscribe ExecutionEngine to FundingRateEvent and
+  # settle each funding-rate update against open positions' funding_pnl
+  # (Position.add_funding() — existed with a fully implemented field/
+  # total_pnl formula but no caller anywhere in the live path before this
+  # key existed, so funding_pnl stayed permanently 0 for every position).
+  # False (default) means unchanged behavior: no funding subscription,
+  # funding_pnl stays 0, matching every prior version's actual PnL
+  # accounting exactly. This is pure accounting accuracy — it never
+  # affects signal selection, stop placement, or position sizing.
+  track_funding_pnl: false
+
+indicators:
+  atr_period: 14
+  rsi_period: 14
+  ema_fast: 12
+  ema_slow: 26
+
+# Minimum ATR, as % of entry price, for a signal to be accepted. Guards
+# against generating (and RiskManager sizing/executing) signals during
+# near-zero-volatility conditions, where SMC structure/OB/FVG detection is
+# more prone to noise and a stop this tight relative to typical range gets
+# clipped by routine chop rather than genuine invalidation. 0 disables the
+# check entirely (every signal passes regardless of ATR).
+min_atr_pct: 0.0
+
+# Optional confirmation filters on top of the confluence score, using
+# indicators.{rsi,macd} — both were fully implemented and unit-tested but
+# had no caller anywhere in the strategy pipeline before this wiring.
+# Neither feeds into scoring_weights below (see the note there — that
+# budget is tunable per-factor, but momentum indicators intentionally
+# stay out of it); these run afterward as pass/reject gates, same
+# pattern as min_atr_pct. Both disabled by default so existing signal
+# flow is unchanged unless explicitly turned on.
+#
+# rsi_exhaustion_filter: reject a LONG signal when RSI is already
+# overbought (>= rsi_overbought), or a SHORT when RSI is already oversold
+# (<= rsi_oversold) — i.e. don't chase a move that's already extended.
+rsi_exhaustion_filter: false
+rsi_overbought: 80.0
+rsi_oversold: 20.0
+# macd_trend_filter: reject a signal whose direction disagrees with the
+# MACD histogram's sign (negative histogram blocks LONGs, positive blocks
+# SHORTs) — a coarse trend-confirmation gate.
+macd_trend_filter: false
+# max_spread_pct: reject a signal if the live best-bid/best-ask spread
+# (as % of best_bid, from the book-ticker stream) exceeds this value —
+# guards against entering during abnormally wide/illiquid conditions.
+# 0 (default) disables the check entirely.
+max_spread_pct: 0.0
+# kill_zone_filter: reject a signal generated outside an ICT kill-zone
+# window (see src/smart_money/killzones.py::should_trade_now). Distinct
+# from confluence.py's "session" scoring factor (a continuous 0-100
+# weight from sessions.py::session_score) — this is a hard pass/reject
+# gate layered on top, same opt-in/disabled-by-default pattern as
+# rsi_exhaustion_filter/macd_trend_filter/max_spread_pct above.
+kill_zone_filter: false
+# require_kill_zone: if true (default), only the active London/New York
+# open/close/Asian kill zones pass; if false, relaxed to any session
+# scoring >= 0.4 (see should_trade_now). Only read when kill_zone_filter
+# is true.
+require_kill_zone: true
+
+# Per-factor confluence scoring budget, read by src.main::_load_confluence_weights
+# and passed through SMCStrategy -> SMCSignalEngine -> score_confluence()'s
+# `weights=` param (smart_money/confluence.py::ConfluenceWeights). Previously
+# present here but completely unread by any code path — editing these numbers
+# did nothing. Values are fractions (any consistent scale works; they're
+# renormalized internally to sum to 100 regardless of what's written here) —
+# these defaults reproduce score_confluence()'s original hardcoded scoring
+# exactly. Missing keys fall back to that same default per-factor.
+#
+# These are reasoned defaults, not empirically backtested — see
+# ROADMAP.md and `python scripts/optimize.py --tune-weights --symbols
+# ... --timeframes ...` to search for and validate alternatives before
+# changing these in a live deployment.
+scoring_weights:
+  market_structure: 0.20
+  order_block: 0.20
+  fair_value_gap: 0.15
+  liquidity_sweep: 0.15
+  premium_discount: 0.10
+  session: 0.10
+  volume: 0.05
+  htf_alignment: 0.05
+
+# Optional ML gate on top of the confluence-score signal (src/machine_learning).
+# Disabled by default because no trained model ships with the repo — train
+# one with scripts/train_signal_filter.py (or your own pipeline) against
+# your own historical fills before enabling this in anything but backtests.
+ml_filter:
+  enabled: false
+  model_path: models/signal_filter.pkl
+  min_probability: 0.55
+  max_ob_age_bars: 100
+
+# Partial take-profit ladder. Disabled by default — enabling it changes
+# live trade behavior (locking in gains early rather than riding the full
+# position to stop/take-profit), so review before turning on. Each level
+# is [rr_multiple, qty_fraction]: rr_multiple is the reward multiple of the
+# position's own initial stop distance (1.0 = price has moved one stop's
+# worth of distance in profit), qty_fraction is the fraction of the
+# position's entry_quantity to close at that level via a reduce-only
+# MARKET order. Fractions need not sum to 1.0 — whatever remains still
+# rides to the full stop-loss/take-profit as normal.
+partial_take_profit:
+  enabled: false
+  levels:
+    - [1.0, 0.5]
+    - [2.0, 0.25]

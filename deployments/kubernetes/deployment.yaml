@@ -1,0 +1,184 @@
+---
+# Trading System — Kubernetes Deployment
+# Horizontal scaling per symbol group is achieved by setting the
+# TRADING_SYMBOLS env var to a disjoint subset per replica group
+# and fronting them with a single shared PostgreSQL + Redis cluster.
+#
+# Prerequisites:
+#   kubectl create namespace trading
+#
+#   kubectl create secret generic trading-secrets \
+#     --namespace trading \
+#     --from-literal=binance-api-key=<KEY> \
+#     --from-literal=binance-api-secret=<SECRET> \
+#     --from-literal=database-url='postgresql+asyncpg://trader:<PW>@postgres-svc:5432/trading'
+#
+#   kubectl apply -f configmap.yaml
+#   kubectl apply -f deployment.yaml
+#   kubectl apply -f service.yaml
+#   kubectl apply -f hpa.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-system
+  namespace: trading
+  labels:
+    app: trading-system
+    component: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-system
+      component: bot
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: trading-system
+        component: bot
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: trading-system
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: trading-system
+          image: trading-system:latest
+          imagePullPolicy: Always
+          command: ["python", "scripts/start.py"]
+          ports:
+            - name: dashboard
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: TRADING_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: trading-config
+                  key: trading_env
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: trading-config
+                  key: log_level
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: trading-config
+                  key: redis_url
+            # DATABASE_URL comes from a Secret (contains password — never ConfigMap)
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: trading-secrets
+                  key: database-url
+            - name: BINANCE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trading-secrets
+                  key: binance-api-key
+            - name: BINANCE_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: trading-secrets
+                  key: binance-api-secret
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: dashboard
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: dashboard
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          volumeMounts:
+            - name: config
+              mountPath: /app/configs
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+            - name: models
+              mountPath: /app/models
+      volumes:
+        - name: config
+          configMap:
+            name: trading-config          # must match metadata.name in configmap.yaml
+        - name: data
+          persistentVolumeClaim:
+            claimName: trading-data-pvc
+        - name: logs
+          emptyDir: {}
+        - name: models
+          persistentVolumeClaim:
+            claimName: trading-models-pvc
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: [trading-system]
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: trading-system
+  namespace: trading
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trading-data-pvc
+  namespace: trading
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trading-models-pvc
+  namespace: trading
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi

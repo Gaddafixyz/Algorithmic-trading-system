@@ -1,0 +1,46 @@
+# Security note: this project is deliberately unpinned by default (see
+# CHANGELOG.md "Fixed broken pyproject.toml pushed directly to main" for
+# why) — most lines below are bare package names on purpose, not an
+# oversight. The exceptions are the packages listed here, each pinned
+# to the lowest version that resolves every *currently open* Dependabot
+# alert against it (48 alerts across these 9 packages as of the date of
+# this pass — 34x aiohttp, 7x cryptography, 1x each black/msgpack/
+# orjson/lightgbm/python-dotenv/scikit-learn; pytest's floor lives in
+# pyproject.toml's dev extras, not here). Verified via `pip install -e
+# ".[dev]"` in a clean venv + full test suite, not assumed from the
+# advisory text alone. See CHANGELOG.md "Targeted re-pin of the 9
+# packages with open Dependabot alerts" for the alert-by-alert detail
+# and the exact resolved versions from that verification.
+aiohttp>=3.14.3
+asyncpg
+cryptography>=49.0.0
+numpy
+pandas
+pydantic
+pydantic-settings
+python-dotenv>=1.2.2
+PyYAML
+redis
+scikit-learn>=1.5.0
+scipy
+sqlalchemy[asyncio]
+structlog
+websockets
+aioredis
+alembic
+httpx
+tenacity
+prometheus-client
+pytz
+orjson>=3.11.6
+msgpack>=1.2.1
+uvloop
+click
+rich
+tabulate
+matplotlib
+seaborn
+joblib
+optuna
+xgboost
+lightgbm>=4.6.0
